@@ -280,7 +280,7 @@ Die Oberfläche läuft **nur auf Ihrem Rechner** (Adresse `127.0.0.1`) und sende
 | **Projekt** | Stand des Projekts, Kennzahlen, Quellen; `project.yaml` bearbeiten (wird vor dem Speichern geprüft, bei Fehlern wird nichts geschrieben) |
 | **Daten** | Dateien wählen, Trockenlesung mit Format, Zahl der Datensätze und Anteil mit Abstract, Quelle benennen, importieren; Tabelle der Datensätze mit Filter |
 | **Prüfen** | Duplikate, Vorfilter und Gültigkeit; Bericht mit Gründen und Hinweisen; Tokens, Kosten (mit schlimmstem Fall) und Dauer |
-| **Lauf** | Sagt ehrlich, dass das Screening mit dem Sprachmodell in dieser Version noch fehlt, und was schon geht |
+| **Lauf** | Screening starten, verfolgen, pausieren, stoppen und fortsetzen (Abschnitt 6k) |
 | **PRISMA-Fluss** | Zahlen des Flussdiagramms aus den Ereignissen des Projekts, mit Warnungen bei veralteten Schritten |
 | **Export** | CSV, XLSX, RIS oder PRISMA-Zahlen erzeugen und herunterladen |
 | **Einstellungen** | Pfade, Protokollstufe, Preisliste ansehen |
@@ -402,6 +402,19 @@ Ohne Terminal (Umleitung in eine Datei, Planer) schreibt das Programm alle 30 Se
 3. **Je Datensatz:** Prompt bauen, Anfrage senden (mit den Regeln für Wiederholung, Wartezeit und Begrenzung unten), Antwort prüfen, Ergebniszeile schreiben.
 4. **Je Päckchen:** auf der Platte prüfen, Fehlerquote bewerten, Zwischenstand (`manifest.json`) speichern.
 5. **Ende:** Zustand und Ursache speichern; bei einem vollständigen, abgeschlossenen Lauf (kein Probelauf) ein Ereignis für den PRISMA-Fluss schreiben.
+
+### Das Screening in der Oberfläche (Seite „Lauf“)
+
+Die Seite **Lauf** der Oberfläche (Abschnitt 6h) macht dasselbe wie `crapai screen`, aber mit Bedienelementen:
+
+* **Start:** Zusammenfassung der Einstellungen (Anbieter, Modell, Prompt, Päckchengrösse), Kosten- und Zeitschätzung, Feld „Probelauf“ (Anzahl zufälliger Datensätze, 0 = alle), ein Kontrollkästchen für das Einverständnis („die Datensätze werden an den Anbieter gesendet und können Geld kosten“) und die Schaltfläche *Lauf starten*. Ohne Häkchen ist die Schaltfläche gesperrt. Schlüssel, Einstellungen und Sperre werden **vor** dem Start geprüft; ein Fehler (E301 fehlender Schlüssel, E402 Projekt in Benutzung, E203 ungültige Einstellung) erscheint sofort auf der Seite und es wird nichts gestartet.
+* **Der Schlüssel** muss in dem Terminal gesetzt sein, in dem `crapai ui` gestartet wurde (Umgebungsvariable, Abschnitt oben); die Seite nennt den Namen der Variable und speichert nie einen Schlüssel.
+* **Der Lauf arbeitet in einem eigenen Prozess** (`python -m crapai screen …`), nicht in der Oberfläche. Schliessen Sie den Browser-Tab oder starten Sie die Oberfläche neu: der Lauf geht weiter, die Seite findet ihn über `manifest.json` wieder. Was der Prozess ausgibt, steht in `.crapai/screen.out` (die Seite zeigt es, falls ein Start scheitert).
+* **Fortschritt:** Fortschrittsbalken mit „x von y Datensätzen (p %)“, Kacheln für ok, Fehler, Kosten und Päckchen, die Tabelle der Päckchen. Die Anzeige aktualisiert sich alle zwei Sekunden selbst.
+* **Pausieren / Stoppen:** schreiben `control.json`; der Lauf beendet die Anfragen im Flug und hält im Zustand `paused` bzw. `interrupted`.
+* **Nach dem Halt:** die Seite nennt Zustand, Ursache und Code (z. B. „E307 Guthaben aufgebraucht“), zeigt die Datensätze mit Fehlern und bietet *Diesen Lauf fortsetzen* an. Ein Lauf, dessen Zustand „läuft“ lautet, der aber seit 30 Sekunden nichts gespeichert hat, wird als **veraltet** gemeldet (Prozess beendet?): dann `crapai unlock` und fortsetzen.
+* **Alle Läufe** stehen in einer Tabelle (Zustand, erledigt/gesamt, Fehler, Kosten).
+* Ein ganz neuer Lauf nach einem unfertigen wird über die Befehlszeile gestartet (`crapai screen`), damit ein angefangener Lauf nicht versehentlich liegen bleibt.
 
 ### Die Zustände eines Laufs
 

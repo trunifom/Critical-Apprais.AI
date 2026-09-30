@@ -16,8 +16,10 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
@@ -26,6 +28,8 @@ from crapai.errors import SaraError
 from crapai.io.records_store import read_records
 from crapai.prisma.flow import FlowWarning
 from crapai.project.workspace import Workspace
+from crapai.screening.store import Manifest, RunState, RunStore
+from crapai.services import screening as screening_service
 from crapai.services.events import read_events
 from crapai.services.project import ProjectStatus, project_status
 
@@ -57,6 +61,7 @@ class Overview:
         config_problem: First line of the problem, if any.
         in_use: Another process holds the project lock.
         checked: Whether the check has run at least once (a validity event exists).
+        run_state: State of the newest screening run (empty if there is none).
     """
 
     folder: Path
@@ -72,9 +77,12 @@ class Overview:
     config_problem: str | None
     in_use: bool
     checked: bool
+    run_state: str = ""
 
 
-def overview_from_status(status: ProjectStatus, excluded: int, checked: bool) -> Overview:
+def overview_from_status(
+    status: ProjectStatus, excluded: int, checked: bool, run_state: str = ""
+) -> Overview:
     """Build an :class:`Overview` from the service's status and the exclusion count."""
     return Overview(
         folder=status.root,
@@ -90,6 +98,7 @@ def overview_from_status(status: ProjectStatus, excluded: int, checked: bool) ->
         config_problem=status.config_problem,
         in_use=status.in_use,
         checked=checked,
+        run_state=run_state,
     )
 
 
@@ -104,7 +113,8 @@ def load_overview(folder: Path) -> Overview:
     records = read_records(workspace.records_csv)
     excluded = sum(1 for r in records if r.exclusion_reason)
     checked = any(event.kind == "validity" for event in read_events(workspace.events_jsonl))
-    return overview_from_status(status, excluded, checked)
+    runs = screening_service.list_runs(workspace)
+    return overview_from_status(status, excluded, checked, runs[-1].state if runs else "")
 
 
 @dataclass(frozen=True)
@@ -134,7 +144,8 @@ def build_stepper(
 
     The order is fixed: project, data, check, run, flow, export. A step is *locked* while its
     requirement is missing; the first step that is neither done nor locked is the *current* one.
-    The ``run`` step (the model screening) is always locked in this version.
+    The ``run`` step follows the newest screening run: ``done`` if it completed, ``warning`` if
+    it was paused, interrupted or failed, otherwise ``current`` as soon as there are records.
 
     Args:
         overview: The project overview, or None if no project is open.
@@ -153,7 +164,7 @@ def build_stepper(
             "locked" if not has_records else ("done" if overview.checked else "current"),
             "needs_records" if not has_records else "",
         ),
-        "run": ("locked", "not_available"),
+        "run": _run_step(overview, has_records),
         "flow": (
             "locked" if not has_records else ("warning" if flow_warnings else "done"),
             "needs_records" if not has_records else "",
@@ -165,6 +176,146 @@ def build_stepper(
     }
     steps = [StepInfo(key, state, reason) for key, (state, reason) in states.items()]
     return steps
+
+
+def _run_step(overview: Overview, has_records: bool) -> tuple[StepState, str]:
+    """State of the ``run`` step from the state of the newest run."""
+    if not has_records:
+        return "locked", "needs_records"
+    if overview.run_state == RunState.COMPLETED.value:
+        return "done", ""
+    if overview.run_state in (
+        RunState.PAUSED.value,
+        RunState.INTERRUPTED.value,
+        RunState.FAILED.value,
+    ):
+        return "warning", ""
+    return "current", ""
+
+
+#: a running run whose manifest was not saved for this long (seconds) is shown as stalled
+STALL_AFTER_S = 30.0
+
+
+@dataclass(frozen=True)
+class RunView:
+    """One screening run as the run page shows it (built from ``manifest.json``).
+
+    Attributes:
+        run_id: Folder name of the run.
+        state: A :class:`~crapai.screening.store.RunState` value.
+        kind: ``full`` or ``sample``.
+        total: Records of the whole run.
+        done: Records with a result so far (all sessions).
+        ok: Records screened successfully.
+        errors: ``done`` minus ``ok``.
+        cost: Cost so far.
+        currency: Currency of the cost.
+        batch: The batch being worked on (1-based; the last one when finished).
+        batches: Number of batches of the whole run.
+        stop_reason: Why the last session ended.
+        last_error: ``{"code", "message"}`` of the problem that stopped the run, or empty.
+        warnings: Notes of the run.
+        batch_rows: The batch table of the manifest.
+        updated_at: When the manifest was last saved (ISO text).
+        age_s: Seconds since then, or None if unknown.
+    """
+
+    run_id: str
+    state: str
+    kind: str
+    total: int
+    done: int
+    ok: int
+    errors: int
+    cost: float
+    currency: str
+    batch: int
+    batches: int
+    stop_reason: str
+    last_error: dict[str, str]
+    warnings: tuple[str, ...]
+    batch_rows: tuple[dict[str, object], ...]
+    updated_at: str
+    age_s: float | None
+
+    @property
+    def fraction(self) -> float:
+        """Progress between 0 and 1 (1 for an empty run)."""
+        return min(1.0, self.done / self.total) if self.total else 1.0
+
+    @property
+    def running(self) -> bool:
+        """True while the manifest says the run is working."""
+        return self.state == RunState.RUNNING.value
+
+    @property
+    def stalled(self) -> bool:
+        """True if the run claims to be working but has not saved anything for a while."""
+        return self.running and self.age_s is not None and self.age_s > STALL_AFTER_S
+
+    @property
+    def resumable(self) -> bool:
+        """Whether ``resume`` makes sense: unfinished, or completed with failed records."""
+        if self.state == RunState.COMPLETED.value:
+            return self.errors > 0
+        return RunState(self.state).resumable
+
+
+def run_view(manifest: Manifest, now: datetime | None = None) -> RunView:
+    """Turn a manifest into a :class:`RunView`."""
+    counts = manifest.counts
+    total, done, ok = counts.get("total", 0), counts.get("done", 0), counts.get("ok", 0)
+    size = int(manifest.run_settings.get("batch_size", 0) or 0)
+    batches = math.ceil(total / size) if size else len(manifest.batches)
+    verified = sum(1 for row in manifest.batches if row.get("status") == "verified")
+    try:
+        updated = datetime.fromisoformat(manifest.updated_at)
+        age = max(0.0, ((now or datetime.now(UTC)) - updated).total_seconds())
+    except ValueError:
+        age = None
+    return RunView(
+        run_id=manifest.run_id,
+        state=manifest.state,
+        kind=manifest.kind,
+        total=total,
+        done=done,
+        ok=ok,
+        errors=max(0, done - ok),
+        cost=float(manifest.usage.get("cost", 0.0) or 0.0),
+        currency=str(manifest.usage.get("currency", "")),
+        batch=min(verified + 1, max(batches, 1)),
+        batches=batches,
+        stop_reason=manifest.stop_reason,
+        last_error=dict(manifest.last_error),
+        warnings=tuple(manifest.warnings),
+        batch_rows=tuple(manifest.batches),
+        updated_at=manifest.updated_at,
+        age_s=age,
+    )
+
+
+def load_run_views(folder: Path) -> list[RunView]:
+    """All runs of a project, oldest first (damaged run folders are skipped and logged)."""
+    return [run_view(m) for m in screening_service.list_runs(Workspace(folder))]
+
+
+def failed_results(folder: Path, run_id: str, limit: int = 200) -> list[dict[str, str]]:
+    """Records of a run whose last result is not ``ok``: title, status, code (first ``limit``)."""
+    workspace = Workspace(folder)
+    store = RunStore(workspace.runs_dir / run_id)
+    titles = {r.study_uid: r.title for r in read_records(workspace.records_csv)}
+    rows = [row for row in store.last_results().values() if not row.is_ok]
+    return [
+        {
+            "title": titles.get(row.study_uid, row.study_uid),
+            "status": row.status,
+            "code": row.error_code,
+            "message": row.error_message,
+            "attempts": str(row.attempts),
+        }
+        for row in rows[:limit]
+    ]
 
 
 def percent(part: int, whole: int) -> str:

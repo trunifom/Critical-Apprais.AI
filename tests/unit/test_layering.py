@@ -20,7 +20,8 @@ FORBIDDEN_THIRD_PARTY = frozenset(
 # Layers above or beside the core. Core modules must not import them (arrows point downwards).
 UPPER_LAYERS = frozenset({"cli", "ui", "services", "adapters"})
 # Top-level sub-packages that are allowed to depend on the forbidden packages.
-NON_CORE = UPPER_LAYERS
+# ``python -m crapai`` (__main__) is an entry point like ``cli`` and may import it.
+NON_CORE = UPPER_LAYERS | {"__main__"}
 # Adapters: the one place per SDK where the outside world is touched (ports and adapters). They
 # may import their SDK, but still must not import an upper layer. Keep this list short.
 ADAPTER_MODULES = {"llm/openai_provider.py": frozenset({"openai"})}

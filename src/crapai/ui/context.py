@@ -24,7 +24,7 @@ PAGES: tuple[str, ...] = (
 #: pages that need an open project (the others work without one)
 NEEDS_PROJECT = frozenset({"project", "data", "check", "run", "flow", "export"})
 #: pages that need records
-NEEDS_RECORDS = frozenset({"check", "flow", "export"})
+NEEDS_RECORDS = frozenset({"check", "run", "flow", "export"})
 
 
 @dataclass
@@ -63,8 +63,6 @@ def initial_language() -> str:
 
 def lock_reason(page: str, overview: Overview | None, folder: Path | None) -> str | None:
     """Why a page cannot be used yet (a ``ui.locked.*`` key suffix), or None if it can."""
-    if page == "run":
-        return "not_available"
     if page in NEEDS_PROJECT and folder is None:
         return "needs_project"
     if page in NEEDS_RECORDS and (overview is None or overview.records == 0):

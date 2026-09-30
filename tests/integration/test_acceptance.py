@@ -98,7 +98,7 @@ def test_at2_server_errors_leave_a_complete_file_and_resume_repairs_it(tmp_path:
     )
     assert all(r["decision"] == "" for r in errors)  # never a label for a failed record
     second = run(workspace, MockProvider("S1"), resume=first.run_id)
-    assert second.summary.by_status == {"ok": len(errors)}
+    assert second.summary.session_done == len(errors) and second.summary.by_status == {"ok": 60}
     final = RunStore(first.folder).last_results()
     assert len(final) == 60 and all(r.is_ok for r in final.values())
 
@@ -159,7 +159,9 @@ def test_at3_a_killed_run_is_resumed_without_double_work_and_with_the_same_resul
     assert (
         decisions(workspace, resumed.folder) == expected
     )  # the same end result as the undisturbed run
-    assert resumed.summary.done <= total - done_before + 5  # only the missing ones were paid for
+    assert (
+        resumed.summary.session_done <= total - done_before + 5
+    )  # only the missing ones were paid for
 
 
 # --- AT4 ------------------------------------------------------------------------------------------

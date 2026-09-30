@@ -69,7 +69,7 @@ def test_after_the_import_the_check_is_next(project: Workspace, tmp_path: Path) 
     with_records(project, tmp_path)
     result = states(load_overview(project.root))
     assert result["data"] == "done" and result["check"] == "current"
-    assert result["flow"] == "done" and result["export"] == "done" and result["run"] == "locked"
+    assert result["flow"] == "done" and result["export"] == "done" and result["run"] == "current"
 
 
 def test_after_the_check_nothing_is_current(project: Workspace, tmp_path: Path) -> None:
@@ -120,7 +120,7 @@ def test_status_icons() -> None:
         ("data", False, 0, "needs_project"), ("project", False, 0, "needs_project"),
         ("data", True, 0, None), ("check", True, 0, "needs_records"),
         ("flow", True, 0, "needs_records"), ("export", True, 3, None),
-        ("run", True, 3, "not_available"),
+        ("run", True, 3, None), ("run", True, 0, "needs_records"), ("run", False, 0, "needs_project"),
     ],
 )  # fmt: skip
 def test_lock_reasons(
@@ -330,3 +330,183 @@ def test_context_text_uses_the_ui_prefix(messages: Messages, tmp_path: Path) -> 
     assert ctx.t("nav.start") == "Start" and "Open or create" in ctx.t("locked.needs_project")
     german = Context(None, None, "de", Messages("de"), RecentProjects(tmp_path / "r.json"))
     assert german.t("nav.check") == "Prüfen"
+
+
+# --- screening runs: view models and actions --------------------------------------------------------
+
+
+def _manifest_run(
+    project: Workspace,
+    state: str,
+    *,
+    done: int = 4,
+    total: int = 10,
+    ok: int = 3,
+    age: float = 0.0,
+):  # type: ignore[no-untyped-def]
+    import re
+    from datetime import UTC, datetime, timedelta
+
+    from crapai.screening.store import Manifest, RunStore
+
+    store = RunStore(project.runs_dir / "2026-10-01T10-00_run-001")
+    manifest = Manifest(run_id=store.folder.name, state=state)
+    manifest.counts = {"total": total, "done": done, "ok": ok}
+    manifest.usage = {"cost": 1.5, "currency": "USD"}
+    manifest.run_settings = {"batch_size": 4}
+    manifest.batches = [{"index": 0, "status": "verified", "size": 4}]
+    store.create(manifest)
+    stamped = (datetime.now(UTC) - timedelta(seconds=age)).isoformat(timespec="seconds")
+    text = store.manifest_path.read_text(encoding="utf-8")
+    store.manifest_path.write_text(
+        re.sub(r'"updated_at": "[^"]*"', f'"updated_at": "{stamped}"', text), encoding="utf-8"
+    )
+    return store
+
+
+def test_a_run_view_is_built_from_the_manifest(project: Workspace) -> None:
+    from crapai.ui.viewmodels import load_run_views
+
+    _manifest_run(project, "paused")
+    (view,) = load_run_views(project.root)
+    assert (view.total, view.done, view.ok, view.errors) == (10, 4, 3, 1)
+    assert view.fraction == 0.4 and view.batches == 3 and view.batch == 2
+    assert view.cost == 1.5 and view.currency == "USD" and view.resumable and not view.running
+
+
+def test_a_running_run_that_stopped_saving_is_stalled(project: Workspace) -> None:
+    from crapai.ui.viewmodels import load_run_views
+
+    _manifest_run(project, "running", age=120)
+    (view,) = load_run_views(project.root)
+    assert view.running and view.stalled
+
+
+def test_a_running_run_that_saves_is_not_stalled(project: Workspace) -> None:
+    from crapai.ui.viewmodels import load_run_views
+
+    _manifest_run(project, "running", age=1)
+    assert not load_run_views(project.root)[0].stalled
+
+
+def test_completed_runs_are_resumable_only_with_failed_records(project: Workspace) -> None:
+    from crapai.ui.viewmodels import load_run_views
+
+    _manifest_run(project, "completed", done=10, ok=10)
+    assert not load_run_views(project.root)[0].resumable
+
+
+def test_an_empty_run_is_full_and_no_runs_is_an_empty_list(project: Workspace) -> None:
+    from crapai.ui.viewmodels import load_run_views
+
+    assert load_run_views(project.root) == []
+    _manifest_run(project, "completed", done=0, total=0, ok=0)
+    assert load_run_views(project.root)[0].fraction == 1.0
+
+
+@pytest.mark.parametrize(
+    "state,step",
+    [
+        ("completed", "done"),
+        ("paused", "warning"),
+        ("interrupted", "warning"),
+        ("failed", "warning"),
+        ("running", "current"),
+    ],
+)
+def test_the_run_step_follows_the_newest_run(
+    project: Workspace, tmp_path: Path, state: str, step: str
+) -> None:
+    with_records(project, tmp_path)
+    _manifest_run(project, state)
+    assert states(load_overview(project.root))["run"] == step
+
+
+def test_the_screening_command_line(project: Workspace) -> None:
+    import sys
+
+    command = actions.screen_command(project.root, lang="de", sample=20)
+    assert command[:4] == [sys.executable, "-m", "crapai", "screen"]
+    assert "--yes" in command and "--no-progress" in command
+    assert command[command.index("--sample") + 1] == "20"
+    assert "--resume" in actions.screen_command(project.root, lang="en", resume=True)
+    assert "--sample" not in actions.screen_command(project.root, lang="en", resume=True, sample=5)
+
+
+class _FakePopen:
+    calls: list[list[str]] = []
+
+    def __init__(self, command: list[str], **kwargs: object) -> None:
+        _FakePopen.calls.append(command)
+        self.pid = 4242
+
+
+def _mock_project(project: Workspace) -> None:
+    import yaml
+
+    data = yaml.safe_load(project.project_yaml.read_text(encoding="utf-8"))
+    data["llm"].update({"provider": "mock", "model": "S1", "base_url": None})
+    project.project_yaml.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+
+
+def test_starting_a_run_spawns_a_separate_process(
+    project: Workspace, messages: Messages, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _mock_project(project)
+    _FakePopen.calls.clear()
+    monkeypatch.setattr(actions.subprocess, "Popen", _FakePopen)
+    outcome = actions.start_run(messages, project.root, lang="en", sample=5)
+    assert outcome.ok and outcome.value == 4242 and len(_FakePopen.calls) == 1
+    assert (project.state_dir / actions.SCREEN_OUTPUT).exists()
+
+
+def test_a_missing_key_is_reported_in_the_interface_before_anything_starts(
+    project: Workspace, messages: Messages, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import yaml
+
+    data = yaml.safe_load(project.project_yaml.read_text(encoding="utf-8"))
+    data["llm"].update(
+        {
+            "provider": "openai_compatible",
+            "base_url": "https://x.example/v1",
+            "api_key_env": "NO_SUCH_VAR_Q",
+        }
+    )
+    project.project_yaml.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    monkeypatch.delenv("NO_SUCH_VAR_Q", raising=False)
+    _FakePopen.calls.clear()
+    monkeypatch.setattr(actions.subprocess, "Popen", _FakePopen)
+    outcome = actions.start_run(messages, project.root, lang="en")
+    assert outcome.error is not None and outcome.error.code == "E301" and not _FakePopen.calls
+
+
+def test_a_project_in_use_is_reported_as_e402(
+    project: Workspace, messages: Messages, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _mock_project(project)
+    _FakePopen.calls.clear()
+    monkeypatch.setattr(actions.subprocess, "Popen", _FakePopen)
+    with project.lock():
+        outcome = actions.start_run(messages, project.root, lang="en")
+    assert outcome.error is not None and outcome.error.code == "E402" and not _FakePopen.calls
+
+
+def test_pause_and_stop_write_the_control_file(project: Workspace, messages: Messages) -> None:
+    store = _manifest_run(project, "running")
+    assert actions.control_run(messages, project.root, store.folder.name, "pause").ok
+    assert store.read_control() == "pause"
+    assert actions.control_run(messages, project.root, "nope", "pause").error is not None
+    assert (
+        actions.control_run(messages, project.root, store.folder.name, "explode").error is not None
+    )
+
+
+def test_the_output_of_the_screening_process_is_shown_from_its_end(project: Workspace) -> None:
+    assert actions.screen_output_tail(project.root) == ""
+    project.state_dir.mkdir(parents=True, exist_ok=True)
+    (project.state_dir / actions.SCREEN_OUTPUT).write_text(
+        "\n".join(f"line {n}" for n in range(50)), encoding="utf-8"
+    )
+    tail = actions.screen_output_tail(project.root, lines=3)
+    assert tail.splitlines() == ["line 47", "line 48", "line 49"]

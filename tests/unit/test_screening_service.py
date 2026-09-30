@@ -179,9 +179,9 @@ def test_failed_records_are_retried_on_resume_unless_switched_off(project: Works
     no_retry = svc.screen_project(
         project, options(resume=first.run_id, provider=MockProvider("S1"), retry_failed=False)
     )
-    assert no_retry.summary.done == 0
+    assert no_retry.summary.session_done == 0 and no_retry.summary.errors == bad
     again = svc.screen_project(project, options(resume=first.run_id, provider=MockProvider("S1")))
-    assert again.summary.done == bad and again.summary.by_status == {"ok": bad}
+    assert again.summary.session_done == bad and again.summary.by_status == {"ok": 25}
     final = again.manifest
     assert final.state == "completed" and not any(
         not r.is_ok for r in svc.find_run(project, first.run_id).last_results().values()

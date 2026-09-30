@@ -156,7 +156,7 @@ def main(st: Any) -> None:
         show_error(st, ctx, state.pop("load_error"))
     page = state["page"]
     reason = lock_reason(page, overview, folder)
-    if reason is not None and page != "run":
+    if reason is not None:
         st.header(ctx.t(f"nav.{page}"))
         show_locked(st, ctx, reason)
         return

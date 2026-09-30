@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import logging
 import re
+import subprocess
+import sys
 import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -23,14 +25,15 @@ from typing import Any, Generic, TypeVar
 
 import yaml
 
-from crapai.config.loader import validate_config
+from crapai.config.loader import load_project_config, validate_config
 from crapai.config.overrides import Setting, effective_settings, reset_values, set_values
-from crapai.errors import ConfigError, SaraError
+from crapai.errors import ConfigError, SaraError, StorageError
 from crapai.i18n.messages import ErrorReport, Messages
 from crapai.logging_setup import attach_project_log
 from crapai.prisma.flow import FlowWarning, PrismaFlow
 from crapai.project.atomic import atomic_write_text
 from crapai.project.workspace import Workspace
+from crapai.services import screening as screening_service
 from crapai.services.cost import ProjectEstimate, estimate_project
 from crapai.services.events import project_flow
 from crapai.services.export import ExportSummary, export_flow, export_records
@@ -347,3 +350,105 @@ def run_export(
         return ExportResult(summary, summary.path.read_bytes())
 
     return guarded(messages, work, name="export")
+
+
+# --- screening runs -----------------------------------------------------------------------------
+
+#: file in ``.crapai/`` that receives what the screening process prints (for a crash at the start)
+SCREEN_OUTPUT = "screen.out"
+
+
+def screen_command(
+    folder: Path, *, lang: str, sample: int | None = None, resume: bool = False
+) -> list[str]:
+    """The command line of the screening process (``python -m crapai screen ...``)."""
+    command = [sys.executable, "-m", "crapai", "screen", str(folder), "--yes", "--no-progress"]
+    command += ["--lang", lang]
+    if resume:
+        command.append("--resume")
+    elif sample:
+        command += ["--sample", str(sample)]
+    return command
+
+
+def start_run(
+    messages: Messages,
+    folder: Path,
+    *,
+    lang: str,
+    sample: int | None = None,
+    resume: bool = False,
+) -> Outcome[int]:
+    """Start a screening run in a **separate process** and return its process id.
+
+    The run does not depend on the browser: closing the tab or the interface does not stop it, and
+    the page finds it again through ``manifest.json`` (architecture decision 0006). Everything that
+    can be checked beforehand is checked here, so that a wrong key or a busy project is reported
+    in the interface at once and not only in a file: the project must not be in use, the settings
+    must be valid, and the provider must be usable (key present).
+
+    Returns:
+        The outcome with the process id, or an error report (E402 in use, E301 key, E203/E201
+        settings, E404 no project).
+    """
+
+    def work() -> int:
+        workspace = Workspace.open(folder)
+        info = workspace.lock().inspect()
+        if info is not None and not info.stale:
+            raise StorageError(
+                "The project is in use by another process",
+                code="E402",
+                hint="Wait until it has finished, or stop that run first.",
+            )
+        config = load_project_config(workspace.project_yaml)
+        screening_service.make_provider(config)  # raises E301/E203 before anything is started
+        workspace.state_dir.mkdir(parents=True, exist_ok=True)
+        command = screen_command(folder, lang=lang, sample=sample, resume=resume)
+        flags = 0
+        extra: dict[str, Any] = {}
+        if sys.platform == "win32":
+            # Own process group, no console window: Ctrl+C in the interface must not reach it.
+            flags = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW
+        else:
+            extra["start_new_session"] = True
+        with (workspace.state_dir / SCREEN_OUTPUT).open("ab") as output:
+            process = subprocess.Popen(  # noqa: S603 - a fixed argument list, no shell
+                command,
+                stdin=subprocess.DEVNULL,
+                stdout=output,
+                stderr=output,
+                cwd=folder,
+                creationflags=flags,
+                **extra,
+            )
+        logger.info("Started the screening process (PID %d)", process.pid)
+        return process.pid
+
+    return guarded(messages, work, name="start run")
+
+
+def control_run(messages: Messages, folder: Path, run_id: str, command: str) -> Outcome[None]:
+    """Ask a running run to ``pause`` or ``stop`` (it reacts within a few seconds)."""
+
+    def work() -> None:
+        screening_service.request_control(Workspace.open(folder), run_id, command)
+        logger.info("Sent %s to run %s", command, run_id)
+
+    return guarded(messages, work, name=f"{command} run")
+
+
+def estimate_run(messages: Messages, folder: Path) -> Outcome[ProjectEstimate]:
+    """The cost and time estimate shown before a run starts."""
+    return guarded(messages, lambda: estimate_project(Workspace.open(folder)), name="estimate")
+
+
+def screen_output_tail(folder: Path, lines: int = 20) -> str:
+    """The last lines the screening process printed (empty if there are none)."""
+    try:
+        text = (Workspace(folder).state_dir / SCREEN_OUTPUT).read_text(
+            encoding="utf-8", errors="replace"
+        )
+    except OSError:
+        return ""
+    return "\n".join(text.splitlines()[-lines:])

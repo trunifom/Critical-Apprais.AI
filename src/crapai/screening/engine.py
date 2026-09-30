@@ -136,7 +136,12 @@ class Progress:
 
 @dataclass
 class RunSummary:
-    """The result of one engine session."""
+    """The result of one engine session.
+
+    ``total``, ``done`` and ``by_status`` are **cumulative over the whole run**: after a resume
+    they include the records that earlier sessions finished, so "79'000 of 80'000" stays true.
+    ``session_done`` is what this session alone did.
+    """
 
     state: str
     total: int
@@ -150,6 +155,7 @@ class RunSummary:
     duration_s: float = 0.0
     batches_done: int = 0
     warnings: list[str] = field(default_factory=list)
+    session_done: int = 0  # records this session processed (``done`` includes earlier sessions)
 
     @property
     def errors(self) -> int:
@@ -231,7 +237,9 @@ class ScreeningEngine:
         self._stop: RunState | None = None
         self._stop_reason = ""
         self._abort: RunAbort | None = None
-        self._counts: Counter[str] = Counter()
+        self._counts: Counter[str] = Counter()  # results of this session
+        self._base: Counter[str] = Counter()  # results of earlier sessions (already_ok records)
+        self._skipped = 0
         self._latencies: list[float] = []
         self._cost = 0.0
         self._tokens_in = self._tokens_out = 0
@@ -262,6 +270,7 @@ class ScreeningEngine:
         """
         todo = [item for item in items if item.uid not in self._already_ok]
         self._total = len(todo)
+        self._skipped = len(items) - len(todo)
         batches = chunks(todo, self.settings.batch_size)
         self._batches = len(batches)
         self._started = self._last_save = self._clock()
@@ -296,13 +305,18 @@ class ScreeningEngine:
 
     def _begin_session(self, skipped: int) -> None:
         m = self.manifest
+        if skipped:
+            # What earlier sessions achieved, from the record of truth (once per session).
+            previous = self.store.last_results()
+            self._base = Counter(
+                row.status for uid, row in previous.items() if uid in self._already_ok
+            )
         m.state = RunState.RUNNING.value
         m.started_at = m.started_at or now_iso()
         m.finished_at = ""
         m.stop_reason = ""
         m.sessions.append({"started": now_iso(), "planned": self._total, "skipped_ok": skipped})
-        m.counts.setdefault("total", 0)
-        m.counts["total"] = max(m.counts["total"], self._total + skipped)
+        m.counts["total"] = max(m.counts.get("total", 0), self._total + skipped)
         self._save_manifest(force=True)
         logger.info(
             "Run %s: %d record(s) in %d batch(es), %d already done",
@@ -318,9 +332,12 @@ class ScreeningEngine:
             return
         self._last_save = now
         m = self.manifest
-        for status, count in self._counts.items():
-            m.counts[status] = count
-        m.counts["done"] = sum(self._counts.values())
+        merged = self._base + self._counts
+        m.counts = {
+            "total": max(m.counts.get("total", 0), self._skipped + self._total),
+            **dict(merged),
+            "done": sum(merged.values()),
+        }
         m.usage = {
             "tokens_in": self._tokens_in,
             "tokens_out": self._tokens_out,
@@ -350,16 +367,19 @@ class ScreeningEngine:
         if not force and now - self._last_progress < 0.1:
             return
         self._last_progress = now
-        done = sum(self._counts.values())
+        session = sum(self._counts.values())
+        merged = self._base + self._counts
+        done = sum(merged.values())
         elapsed = now - self._started
-        eta = (elapsed / done) * (self._total - done) if done else None
+        # The rest is estimated from the speed of this session only.
+        eta = (elapsed / session) * (self._total - session) if session else None
         self._progress(
             Progress(
                 state=self.manifest.state,
                 done=done,
-                total=self._total,
-                ok=self._counts.get("ok", 0),
-                errors=done - self._counts.get("ok", 0),
+                total=self._skipped + self._total,
+                ok=merged.get("ok", 0),
+                errors=done - merged.get("ok", 0),
                 cost=self._cost,
                 batch=self._batch_index + 1,
                 batches=self._batches,
@@ -407,11 +427,13 @@ class ScreeningEngine:
         logger.info("Run %s finished in state %s (%s)", m.run_id, state.value, reason or "-")
 
     def _summary(self, state: RunState, error: SaraError | None) -> RunSummary:
+        merged = self._base + self._counts
         return RunSummary(
             state=state.value,
-            total=self._total,
-            done=sum(self._counts.values()),
-            by_status=dict(self._counts),
+            total=self._skipped + self._total,
+            done=sum(merged.values()),
+            session_done=sum(self._counts.values()),
+            by_status=dict(merged),
             cost=self._cost,
             tokens_in=self._tokens_in,
             tokens_out=self._tokens_out,

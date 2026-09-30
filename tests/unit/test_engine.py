@@ -225,7 +225,7 @@ async def test_a_failed_record_is_tried_again_on_resume_and_the_last_line_wins(
     ok = {u for u, r in first.store.last_results().items() if r.is_ok}
     second = make_engine(tmp_path, MockProvider("S1"), already_ok=ok)
     summary = await second.run(items)
-    assert summary.done == len(failed)
+    assert summary.session_done == len(failed) and summary.done == 28  # cumulative
     assert all(r.is_ok for r in second.store.last_results().values())
 
 
@@ -430,3 +430,21 @@ async def test_the_result_file_is_valid_json_lines_with_one_uid_per_line(tmp_pat
 def test_the_default_config_builds_a_builder() -> None:
     assert make_config().screening.output_format == "structured"
     assert RunState.COMPLETED.value == "completed"
+
+
+async def test_after_a_resume_progress_and_manifest_count_the_whole_run(tmp_path: Path) -> None:
+    """79'000 of 80'000 stays true after the resume: counts are cumulative, not per session."""
+    items = make_items(30)
+    first = make_engine(
+        tmp_path, MockProvider("S14", after=12), settings=fast_settings(concurrency=1)
+    )
+    await first.run(items)
+    done = {u for u, r in first.store.last_results().items() if r.is_ok}
+    seen: list[Progress] = []
+    second = make_engine(tmp_path, MockProvider("S1"), already_ok=done, progress=seen.append)
+    summary = await second.run(items)
+    assert summary.total == 30 and summary.done == 30 and summary.session_done == 18
+    assert summary.by_status == {"ok": 30}
+    assert seen[0].total == 30 and seen[0].done >= 12 and seen[-1].done == 30 and seen[-1].ok == 30
+    counts = second.store.load_manifest().counts
+    assert counts["total"] == 30 and counts["done"] == 30 and counts["ok"] == 30
