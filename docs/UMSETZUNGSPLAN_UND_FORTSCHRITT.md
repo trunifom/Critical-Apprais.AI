@@ -37,7 +37,7 @@ Commit-Schema: `type(scope): Zusammenfassung (Karten-ID)`; Ende der Nachricht: d
 | Punkt | Stand |
 |---|---|
 | Branch | Nur `main`. Die frühen Task-Branches wurden fast-forward nach `main` gemergt und gelöscht. Push: `git push origin main` durch den Projektleiter |
-| Tests | 1118 passed (`python -m pytest -q`) |
+| Tests | 1240 passed (`python -m pytest -q`) |
 | Lint / Typen | `ruff` sauber (ohne `reference/`), `mypy src` sauber |
 | CI | `.github/workflows/ci.yml` geschrieben (Linux/Windows/macOS x Python 3.11-3.13), noch nie auf GitHub gelaufen |
 | Extras in `pyproject.toml` | `import` (rispy, pybtex, openpyxl, pymupdf, pdfplumber, pylatexenc), `cli` (typer, rich), `dev`, u. a. Neue Abhängigkeiten ausserhalb der Extras: vorher fragen |
@@ -172,3 +172,13 @@ Alle bestätigten Fehler sind behoben und mit Tests abgesichert; die Entscheide 
 | [x] | `crapai export` (CSV, XLSX, RIS, PRISMA-Fluss), Formatierung, CI, Dokumentation | siehe `git log` |
 
 Offen aus der Prüfung (bewusst nicht geändert, siehe ADR 0020): ungenutzte Aufzählungen in `enums.py`; `tiktoken` wird in der CI nicht installiert.
+
+## Oberfläche, Protokoll-System und Arbeitsablauf (2026-10-01)
+
+| Erledigt | Was | Commit |
+|---|---|---|
+| [x] | Lokale Streamlit-Oberfläche (`crapai ui`), neun Seiten, getestet mit `AppTest` | `bfccaa5` |
+| [x] | `logging_setup.py` (Sitzungskennung, Schutz vor Schlüsseln, `--verbose`), `ErrorReport` | `bfccaa5` |
+| [x] | `scripts/qa.py`, schnellere und von der Maschine unabhängige Tests, CI mit Extra `ui` | `bfccaa5` |
+
+Nicht Teil dieser Version (bewusst): die Seite „Lauf“ (Screening mit Sprachmodell, Meilenstein M3), Kriterien-Editor nach Rahmenwerk (bearbeitet wird vorerst `project.yaml` direkt), PRISMA-Grafik (PNG/SVG, Export M8).
