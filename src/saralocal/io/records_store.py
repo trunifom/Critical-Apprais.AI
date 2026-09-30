@@ -255,20 +255,37 @@ def write_records(
     *,
     backup_dir: Path | None = None,
     now: datetime | None = None,
+    allow_alternative: bool = False,
 ) -> Path:
     """Write ``records`` to ``path`` atomically; back up an existing file first.
 
+    ``records.csv`` is the one canonical table, so by default a locked file (for example open
+    in Excel) is an **error** and no side file is left behind: a copy under another name would
+    leave the project without the new records while the import log claims success.
+
+    Args:
+        allow_alternative: Accept the timestamped alternative file of the atomic writer when the
+            target is locked (for derived exports, never for ``records.csv``).
+
     Returns:
-        The path that was written (an alternative name if the file was locked, see
-        :func:`saralocal.project.atomic.atomic_write`).
+        The path that was written.
 
     Raises:
-        StorageError: E401/E403 if the file cannot be written.
+        StorageError: E401 if the file is locked (and ``allow_alternative`` is off), E401/E403
+            for other write problems.
     """
     materialised = list(records)
     if backup_dir is not None:
         backup_records(path, backup_dir, now=now or datetime.now())
     result = atomic_write(path, lambda handle: _write_rows(handle, materialised))
+    if result.used_alternative and not allow_alternative:
+        result.path.unlink(missing_ok=True)
+        raise StorageError(
+            f"{path.name} is locked (open in another program); nothing was changed",
+            code="E401",
+            hint="Close the file in Excel or another program and try again.",
+            details={"path": str(path)},
+        )
     logger.info("Wrote %d record(s) to %s", len(materialised), result.path.name)
     return result.path
 

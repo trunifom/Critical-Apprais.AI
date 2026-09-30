@@ -271,3 +271,32 @@ def test_csv_can_be_parsed_by_a_plain_csv_reader(tmp_path: Path) -> None:
         rows = list(csv.DictReader(handle))
     assert rows[0]["title"] == "x,y" and rows[0]["abstract"] == "line1\nline2"
     assert json.loads(rows[0]["extra_json"]) == {"a": "b"}
+
+
+def test_locked_file_is_an_error_unless_an_alternative_is_allowed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import os
+
+    from saralocal.project import atomic
+
+    path = tmp_path / "records.csv"
+    write_records(path, [make(title="old")])
+    real_replace = os.replace
+
+    def locked(src: object, dst: object) -> None:
+        if Path(str(dst)) == path:
+            raise PermissionError("open in Excel")
+        real_replace(src, dst)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(atomic.os, "replace", locked)
+    monkeypatch.setattr(atomic.time, "sleep", lambda seconds: None)
+    with pytest.raises(StorageError) as info:
+        write_records(path, [make(title="new")])
+    assert info.value.code == "E401"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["records.csv"]  # no side file
+    assert read_records(path)[0].title == "old"
+
+    written = write_records(path, [make(title="new")], allow_alternative=True)
+    assert written != path and read_records(written)[0].title == "new"
+    assert read_records(path)[0].title == "old"

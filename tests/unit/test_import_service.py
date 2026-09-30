@@ -204,3 +204,37 @@ def test_source_file_is_never_modified(workspace: Workspace, tmp_path: Path) -> 
     import_source(workspace, ImportRequest(original))
     assert sha256_file(original) == digest
     assert sha256_file(workspace.sources_dir / "keep.ris") == digest
+
+
+def test_locked_records_csv_fails_the_import_instead_of_writing_a_side_file(
+    workspace: Workspace, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """If records.csv is open in Excel the import must fail, not report success.
+
+    The atomic writer would silently write records.<time>.csv next to it; for the canonical
+    record table that would leave the project without the new records but with a log entry.
+    """
+    import os
+
+    from saralocal.project import atomic
+
+    run(workspace, "example_AB_nr4.ris")
+    before = workspace.records_csv.read_bytes()
+    real_replace = os.replace
+
+    def locked(src: object, dst: object) -> None:
+        if Path(str(dst)) == workspace.records_csv:
+            raise PermissionError("open in Excel")
+        real_replace(src, dst)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(atomic.os, "replace", locked)
+    monkeypatch.setattr(atomic.time, "sleep", lambda seconds: None)
+    with pytest.raises(StorageError) as info:
+        run(workspace, "example_db_nr1_total-15_duplicates-0.ris")
+    assert info.value.code == "E401" and "records.csv" in info.value.user_message
+    monkeypatch.undo()
+    assert workspace.records_csv.read_bytes() == before
+    assert sorted(p.name for p in workspace.data_dir.glob("records.*.csv")) == []  # no side file
+    assert len(read_entries(workspace.import_log)) == 1  # the failed import is not logged
+    run(workspace, "example_db_nr1_total-15_duplicates-0.ris")  # works once Excel is closed
+    assert len(read_records(workspace.records_csv)) == 3 + 13
