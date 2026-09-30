@@ -37,7 +37,7 @@ Commit-Schema: `type(scope): Zusammenfassung (Karten-ID)`; Ende der Nachricht: d
 | Punkt | Stand |
 |---|---|
 | Branch | Nur `main`. Die frühen Task-Branches wurden fast-forward nach `main` gemergt und gelöscht. Push: `git push origin main` durch den Projektleiter |
-| Tests | 470 passed (`python -m pytest -q`) |
+| Tests | 509 passed (`python -m pytest -q`) |
 | Lint / Typen | `ruff` sauber (ohne `reference/`), `mypy src` sauber |
 | CI | `.github/workflows/ci.yml` geschrieben (Linux/Windows/macOS x Python 3.11-3.13), noch nie auf GitHub gelaufen |
 | Extras in `pyproject.toml` | `import` (rispy, pybtex, openpyxl, pymupdf, pdfplumber, pylatexenc), `cli` (typer, rich), `dev`, u. a. Neue Abhängigkeiten ausserhalb der Extras: vorher fragen |
@@ -109,16 +109,29 @@ und `crapai init/import/status` läuft.
 **Pflicht bei jeder Aufgabe:** die fünf Dokumente mitführen (neue Befehle/Optionen ins Benutzerhandbuch, neue Schnittstellen und Datenformate in die Entwicklerdokumentation,
 neue Module in die Architektur, Änderungen ins `CHANGELOG.md`, Stand ins `README.md`). `tests/unit/test_docs.py` schlägt fehl, wenn Handbuch, Code und Spalten auseinanderlaufen.
 
-### M2 bis M3 (erst nach Meilenstein A; Karten in `tasks/`)
+### M2 - Aufbereitung (Meilenstein A ist erreicht)
 
-M2: T-M2-01 Dedup, -02 Fuzzy (optional), -03 fehlende Abstracts/Flags, -04 Preflight, -05 Tokenizer/Kosten, -06 Dauer/`crapai check`,
--07 PRISMA-Ereignisse, -08 Vorfilter. M3: T-M3-01 Provider-Protokoll + MockProvider, -02 OpenAI-kompatibel (SwissGPT zuerst),
+| Status | Karte | Inhalt | h | Datum / Uhrzeit | Commit |
+|---|---|---|---|---|---|
+| [x] | T-M2-01 | `prisma/dedup.py`: Duplikate nicht löschend markieren (4 Strategien, normalisierte Titel, vollständigster Datensatz behalten) | 6 | 2026-09-30 17:10 | `edc0d2f` |
+| [x] | T-M2-01 | `services/dedup.py`, `crapai dedup`, Texte, Dokumentation (Folge-Commit; `edc0d2f` liess den Doku-Wächtertest kurz rot) | | 2026-09-30 17:16 | `97bf716` |
+| [ ] | T-M2-03 | fehlende Abstracts (`NO_ABSTRACT`), `NOT_SCREENABLE`, zurückgezogene Studien, Qualitätsmerkmale | 3 | | |
+| [ ] | T-M2-04 | Preflight-Dienst (Codes) und Ausgabe | 4 | | |
+| [ ] | T-M2-05 | Tokenizer je Anbieter, Preisquelle, genaue Schätzung mit echten Texten | 6 | | |
+| [ ] | T-M2-07 | PRISMA-Ereignisse für Import und Dedup (`events.jsonl`) | 5 | | |
+| [ ] | T-M2-08 | deterministische Vorfilter (Sprache, Jahr, Publikationstyp, zurückgezogen) | 5 | | |
+| [ ] | T-M2-06 | Dauerschätzung, Kostenbestätigung, `crapai check` | 4 | | |
+| [ ] | T-M2-02 | optionale unscharfe Duplikatsuche mit Prüfliste (`rapidfuzz` ist im Extra noch nicht enthalten: vorher fragen) | 4 | | |
+
+### M3 (Karten in `tasks/`)
+
+M3: T-M3-01 Provider-Protokoll + MockProvider, -02 OpenAI-kompatibel (SwissGPT zuerst),
 -03 Retry, -04 Rate-Limiter, -05 Prompt-Builder, -06 Antwortschema/Parser, -07 Engine, -08 Checkpoint/Resume, -09 CLI `screen`,
 -10 Akzeptanztests. Pro Karte hier Zeilen ergänzen, sobald sie beginnt.
 
 ## 5. Nächster Schritt (bitte aktuell halten)
 
-**Meilenstein A ist erreicht und M1 ist vollständig** (T-M1-09 bleibt zurückgestellt). Als Nächstes M2 (Karten `T-M2-01` bis `T-M2-08`): zuerst `T-M2-01` (Deduplizierung; markiert nur, löscht nie), dann `T-M2-03` (fehlende Abstracts, Flags), `T-M2-04` (Preflight), `T-M2-05` (Kosten, Tokenizer). Pflege der Dokumentation: `docs/BENUTZERHANDBUCH.md`, `docs/ENTWICKLERDOKUMENTATION.md`, `docs/ARCHITEKTUR.md`, `README.md`, `CHANGELOG.md` nach jeder Aufgabe mitführen.
+**Meilenstein A ist erreicht und M1 ist vollständig** (T-M1-09 bleibt zurückgestellt). **Nächster Schritt: `T-M2-03`** (fehlende Abstracts `NO_ABSTRACT`, `NOT_SCREENABLE`, zurückgezogene Studien, Qualitätsmerkmale), danach `T-M2-04` (Preflight), `T-M2-05` (Kosten, Tokenizer), `T-M2-07`, `T-M2-08`. `T-M2-01` (Duplikate) ist fertig. Pflege der Dokumentation: `docs/BENUTZERHANDBUCH.md`, `docs/ENTWICKLERDOKUMENTATION.md`, `docs/ARCHITEKTUR.md`, `README.md`, `CHANGELOG.md` nach jeder Aufgabe mitführen.
 
 ## 6. Abweichungen und offene Punkte
 
