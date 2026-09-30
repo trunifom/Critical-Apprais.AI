@@ -54,7 +54,6 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 "scripts/generate_task_cards.py" = ["E501"]  # generator holds long card texts
 "scripts/plan_chapter.py" = ["SIM114"]
 "src/crapai/enums.py" = ["E501", "UP", "I"]
-"src/crapai/cost/estimator.py" = ["E501", "UP", "I", "SIM", "F401"]
 "src/crapai/criteria/template.py" = ["E501", "UP", "I", "SIM"]
 "src/crapai/i18n/**" = ["E501", "UP", "I", "SIM", "B", "F401", "E402"]
 

@@ -109,6 +109,10 @@ Einzelbausteine:
 | `prisma.dedup.mark_duplicates(records, DedupConfig(strategy, keep))` | markiert Duplikate; `DedupResult(records, marked, groups, by_method, within_source, across_sources)` |
 | `prisma.validity.mark_validity(records, ValidityConfig(include_title_only, exclude_retracted))` | setzt `exclusion_reason` (`NOT_SCREENABLE`/`RETRACTED`/`NO_ABSTRACT`), `has_abstract`, `abstract_quality`; `ValidityResult(records, by_reason, quality, valid_for_model)` |
 | `services.validity.validate_project(workspace, include_title_only=None, exclude_retracted=None)` | wie `dedup_project`: Sperre, Sicherung, Optionen aus Befehlszeile > `project.yaml` > aus |
+| `cost.tokenizers.tokenizer_for(provider, model)` | liefert `TiktokenTokenizer` (OpenAI: `o200k_base`, ältere Namen `cl100k_base`) oder `CharTokenizer(safety_factor=1.10)`; `.count(text)`, `.name`, `.exact`. Ohne installiertes `tiktoken` (Extra `llm-openai`) fällt der OpenAI-Zähler auf Zeichen zurück und meldet `exact=False` |
+| `cost.pricing.CsvPriceSource(path).get_price(provider, model)` | `Price(input_per_1k, output_per_1k, currency, valid_from, source)` oder `None`; Gross-/Kleinschreibung egal, Komma oder Punkt als Dezimalzeichen, erste Zeile gewinnt, ungültige Zeilen werden übersprungen (Warnung im Protokoll); fehlende Pflichtspalte oder unlesbare Datei = `E203` |
+| `cost.estimator.estimate_run(items, shared_text, tokenizer, price=None, config=None)` | `RunEstimate`: `n_items`, `shared_tokens`, `item_tokens`, `input_tokens`, `output_tokens`, `total_tokens`, `cost`, `cost_low`, `cost_high`, `cost_max` (Worst Case: jede Antwort an der Grenze `llm.max_output_tokens`), `tokenizer`, `exact`. Ohne Preis sind alle Kosten `None`. Kein fester Wert für Volltext: ein längerer Text wird einfach gezählt |
+| `services.cost.estimate_project(workspace)` | `ProjectEstimate(estimate, provider, model, max_cost, over_limit, price_file_found)`; zählt die Datensätze ohne `exclusion_reason`; gemeinsamer Anteil aus `project.yaml` (bis der Prompt-Bauer in M3 den genauen Text liefert) |
 | `services.preflight.check_file(path, label, ...)` | trockenes Lesen einer Datei vor dem Import, nichts wird geschrieben; `PreflightFileResult(status, issues, message_key, error_code, ...)` mit `PreflightStatus`/`PreflightIssueCode` aus `enums.py` (nur Pfade, keine UI-Typen); wirft nie bei schlechten Dateien |
 | `services.preflight.check_project(workspace, update=True)` | optional Dedup + Gültigkeit ausführen, dann `ProjectReport(status, issues, by_reason, sources, ...)` mit `ProjectIssue` (`no_records`, `nothing_to_screen`, `low_abstract_ratio`, `suspect_abstracts`, `retracted_included`, `config_invalid`) |
 | `services.dedup.dedup_project(workspace, strategy=None, keep="best")` | liest `records.csv`, markiert, schreibt nach Sicherung; Strategie: Befehlszeile > `project.yaml` > Standard |
@@ -173,7 +177,7 @@ python -m pytest -q --cov=crapai --cov-branch --cov-report=term-missing:skip-cov
 
 Stand 2026-09-30: **96 %** insgesamt. Der neue Code (Import, Konfiguration, Projekt, Dedup, CLI, Meldungen) liegt bei 99-100 %; die letzten Lücken sind
 Zweige, die nur ein anderes Betriebssystem oder eine Unterbrechung in einem bestimmten Augenblick erreichen. Die Restlücke liegt in den **übernommenen** Modulen
-`cost/estimator.py` (63 %; wird mit T-M2-05 neu geschrieben und dann getestet), `criteria/template.py` und `legacy.py`. Ziel laut Plan Kap. 33.8: mindestens 80 % Zeilen und 70 % Zweige im Kern.
+`criteria/template.py` und `legacy.py` (`cost/*` ist seit T-M2-05 neu geschrieben und zu 100 % abgedeckt). Ziel laut Plan Kap. 33.8: mindestens 80 % Zeilen und 70 % Zweige im Kern.
 
 ## 5. Einen Reader hinzufügen
 

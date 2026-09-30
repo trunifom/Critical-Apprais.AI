@@ -9,7 +9,7 @@ Stufen: **A** = (fast) unverändert übernehmbar, **B** = übernehmbar mit Anpas
 | Alter Pfad | Zeilen | Stufe | Neues Ziel | Aufgabe | Status | Bemerkung / Änderungen |
 |---|---|---|---|---|---|---|
 | `core/enums.py` | 195 | A | `src/crapai/enums.py` | - | **portiert, getestet** | unverändert + Kopfzeile. Werte sind persistiert: nicht ändern |
-| `core/estimator.py` | 430 | A | `src/crapai/cost/estimator.py` | T-M2-05 (Ausbau) | **portiert, getestet** | Unverändert. Ausbau: exakte Zählung statt Stichprobe, Tokenizer je Anbieter |
+| `core/estimator.py` | 430 | A | `src/crapai/cost/estimator.py` | T-M2-05 | **neu geschrieben, getestet** | Aufgeteilt in `cost/tokenizers.py`, `cost/pricing.py`, `cost/estimator.py`; exakte Zählung statt Stichprobe; Hugging-Face-Zähler und `per_batch` entfallen |
 | `core/criteria_template.py` | 348 | A | `src/crapai/criteria/template.py` | - | **portiert, getestet** | Nur i18n-Importpfad geändert |
 | `i18n.py` | ~200 | A | `src/crapai/i18n/loader.py` | T-M1-12 | **portiert, getestet** | Fallback-Import geändert, `texts/` liegt im Paket |
 | `texts/en.yaml` | 225 | A | `src/crapai/i18n/texts/en.yaml`, `de.yaml` | T-M1-12 | **portiert, angepasst, getestet** | E-Mail-Vorlagen entfernt; Volltext-Abschnitt entfernt (v1), PIRD ergänzt, Hintergrund-Worker/E-Mail-Texte ersetzt. Neu: `nav`, `common`, `start`, `criteria_assistant`, `data`, `run`, `results`, `prisma`, `evaluation`, `settings`, `help`, `cli`, `errors.<Code>.title/cause/action`. `de.yaml` vollständig, Paritätstest `tests/unit/test_i18n_parity.py` |

@@ -76,6 +76,11 @@ class Workspace:
         """``.crapai/app.log``: the technical log (no record contents)."""
         return self.state_dir / "app.log"
 
+    @property
+    def pricing_csv(self) -> Path:
+        """``pricing.csv``: the user's price list (optional; example in templates/)."""
+        return self.root / "pricing.csv"
+
     # -- folders ---------------------------------------------------------------------------
     @property
     def sources_dir(self) -> Path:

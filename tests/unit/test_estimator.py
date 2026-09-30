@@ -1,67 +1,111 @@
+"""Tests for the estimator arithmetic (task T-M2-05)."""
+
+from __future__ import annotations
+
 import math
 
+import pytest
+from hypothesis import given
+from hypothesis import strategies as st
+
 from crapai.cost.estimator import (
-    CharTokenizer,
-    CSVPriceSource,
     EstimatorConfig,
-    StaticPriceSource,
-    TokenEstimator,
+    build_shared_payload,
+    cost_of,
+    estimate_run,
+    format_item,
 )
+from crapai.cost.pricing import Price
+from crapai.cost.tokenizers import CharTokenizer
+
+ONE_PER_CHAR = CharTokenizer(chars_per_token=1)
 
 
-def test_char_tokenizer_rounds_up_and_handles_empty() -> None:
-    tok = CharTokenizer(chars_per_token=4)
-    assert tok.count("") == 0
-    assert tok.count("abcde") == 2
+def test_tokens_add_up_from_real_texts() -> None:
+    items = [("ab", "cde"), ("", "")]
+    estimate = estimate_run(items, "x" * 10, ONE_PER_CHAR)
+    per_record = [len(format_item(t, a)) for t, a in items]
+    assert estimate.n_items == 2 and estimate.shared_tokens == 10
+    assert estimate.item_tokens == sum(per_record)
+    assert estimate.input_tokens == 2 * 10 + sum(per_record)
+    assert estimate.output_tokens == 2 * 120
+    assert estimate.total_tokens == estimate.input_tokens + estimate.output_tokens
+    assert estimate.per_item_input_tokens == estimate.input_tokens / 2
+    assert estimate.tokenizer == "chars" and estimate.exact is False
 
 
-def test_estimate_run_tokens_and_cost() -> None:
-    est = TokenEstimator(
-        EstimatorConfig(
-            price_source=StaticPriceSource(0.5, 1.5, "CHF"),
-            output_tokens_per_item=100,
-            cost_uncertainty=0.1,
-        )
+def test_no_items_is_a_valid_empty_estimate() -> None:
+    estimate = estimate_run([], "shared", ONE_PER_CHAR, price=Price(1, 1))
+    assert estimate.n_items == 0 and estimate.input_tokens == 0 and estimate.output_tokens == 0
+    assert estimate.cost == 0 and estimate.per_item_input_tokens == 0.0
+
+
+def test_iterators_are_consumed_once() -> None:
+    estimate = estimate_run(iter([("a", "b")] * 3), "", ONE_PER_CHAR)
+    assert estimate.n_items == 3
+
+
+def test_cost_band_and_worst_case() -> None:
+    price = Price(0.5, 1.5, "CHF")
+    cfg = EstimatorConfig(output_tokens_per_item=100, max_output_tokens=400, cost_uncertainty=0.1)
+    estimate = estimate_run([("t", "a")] * 10, "s" * 100, ONE_PER_CHAR, price=price, config=cfg)
+    cost = cost_of(price, estimate.input_tokens, 1000)
+    assert math.isclose(estimate.cost or 0, cost)
+    assert math.isclose(estimate.cost_low or 0, cost * 0.9)
+    assert math.isclose(estimate.cost_high or 0, cost * 1.1)
+    assert math.isclose(estimate.cost_max or 0, cost_of(price, estimate.input_tokens, 4000))
+    assert estimate.currency == "CHF" and estimate.price == price
+
+
+def test_unknown_model_reports_tokens_only() -> None:
+    estimate = estimate_run([("t", "a")], "s", ONE_PER_CHAR)
+    assert estimate.price is None and estimate.currency is None
+    assert estimate.cost is None and estimate.cost_low is None
+    assert estimate.cost_high is None and estimate.cost_max is None
+
+
+def test_worst_case_is_never_below_the_expected_cost() -> None:
+    cfg = EstimatorConfig(output_tokens_per_item=500, max_output_tokens=100)
+    estimate = estimate_run([("t", "a")], "s", ONE_PER_CHAR, price=Price(1, 1), config=cfg)
+    assert (estimate.cost_max or 0) >= (estimate.cost or 0)
+
+
+def test_negative_settings_do_not_produce_negative_numbers() -> None:
+    cfg = EstimatorConfig(output_tokens_per_item=-5, max_output_tokens=-5, cost_uncertainty=-1)
+    estimate = estimate_run([("t", "a")], "s", ONE_PER_CHAR, price=Price(1, 1), config=cfg)
+    assert estimate.output_tokens == 0
+    assert estimate.cost_low == estimate.cost == estimate.cost_high
+
+
+def test_the_cost_formula_is_per_thousand() -> None:
+    assert cost_of(Price(2.0, 4.0), 1000, 500) == 4.0
+
+
+@given(
+    st.lists(st.tuples(st.text(max_size=50), st.text(max_size=200)), max_size=20),
+    st.text(max_size=100),
+)
+def test_more_records_never_cost_fewer_tokens(items: list[tuple[str, str]], shared: str) -> None:
+    tok = CharTokenizer()
+    base = estimate_run(items, shared, tok)
+    more = estimate_run([*items, ("t", "a")], shared, tok)
+    assert more.input_tokens > base.input_tokens
+    assert base.input_tokens == base.n_items * base.shared_tokens + base.item_tokens
+
+
+def test_shared_payload_skips_empty_parts() -> None:
+    text = build_shared_payload(
+        instructions=" Rate it. ",
+        project_title="Title",
+        project_description="",
+        objectives=["o1", " ", "o2"],
+        criteria_text="C",
     )
-    out = est.estimate_run(
-        n_items=10, per_item_input_tokens=300, shared_tokens=200, provider="openai", model="x"
-    )
-    assert out["input_tokens"] == 5000
-    assert out["output_tokens"] == 1000
-    assert out["total_tokens"] == 6000
-    cost = 5.0 * 0.5 + 1.0 * 1.5
-    low, high = out["cost_range"]
-    assert math.isclose(low, cost * 0.9)
-    assert math.isclose(high, cost * 1.1)
-    assert out["currency"] == "CHF"
-
-
-def test_no_price_source_means_no_cost() -> None:
-    out = TokenEstimator().estimate_run(3, 100, 50, provider="p", model="m")
-    assert out["cost_range"] is None
-
-
-def test_csv_price_source(tmp_path) -> None:
-    csv = tmp_path / "prices.csv"
-    csv.write_text(
-        "provider,model,price_input_per_1k,price_output_per_1k,currency\n"
-        'openai,gpt-4o-mini,"0,00015",0.0006,usd\n',
-        encoding="utf-8",
-    )
-    assert CSVPriceSource(str(csv)).get_prices("OpenAI", "GPT-4o-mini") == (0.00015, 0.0006, "USD")
-    assert CSVPriceSource(str(csv)).get_prices("openai", "other") is None
-
-
-def test_shared_payload_respects_mask() -> None:
-    est = TokenEstimator()
-    text = est.build_shared_payload(
-        "crit", "Title", "Desc", ["o1", " "], "tmpl", include_parts={"project_desc": False}
-    )
+    assert text == "Rate it.\n\nProject: Title\n\nObjectives: o1, o2\n\nCriteria: C"
     assert "Description" not in text
-    assert "Objectives: o1" in text
-    assert "Criteria: crit" in text
+    assert build_shared_payload() == ""
 
 
-def test_per_batch_mode_amortises_shared_tokens() -> None:
-    est = TokenEstimator(EstimatorConfig(shared_mode="per_batch"))
-    assert est.estimate_shared_tokens("x" * 400, batch_size=10) == 10  # 100 tokens / 10
+@pytest.mark.parametrize("n", [0, 1, 5])
+def test_format_item_labels_both_parts(n: int) -> None:
+    assert format_item("T" * n, "A" * n) == f"Title: {'T' * n}\nAbstract: {'A' * n}"

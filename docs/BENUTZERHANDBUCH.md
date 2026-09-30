@@ -225,6 +225,22 @@ Ein Ergebnis "kein Datensatz kann ans Modell gehen" bedeutet nicht, dass etwas g
 
 Schon **vor** dem Import lässt sich eine einzelne Datei ohne Änderungen prüfen (Lesbarkeit, Anzahl Datensätze, Anteil mit Abstract); das nutzt die spätere grafische Oberfläche.
 
+## 6c. Die Preisliste `pricing.csv`
+
+Für die Kostenschätzung liest Critical Apprais.AI die Datei `pricing.csv` im Projektordner (optional). Preise ändern sich und gehören Ihnen: Tragen Sie die Werte aus der Preisseite Ihres Anbieters ein. Eine Vorlage liegt in `templates/pricing.example.csv` (**die Werte dort sind nur Beispiele**).
+
+```text
+provider,model,price_input_per_1k,price_output_per_1k,currency,valid_from,source
+anthropic,claude-sonnet-5-5,0.003,0.015,USD,2026-09-30,Preisseite des Anbieters
+```
+
+* Preise gelten je 1000 Token. Komma oder Punkt als Dezimalzeichen sind erlaubt; Gross-/Kleinschreibung spielt keine Rolle.
+* `provider` und `model` müssen mit `llm.provider` und `llm.model` der `project.yaml` übereinstimmen. Ist das Modell nicht eingetragen oder fehlt die Datei, zeigt die Schätzung nur Tokens und keine Kosten.
+* Zeilen mit fehlendem oder ungültigem Preis werden übersprungen (Hinweis im Protokoll `.crapai/app.log`). Fehlt eine Pflichtspalte, meldet das Programm `E203`.
+* **So wird gezählt:** Jeder Datensatz, der ans Modell geht, wird mit seinem echten Titel und Abstract gezählt, dazu der gemeinsame Anteil (Kriterien, Ziele) einmal je Datensatz. Für OpenAI-Modelle zählt das Programm genau (Paket `tiktoken`, Extra `llm-openai`); für alle anderen Anbieter näherungsweise mit einem Zuschlag von 10 %, damit die Kosten eher zu hoch als zu tief geschätzt werden. Die Ausgabelänge ist unbekannt: Erwartet wird ein Wert pro Antwort, als Obergrenze gilt `llm.max_output_tokens` (Worst Case), der mit `limits.max_cost` verglichen wird.
+
+Die Ausgabe der Schätzung in `crapai check` folgt mit T-M2-06.
+
 ## 6. Stand ansehen: `crapai status`
 
 ```

@@ -22,7 +22,7 @@ und kennzeichnet Geplantes ausdrücklich. Bedienung: `docs/BENUTZERHANDBUCH.md`.
 ```
 Bedienung        cli.py (typer)                      [geplant: ui/ (Streamlit)]
                     │  ruft
-Dienste          services/importing.py   services/project.py   services/dedup.py   services/validity.py   services/preflight.py
+Dienste          services/importing.py   services/project.py   services/dedup.py   services/validity.py   services/preflight.py   services/cost.py
                  [geplant: screening, export, evaluation]
                     │  ruft
 Fachkern         io/ (readers, normalize, records_store, import_log)
@@ -55,6 +55,10 @@ So bleibt der Kern ohne Oberfläche testbar und später von Streamlit und CLI ge
 | `prisma.reasons` | Katalog der Ausschlussgründe und wer sie setzen darf | `VALIDITY_REASONS`, `REASON_*` (ADR 0018) |
 | `prisma.validity` | Gültigkeit: fehlende Abstracts, Front-Matter, zurückgezogene Studien, Abstract-Qualität | `mark_validity`, `ValidityConfig`, `classify_abstract`, `is_not_screenable` |
 | `services.validity` | Gültigkeit im Projekt anwenden | `validate_project` |
+| `cost.tokenizers` | lokale Token-Zähler: `tiktoken` (OpenAI, genau) oder Zeichenzähler mit Sicherheitszuschlag; jeder Zähler meldet `name` und `exact` | `tokenizer_for`, `CharTokenizer`, `TiktokenTokenizer` |
+| `cost.pricing` | Preisquellen: editierbare `pricing.csv` (Preis je 1000 Token, Datum, Quelle) oder statisch; unbekanntes Modell = kein Preis | `CsvPriceSource`, `StaticPriceSource`, `Price` |
+| `cost.estimator` | Schätzung eines Laufs aus den **echten** Texten (Titel + Abstract je Datensatz, gemeinsamer Anteil einmal gezählt), Kostenband und Worst Case; ohne I/O | `estimate_run`, `RunEstimate`, `build_shared_payload` |
+| `services.cost` | Schätzung für ein Projekt: zählt die Datensätze ohne Ausschlussgrund, liest `pricing.csv` des Projekts, vergleicht den Worst Case mit `limits.max_cost`; schreibt nichts | `estimate_project`, `ProjectEstimate` |
 | `services.preflight` | Vorprüfung: eine Datei vor dem Import, das Projekt vor dem Lauf | `check_file`, `check_project`, `PreflightFileResult`, `ProjectReport`, `ProjectIssue` |
 | `prisma.dedup` | Duplikate markieren (nicht löschend) | `mark_duplicates`, `DedupConfig`, `DedupResult`, `normalize_title`; Strategien `doi_or_title`, `strict_ids`, `title`, `title_authors` |
 | `services.dedup` | Duplikate im Projekt markieren | `dedup_project` (Sperre, Sicherung, atomares Schreiben) |
