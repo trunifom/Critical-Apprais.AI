@@ -37,7 +37,7 @@ Commit-Schema: `type(scope): Zusammenfassung (Karten-ID)`; Ende der Nachricht: d
 | Punkt | Stand |
 |---|---|
 | Branch | Nur `main`. Die frühen Task-Branches wurden fast-forward nach `main` gemergt und gelöscht. Push: `git push origin main` durch den Projektleiter |
-| Tests | 195 passed (`python -m pytest -q`) |
+| Tests | 222 passed (`python -m pytest -q`) |
 | Lint / Typen | `ruff` sauber (ohne `reference/`), `mypy src` sauber |
 | CI | `.github/workflows/ci.yml` geschrieben (Linux/Windows/macOS x Python 3.11-3.13), noch nie auf GitHub gelaufen |
 | Extras in `pyproject.toml` | `import` (rispy, pybtex, openpyxl, pymupdf, pdfplumber, pylatexenc), `cli` (typer, rich), `dev`, u. a. Neue Abhängigkeiten ausserhalb der Extras: vorher fragen |
@@ -79,7 +79,8 @@ Reihenfolge = empfohlene Arbeitsreihenfolge. Aufwand in Stunden (Schätzung der 
 | [x] | T-M1-03 | `project/workspace.py`: Ordnerstruktur Kap. 6, Schema-Version | | 2026-09-30 15:17 | `54d3144` |
 | [x] | T-M1-04 | `io/readers/detect.py`: Formaterkennung RIS/NBIB/BibTeX/XLSX/ZIP/PDF (Inhalt vor Endung; Typ, Konfidenz, Grund) | 4 | 2026-09-30 15:20 | `55a2f7b` |
 | [x] | T-M1-04 | `io/readers/detect.py`: CSV/TSV-Erkennung mit Trennzeichen und Kodierung | | 2026-09-30 15:23 | `4020d3b` |
-| [ ] | T-M1-05 | `io/readers/ris.py`: RIS-Reader (Fortsetzungszeilen, L15 beheben; 706/156, 6, 46 laut EXPECTED.json) | 5 | | |
+| [x] | T-M1-05 | `io/readers/base.py`: gemeinsame Typen `RawRecord`/`ReadResult`, Dekodierung mit Kodierungskette | | 2026-09-30 15:24 | `7738aa4` |
+| [x] | T-M1-05 | `io/readers/ris.py`: RIS-Reader (Fortsetzungszeilen, L15 beheben; 706/156, 6, 46 laut EXPECTED.json) | 5 | 2026-09-30 15:27 | `a5b819d` |
 | [ ] | T-M1-06 | `io/readers/nbib.py`: NBIB/MEDLINE (100 und 62 Datensätze) | 4 | | |
 | [ ] | T-M1-07 | `io/readers/bibtex.py`: BibTeX (48, 706; 11,5-MB-Datei nur Marker `large`) | 6 | | |
 | [ ] | T-M1-08 | `io/readers/tabular.py`: CSV/TSV/XLSX (Kodierung, Trennzeichen, Spaltenzuordnung) | 5 | | |
@@ -101,7 +102,7 @@ M2: T-M2-01 Dedup, -02 Fuzzy (optional), -03 fehlende Abstracts/Flags, -04 Prefl
 
 ## 5. Nächster Schritt (bitte aktuell halten)
 
-**T-M1-05 (RIS-Reader `io/readers/ris.py`)**; T-M1-01 bis T-M1-04 stehen. Der Reader nutzt `detect_format`, `SourceFormat` und die Kodierungskette aus `detect.py`. Danach die Reader T-M1-05 (RIS zuerst), -06, -07, -08.
+**T-M1-06 (NBIB-Reader `io/readers/nbib.py`)**; T-M1-01 bis T-M1-05 stehen. Alle Reader liefern `ReadResult`/`RawRecord` aus `io/readers/base.py` (Vorbild: `ris.py`); Felder ausserhalb von Kap. 26.1 (`notes`, `database_name` u. a.) muss T-M1-10 nach `extra_json` verschieben. Danach die Reader T-M1-05 (RIS zuerst), -06, -07, -08.
 
 ## 6. Abweichungen und offene Punkte
 
