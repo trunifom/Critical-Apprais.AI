@@ -23,6 +23,7 @@ und kennzeichnet Geplantes ausdrücklich. Bedienung: `docs/BENUTZERHANDBUCH.md`.
 Bedienung        cli.py (typer)                      [geplant: ui/ (Streamlit)]
                     │  ruft
 Dienste          services/importing.py   services/project.py   services/dedup.py   services/validity.py   services/preflight.py   services/cost.py   services/events.py   services/prefilter.py   services/export.py
+Oberfläche       ui/ (Streamlit: viewmodels, actions, context, app, pages/)   logging_setup.py
                  [geplant: screening, export, evaluation]
                     │  ruft
 Fachkern         io/ (readers, normalize, records_store, import_log)
@@ -64,6 +65,12 @@ So bleibt der Kern ohne Oberfläche testbar und später von Streamlit und CLI ge
 | `cost.pricing` | Preisquellen: editierbare `pricing.csv` (Preis je 1000 Token, Datum, Quelle) oder statisch; unbekanntes Modell = kein Preis | `CsvPriceSource`, `StaticPriceSource`, `Price` |
 | `cost.estimator` | Schätzung eines Laufs aus den **echten** Texten (Titel + Abstract je Datensatz, gemeinsamer Anteil einmal gezählt), Kostenband und Worst Case; ohne I/O | `estimate_run`, `RunEstimate`, `build_shared_payload` |
 | `cost.duration` | Dauerschätzung aus rpm, tpm und Parallelität; Bestätigungsregel vor einem Lauf (`--yes` oder Terminal) | `estimate_duration`, `decide_confirmation` |
+| `logging_setup` | Protokoll für Befehlszeile und Oberfläche: ein Format mit Sitzungskennung, Schutz vor Schlüsseln, Stufe aus Option oder `CRAPAI_LOG_LEVEL`, rotierende Projektdatei, tolerant gegen nicht schreibbare Dateien | `attach_project_log`, `enable_console_log`, `redact`, `read_log_tail` |
+| `ui.viewmodels` | Was die Oberfläche zeigt, ohne Streamlit: Schrittleiste, Kennzahlen, zuletzt verwendete Projekte | `build_stepper`, `load_overview`, `RecentProjects` |
+| `ui.actions` | Was ein Klick tut: ruft die Dienste, macht jeden Fehler zu einem `ErrorReport` (kein `try` in den Seiten) | `guarded`, `open_project`, `prepare_uploads`, `import_prepared`, `run_check`, `run_export` |
+| `ui.context` | Gemeinsamer Zustand einer Sitzung und Sperrgründe der Seiten | `Context`, `lock_reason` |
+| `ui.app`, `ui.streamlit_app` | Einstiegspunkt: Seitenaufbau, Sprache, Seitenleiste mit Schritten, Statuszeile, Weiterleitung | `main` |
+| `ui.pages.*` (`start`, `project`, `data`, `check`, `run`, `flow`, `export`, `settings`, `help`, `common`) | je eine Seite, nur Zeichnen; `render(st, ctx)` | `render` |
 | `io.writers.tables`, `io.writers.ris` | Export-Dateien: CSV (UTF-8 mit BOM, Formelschutz), XLSX (fixierte Kopfzeile, Steuerzeichen entfernt), RIS (für Literaturverwaltung); alle atomar geschrieben | `write_csv`, `write_xlsx`, `write_ris` |
 | `services.export` | Datensätze (Umfang alle/screenable/excluded) und PRISMA-Fluss exportieren, ohne das Projekt zu ändern; gesperrte Zieldatei ergibt eine Ersatzdatei | `export_records`, `export_flow`, `ExportSummary` |
 | `services.cost` | Schätzung für ein Projekt: zählt die Datensätze ohne Ausschlussgrund, liest `pricing.csv` des Projekts, vergleicht den Worst Case mit `limits.max_cost`; schreibt nichts | `estimate_project`, `ProjectEstimate` |

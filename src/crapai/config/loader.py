@@ -8,6 +8,8 @@ that cannot be read or parsed.
 
 from __future__ import annotations
 
+import copy
+import functools
 import logging
 import os
 from collections.abc import Iterable, Mapping
@@ -26,6 +28,16 @@ logger = logging.getLogger(__name__)
 CODE_MISSING = "E201"
 CODE_INVALID = "E203"
 ENV_NESTING = "__"
+
+
+@functools.lru_cache(maxsize=64)
+def _parse_yaml(text: str) -> Any:
+    """Parse YAML text; the result is cached by content (one ``check`` reads the file many times).
+
+    Callers get a deep copy, so nobody can change the cached value. Invalid YAML raises and is
+    not cached.
+    """
+    return yaml.safe_load(text)
 
 
 def read_yaml_mapping(path: Path) -> dict[str, Any]:
@@ -51,7 +63,7 @@ def read_yaml_mapping(path: Path) -> dict[str, Any]:
             details={"path": str(path)},
         ) from exc
     try:
-        data = yaml.safe_load(text)
+        data = copy.deepcopy(_parse_yaml(text))
     except yaml.YAMLError as exc:
         mark = getattr(exc, "problem_mark", None)
         where = f" (line {mark.line + 1}, column {mark.column + 1})" if mark else ""

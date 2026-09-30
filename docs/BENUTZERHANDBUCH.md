@@ -261,6 +261,43 @@ Bei einem leeren oder unvollständigen Projekt erscheint „Die Konfiguration br
 `crapai status mein-review --json` liefert dieselben Angaben maschinenlesbar.
 Läuft gerade ein anderer Prozess im Projekt, wird das gemeldet.
 
+## 6h. Die grafische Oberfläche: `crapai ui`
+
+```powershell
+pip install "crapai[ui]"           # einmalig: installiert Streamlit
+crapai ui                          # öffnet die Oberfläche im Browser (Startseite)
+crapai ui mein-review              # öffnet gleich dieses Projekt
+crapai ui mein-review --port 8600 --no-browser
+```
+
+Die Oberfläche läuft **nur auf Ihrem Rechner** (Adresse `127.0.0.1`) und sendet keine Nutzungsstatistik. Sie beendet sich mit Strg+C im Fenster, in dem Sie den Befehl gestartet haben.
+
+| Seite | Was sie tut |
+|---|---|
+| **Start** | Projekt öffnen (zuletzt verwendete Projekte oder Pfad eingeben) oder neu erstellen (Vorlage, Titel) |
+| **Projekt** | Stand des Projekts, Kennzahlen, Quellen; `project.yaml` bearbeiten (wird vor dem Speichern geprüft, bei Fehlern wird nichts geschrieben) |
+| **Daten** | Dateien wählen, Trockenlesung mit Format, Zahl der Datensätze und Anteil mit Abstract, Quelle benennen, importieren; Tabelle der Datensätze mit Filter |
+| **Prüfen** | Duplikate, Vorfilter und Gültigkeit; Bericht mit Gründen und Hinweisen; Tokens, Kosten (mit schlimmstem Fall) und Dauer |
+| **Lauf** | Sagt ehrlich, dass das Screening mit dem Sprachmodell in dieser Version noch fehlt, und was schon geht |
+| **PRISMA-Fluss** | Zahlen des Flussdiagramms aus den Ereignissen des Projekts, mit Warnungen bei veralteten Schritten |
+| **Export** | CSV, XLSX, RIS oder PRISMA-Zahlen erzeugen und herunterladen |
+| **Einstellungen** | Pfade, Protokollstufe, Preisliste ansehen |
+| **Hilfe** | Datenschutz, Fehlercodes mit Bedeutung, Protokoll des Projekts (aktualisieren, herunterladen) |
+
+* Oben links in der Seitenleiste steht die **Sprache** (Deutsch oder Englisch) und darunter die Schritte mit ihrem Stand: ✅ erledigt, 🔵 als Nächstes, ⚠️ erledigt mit Hinweis, ⚪ noch nicht möglich. Seiten, die noch nicht möglich sind, sagen, was zuerst fehlt.
+* Die Kopfzeile jeder Seite zeigt Projekt, Datensätze, Anteil mit Abstract, Duplikate und wie viele ans Modell gehen.
+* **Fehler** erscheinen mit Code, Erklärung und nächstem Schritt, nie als Programmfehler-Text; unter „Einzelheiten“ steht ein Text zum Kopieren für eine Fehlermeldung.
+* Die Oberfläche verwendet dieselben Funktionen wie die Befehlszeile; es gibt nichts, was nur in einer der beiden geht. Ein Projekt kann gleichzeitig nur von einem Prozess geändert werden (Sperre, Abschnitt 6f).
+
+## 6i. Protokoll und Fehlersuche
+
+Jedes Projekt hat ein Protokoll `.crapai/app.log` (rotierend, 1 MB, drei ältere Dateien). Jede Zeile hat Zeit, Stufe, eine **Sitzungskennung** (eine je Programmstart, damit sich die Zeilen einer Sitzung finden lassen), den Namen des Programmteils und die Meldung. Titel, Abstracts und Schlüssel stehen nie im Protokoll; Zeichenfolgen, die wie ein Schlüssel oder Token aussehen, werden zusätzlich durch `***` ersetzt.
+
+* `crapai --verbose …` (oder `-v`) zeigt zusätzlich die Protokollzeilen auf dem Bildschirm (stderr) und schreibt auch die Stufe DEBUG in die Datei. Die Option steht **vor** dem Befehl, zum Beispiel `crapai --verbose check mein-review`.
+* Die Stufe lässt sich auch mit der Umgebungsvariable `CRAPAI_LOG_LEVEL` setzen (`DEBUG`, `INFO`, `WARNING`, `ERROR`). Ein unbekannter Wert ergibt `INFO`.
+* Kann die Protokolldatei nicht geöffnet werden (schreibgeschützter Ordner), läuft der Befehl trotzdem und meldet es einmal.
+* In der Oberfläche zeigt die Seite Hilfe die letzten 200 Zeilen.
+
 ## 6g. Daten weitergeben: `crapai export`
 
 ```powershell

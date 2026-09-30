@@ -35,6 +35,10 @@ packages = ["src/crapai"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+# Delete the temporary folders of passed tests at once (their deletion was a quarter of the run time
+# on Windows); the folders of failed tests stay for inspection.
+tmp_path_retention_policy = "failed"
+tmp_path_retention_count = 1
 markers = [
     "live: talks to a real LLM API (costs money; never run in CI)",
     "large: uses files from tests/data_large (slow)",

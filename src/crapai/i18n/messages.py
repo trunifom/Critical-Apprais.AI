@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -44,6 +45,25 @@ def resolve_language(explicit: str | None = None, project_yaml: Path | None = No
     return "de" if environment.startswith("de") else DEFAULT_LANGUAGE
 
 
+@dataclass(frozen=True)
+class ErrorReport:
+    """An error in words the user can act on.
+
+    Attributes:
+        code: The catalogue code, for example ``E404`` (``E999`` for anything unexpected).
+        title: What happened, in one sentence.
+        cause: Why it usually happens (may be empty).
+        details: The concrete file or setting; for unexpected errors only the exception type.
+        action: What the user can do next (may be empty).
+    """
+
+    code: str
+    title: str
+    cause: str
+    details: str
+    action: str
+
+
 class Messages:
     """Message lookup for one language, falling back to English and then to the key itself."""
 
@@ -65,22 +85,58 @@ class Messages:
             logger.warning("Text %s has unusable placeholders", key)
             return template
 
+    def error_codes(self) -> list[str]:
+        """The codes that have a text (``E101`` ...), sorted; the list behind the help page."""
+        node = self._i18n._get_nested("errors")  # noqa: SLF001 - same package
+        if not isinstance(node, dict):
+            return []
+        return sorted(code for code, value in node.items() if isinstance(value, dict))
+
+    def _action(self, code: str, hint: str | None) -> str:
+        """The catalogue advice for ``code`` followed by the raising code's own hint.
+
+        The hint names the concrete next step ("Install it with: pip install ...") and must not be
+        hidden by the general advice of the catalogue; if the hint repeats it, it is left out.
+        """
+        general = self._i18n.t(f"errors.{code}.action")
+        if not hint or hint in general:
+            return general
+        return f"{general} {hint}".strip()
+
+    def error_report(self, error: BaseException) -> ErrorReport:
+        """The user-facing description of any error, for the command line and the interface.
+
+        A :class:`~crapai.errors.SaraError` gets its catalogue texts (what happened, why, what to
+        do); anything else is reported as the unexpected error ``E999`` with only the exception
+        type, because the message of a foreign exception may hold paths or record content.
+        """
+        if isinstance(error, SaraError):
+            code = error.code
+            known = bool(self._i18n.t(f"errors.{code}.title"))
+            text_code = code if known else UNEXPECTED_ERROR_CODE
+            return ErrorReport(
+                code=code,
+                title=self.text(f"errors.{text_code}.title"),
+                cause=self._i18n.t(f"errors.{text_code}.cause"),
+                details=error.user_message,
+                action=self._action(text_code, error.hint),
+            )
+        return ErrorReport(
+            code=UNEXPECTED_ERROR_CODE,
+            title=self.text("cli.error.unexpected"),
+            cause="",
+            details=type(error).__name__,
+            action="",
+        )
+
     def error_lines(self, error: SaraError) -> list[str]:
         """Lines that report ``error``: code and title, technical details, what to do."""
-        code = error.code
-        title_key = f"errors.{code}.title"
-        if not self._i18n.t(title_key):
-            code_for_text = UNEXPECTED_ERROR_CODE
-        else:
-            code_for_text = code
-        prefix = self.text("cli.error.prefix", code=code)
-        lines = [f"{prefix}: {self.text(f'errors.{code_for_text}.title')}"]
-        cause = self._i18n.t(f"errors.{code_for_text}.cause")
-        if cause:
-            lines.append(f"{self.text('cli.error.cause')}: {cause}")
-        if error.user_message:
-            lines.append(f"{self.text('cli.error.details')}: {error.user_message}")
-        action = self._i18n.t(f"errors.{code_for_text}.action") or error.hint
-        if action:
-            lines.append(f"{self.text('cli.error.action')}: {action}")
+        report = self.error_report(error)
+        lines = [f"{self.text('cli.error.prefix', code=report.code)}: {report.title}"]
+        if report.cause:
+            lines.append(f"{self.text('cli.error.cause')}: {report.cause}")
+        if report.details:
+            lines.append(f"{self.text('cli.error.details')}: {report.details}")
+        if report.action:
+            lines.append(f"{self.text('cli.error.action')}: {report.action}")
         return lines

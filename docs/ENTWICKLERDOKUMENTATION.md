@@ -218,6 +218,20 @@ Wer Code ergänzt, hält diese Regeln ein; `tests/unit/test_*review_fixes.py` un
 * **JSON-Modus:** stdout enthält genau ein JSON-Dokument, alle Meldungen gehen nach stderr; Fehler erscheinen zusätzlich als `{"error": {"code", "message", "hint"}}`.
 * **Code, Kommentare, Docstrings und Protokolltexte sind Englisch**; Benutzertexte stehen in `i18n/texts/{en,de}.yaml`, Dokumente in `docs/` sind Deutsch. `ruff format` (Zeilenlänge 100) ist Pflicht und wird in der CI geprüft.
 
+## 5c. Die Oberfläche (`crapai.ui`)
+
+Drei Schichten, damit fast alles ohne Streamlit testbar ist:
+
+1. `ui/viewmodels.py` und `ui/context.py`: reine Entscheidungen (Stand der Schritte, Kennzahlen, Sperrgründe, Liste der letzten Projekte). Test: `tests/unit/test_ui_logic.py`.
+2. `ui/actions.py`: jede Aktion liefert ein `Outcome` (Wert **oder** `ErrorReport`); `guarded()` fängt alle Ausnahmen, protokolliert sie (Code und Meldung, bei Unerwartetem mit Traceback) und übersetzt sie mit `Messages.error_report`. Hochgeladene Dateien werden nur unter ihrem Basisnamen gespeichert (kein Pfadausbruch), doppelte Namen nummeriert.
+3. `ui/pages/*.py`: nur Zeichnen, `render(st, ctx)`; `st` wird übergeben, nicht importiert. Test: `tests/ui/test_app.py` mit `streamlit.testing.v1.AppTest` (wird ohne Streamlit übersprungen).
+
+Regeln: Texte stehen unter `ui.*` in `i18n/texts/{en,de}.yaml` (Paritätstest); bereits vorhandene Texte der Befehlszeile (`cli.check.*`, `errors.*`) werden wiederverwendet. Ein Seitenwechsel aus einer Seite heraus setzt `session_state["goto"]` (das Navigations-Widget darf erst beim Aufbau gesetzt werden). Der Start (`crapai ui`) übergibt den Ordner über die Umgebungsvariable `CRAPAI_UI_PROJECT` und bindet an `127.0.0.1` mit abgeschalteter Nutzungsstatistik (ADR 0010). Streamlit ist nur im Extra `ui` (`pip install "crapai[ui]"`).
+
+## 5d. Arbeitsablauf der Entwicklung
+
+`python scripts/qa.py` führt die Gates in der Reihenfolge der CI aus (Lint, `ruff format --check`, `mypy`, alle Tests ohne `live`) und bricht beim ersten Fehler ab; `--fix` lässt `ruff` vorher reparieren und formatieren, `--fast` setzt einen festen Hypothesis-Startwert und stoppt beim ersten Fehler, `--ci` setzt die Umgebung von GitHub Actions. Die Tests sind von der Maschine unabhängig (`tests/conftest.py`): feste Terminalausgabe, ein eigenes Heimverzeichnis je Test (die echte Liste der letzten Projekte bleibt unberührt), kein `fsync` und keine Wartezeiten bei Wiederholungen (`atomic.FSYNC`, `atomic.DEFAULT_DELAY_S`).
+
 ## 6. Einen Befehl hinzufügen
 
 Arbeit gehört in `services/`; `cli.py` parst nur Argumente, wählt die Sprache, druckt und übersetzt Fehler in Rückgabecodes (`0/1/2/4`). Texte in beide YAML-Dateien,

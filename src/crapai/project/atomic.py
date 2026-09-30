@@ -28,6 +28,11 @@ from crapai.errors import StorageError
 
 logger = logging.getLogger(__name__)
 
+# Flush file contents to the disk before a file counts as written. It is what makes a crash or a
+# power cut safe and it is always on; the test suite switches it off because it only matters for
+# real disks and it dominates the run time of thousands of small writes.
+FSYNC = True
+
 DEFAULT_RETRIES = 5
 DEFAULT_DELAY_S = 0.2
 
@@ -59,6 +64,13 @@ def _temp_path(target: Path) -> Path:
     """A temp name that is unique per process, thread and call (two writers never share one)."""
     unique = f"{os.getpid()}.{threading.get_ident()}.{next(_temp_counter)}"
     return target.with_name(f".{target.name}.{unique}.tmp")
+
+
+def _sync(handle: BinaryIO) -> None:
+    """Flush ``handle`` to the disk (see :data:`FSYNC`)."""
+    handle.flush()
+    if FSYNC:
+        os.fsync(handle.fileno())
 
 
 def _free_alternative(target: Path, now: datetime) -> Path:
@@ -98,7 +110,7 @@ def atomic_write(
     writer: Callable[[BinaryIO], None],
     *,
     retries: int = DEFAULT_RETRIES,
-    delay_s: float = DEFAULT_DELAY_S,
+    delay_s: float | None = None,
     sleep: Callable[[float], None] = time.sleep,
     now: Callable[[], datetime] = datetime.now,
 ) -> WriteResult:
@@ -111,7 +123,7 @@ def atomic_write(
         target: Final path. Its directory must exist.
         writer: Callback that writes the complete content to the given binary stream.
         retries: Extra attempts of ``os.replace`` after a ``PermissionError`` (default 5).
-        delay_s: Pause between attempts in seconds (default 0.2).
+        delay_s: Pause between attempts in seconds (default :data:`DEFAULT_DELAY_S`).
         sleep: Injectable pause function (for tests).
         now: Injectable clock used for the alternative file name (for tests).
 
@@ -122,12 +134,12 @@ def atomic_write(
         StorageError: (E401) if neither the target nor the alternative file can be replaced;
             (E403) if the disk is full; (E401) for other operating-system errors.
     """
+    delay_s = DEFAULT_DELAY_S if delay_s is None else delay_s  # read at call time
     tmp = _temp_path(target)
     try:
         with open(tmp, "wb") as handle:
             writer(handle)
-            handle.flush()
-            os.fsync(handle.fileno())
+            _sync(handle)
         if _replace_with_retry(tmp, target, retries=retries, delay_s=delay_s, sleep=sleep):
             return WriteResult(target)
         alternative = _free_alternative(target, now())
@@ -173,8 +185,7 @@ def append_lines(path: Path, lines: list[str]) -> None:
     with open(path, "ab+") as handle:
         _cut_torn_tail(handle, path)
         handle.write("".join(f"{line}\n" for line in lines).encode("utf-8"))
-        handle.flush()
-        os.fsync(handle.fileno())
+        _sync(handle)
 
 
 def _cut_torn_tail(handle: BinaryIO, path: Path) -> None:

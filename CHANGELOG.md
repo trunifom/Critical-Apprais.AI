@@ -34,6 +34,13 @@ Jeder Eintrag verweist auf die Aufgabenkarte; die genauen Commits stehen in `doc
 * **Lizenz:** PolyForm Noncommercial 1.0.0 (`LICENSE`, ADR 0016, `license` in `pyproject.toml`): nicht kommerzielle Nutzung erlaubt, kommerzielle ausgeschlossen (T-M0-01).
 * **Dokumentation:** Benutzerhandbuch, Entwicklerdokumentation, Architektur, ausführliches README, dieses Änderungsprotokoll, Umsetzungsplan mit Fortschrittsliste.
 
+### Oberfläche, Protokoll und Arbeitsablauf
+
+* **Grafische Oberfläche** (`crapai ui`, Extra `ui`): neun Seiten (Start, Projekt, Daten, Prüfen, Lauf, PRISMA-Fluss, Export, Einstellungen, Hilfe) mit Schrittleiste, Statuszeile, Deutsch/Englisch, Fehlern mit Code und nächstem Schritt, Trockenlesung vor dem Import, Kosten und Dauer, Export zum Herunterladen. Lokal (`127.0.0.1`), ohne Nutzungsstatistik. Die Seite „Lauf“ sagt ehrlich, dass das Screening mit dem Sprachmodell noch fehlt.
+* **Protokoll-System** (`logging_setup.py`): ein Format mit Sitzungskennung, Schutz vor Schlüsseln und Tokens, `--verbose`/`-v`, Stufe aus `CRAPAI_LOG_LEVEL`, Protokoll in der Oberfläche; eine nicht schreibbare Datei stoppt nichts.
+* **Fehlerberichte** (`Messages.error_report`, `ErrorReport`): Befehlszeile und Oberfläche zeigen dieselben Texte; der Hinweis der auslösenden Stelle (zum Beispiel `pip install "crapai[ui]"`) wird an den allgemeinen Rat angehängt statt von ihm verdeckt.
+* **Arbeitsablauf:** `python scripts/qa.py` (Lint, Format, Typen, Tests; `--fix`, `--fast`, `--ci`); Tests mit eigenem Heimverzeichnis, ohne `fsync` und ohne Wartezeiten; `project.yaml` wird je Inhalt nur einmal geparst (ein `check` las sie bis zu achtmal); `crapai status` zeigt den Titel auch bei unvollständiger Konfiguration.
+
 ### Überarbeitung nach der Gesamtprüfung (ADR 0020)
 
 Drei unabhängige Prüfer lasen den gesamten Code; alle bestätigten Fehler sind behoben und getestet.

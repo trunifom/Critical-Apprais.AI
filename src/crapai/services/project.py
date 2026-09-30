@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
 
-from crapai.config.loader import describe_config_problem, load_project_config
+from crapai.config.loader import describe_config_problem, load_project_config, read_yaml_mapping
 from crapai.errors import ConfigError, SaraError
 from crapai.io.import_log import ImportLogEntry, read_entries
 from crapai.io.records_store import read_records
@@ -110,6 +110,15 @@ class ProjectStatus:
     in_use: bool
 
 
+def _peek_title(path: Path) -> str | None:
+    """The project title from an incomplete ``project.yaml`` (for display only), else None."""
+    try:
+        title = read_yaml_mapping(path)["project"]["title"]
+    except (SaraError, KeyError, TypeError):
+        return None
+    return title if isinstance(title, str) and title.strip() else None
+
+
 def project_status(root: Path) -> ProjectStatus:
     """Collect counts and checks for the project at ``root``.
 
@@ -127,6 +136,7 @@ def project_status(root: Path) -> ProjectStatus:
             title = load_project_config(workspace.project_yaml).project.title
         except SaraError as exc:
             config_ok, problem = False, describe_config_problem(exc)
+            title = _peek_title(workspace.project_yaml)
     info = workspace.lock().inspect()
     return ProjectStatus(
         root=workspace.root,

@@ -22,6 +22,8 @@ bereitet sie auf und wird sie zusammen mit Ihren Ein- und Ausschlusskriterien ei
 | Vorprüfung, Kosten- und Dauerschätzung (`crapai check`) | **umgesetzt** |
 | Deterministische Vorfilter (Sprache, Jahr, Publikationstyp) | **umgesetzt** |
 | Export (`crapai export`: CSV, XLSX, RIS, PRISMA-Fluss als JSON) und `crapai unlock` | **umgesetzt** |
+| Lokale grafische Oberfläche (`crapai ui`, Streamlit) | **umgesetzt** (ohne Screening-Lauf) |
+| Protokoll-System (`--verbose`, Sitzungskennung, Schutz vor Schlüsseln) und `scripts/qa.py` | **umgesetzt** |
 | Gesamtprüfung des Codes (Fehlerbehandlung, Protokolle, Datenverlust), ADR 0020 | **umgesetzt** |
 | PRISMA-Ereignisse und Flusszahlen (`data/events.jsonl`) | **umgesetzt** (Export als Datei und Grafik folgt mit M8) |
 | Unscharfe Duplikatsuche (T-M2-02) | **zurückgestellt** (braucht `rapidfuzz`, Freigabe offen) |

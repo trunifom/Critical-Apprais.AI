@@ -13,10 +13,12 @@ errors into exit codes:
 from __future__ import annotations
 
 import dataclasses
+import importlib.util
 import json
 import logging
-import logging.handlers
 import math
+import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Annotated, Any
@@ -24,10 +26,11 @@ from typing import Annotated, Any
 import typer
 
 from crapai import __version__
-from crapai.branding import CLI_NAME, PRODUCT_NAME, STATE_DIR_NAME
+from crapai.branding import CLI_NAME, PRODUCT_NAME
 from crapai.cost.duration import format_duration
 from crapai.errors import UNEXPECTED_ERROR_CODE, ConfigError, SaraError
 from crapai.i18n.messages import Messages, resolve_language
+from crapai.logging_setup import attach_project_log, enable_console_log
 from crapai.project.lock import pid_alive
 from crapai.project.workspace import Workspace, cloud_sync_marker
 from crapai.services.cost import ProjectEstimate, estimate_project
@@ -40,8 +43,11 @@ from crapai.services.export import (
 from crapai.services.importing import ImportRequest, ImportSummary, import_source
 from crapai.services.preflight import ProjectReport, check_project
 from crapai.services.project import DEFAULT_TEMPLATE, create_project, project_status
+from crapai.ui.context import PROJECT_ENV
 
 logger = logging.getLogger("crapai.cli")
+
+_verbose = False  # set by --verbose; read when the project log is attached
 
 EXIT_OK = 0
 EXIT_USER_ERROR = 1
@@ -85,8 +91,18 @@ def main_callback(
         bool,
         typer.Option("--version", callback=_version_callback, is_eager=True, help="Show version."),
     ] = False,
+    verbose: Annotated[
+        bool,
+        typer.Option(
+            "--verbose", "-v", help="Also print detailed log lines (DEBUG) to the screen (stderr)."
+        ),
+    ] = False,
 ) -> None:
-    """Project commands (init, import, status)."""
+    """Project commands (init, import, status, dedup, check, export, unlock)."""
+    global _verbose  # noqa: PLW0603 - the option is read later by _setup_file_log
+    _verbose = verbose
+    if verbose:
+        enable_console_log(logging.DEBUG)
 
 
 # --- helpers ----------------------------------------------------------------------------------
@@ -98,31 +114,11 @@ def _echo(message: str, *, json_mode: bool, colour: str | None = None) -> None:
 
 
 def _setup_file_log(folder: Path) -> None:
-    """Log to ``.crapai/app.log`` of the project (rotating), if the folder is a project."""
-    state = folder / STATE_DIR_NAME
-    if not state.is_dir():
-        return
-    root = logging.getLogger("crapai")
-    target = str((state / "app.log").resolve())
-    for existing in list(root.handlers):
-        if isinstance(existing, logging.handlers.RotatingFileHandler):
-            if existing.baseFilename == target:
-                return
-            root.removeHandler(existing)  # a different project was used earlier in this process
-            existing.close()
-    try:
-        handler = logging.handlers.RotatingFileHandler(
-            target, maxBytes=1_000_000, backupCount=3, encoding="utf-8"
-        )
-    except OSError as exc:
+    """Log to ``.crapai/app.log`` of the project (see :mod:`crapai.logging_setup`)."""
+    problem = attach_project_log(folder, level=logging.DEBUG if _verbose else None)
+    if problem:
         # A read-only share or a log held by another program must not stop the command itself.
-        typer.secho(
-            f"Warning: cannot write the log file ({type(exc).__name__}).", fg="yellow", err=True
-        )
-        return
-    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
-    root.addHandler(handler)
-    root.setLevel(logging.INFO)
+        typer.secho(f"Warning: {problem}.", fg="yellow", err=True)
 
 
 def error_json(error: Exception) -> dict[str, Any]:
@@ -739,6 +735,64 @@ def _print_export(summary: ExportSummary, messages: Messages) -> None:
             fg="yellow",
             err=True,
         )
+
+
+def ui_command_line(
+    folder: Path | None, port: int, headless: bool
+) -> tuple[list[str], dict[str, str]]:
+    """The command and environment that start the interface (local only, no telemetry).
+
+    The interface listens on ``127.0.0.1`` only and Streamlit's usage statistics are switched off
+    (ADR 0010: no telemetry). The project folder is handed over in an environment variable.
+    """
+    script = Path(__file__).resolve().parent / "ui" / "streamlit_app.py"
+    command = [
+        sys.executable, "-m", "streamlit", "run", str(script),
+        "--server.address", "127.0.0.1",
+        "--server.port", str(port),
+        "--browser.gatherUsageStats", "false",
+        "--server.headless", "true" if headless else "false",
+    ]  # fmt: skip
+    environment = dict(os.environ)
+    if folder is not None:
+        environment[PROJECT_ENV] = str(folder.resolve())
+    return command, environment
+
+
+@app.command("ui")
+def ui_command(
+    folder: Annotated[
+        Path | None, typer.Argument(help="Project folder to open (optional).")
+    ] = None,
+    port: Annotated[int, typer.Option(help="Local port of the interface.")] = 8501,
+    no_browser: Annotated[
+        bool, typer.Option("--no-browser", help="Do not open a browser window.")
+    ] = False,
+    lang: LangOption = None,
+) -> None:
+    """Start the local graphical interface in your browser (needs: pip install "crapai[ui]").
+
+    The interface runs on this computer only (127.0.0.1) and sends no usage statistics.
+    Example: crapai ui my-review
+    """
+    messages = Messages(resolve_language(lang, (folder or Path(".")) / "project.yaml"))
+    try:
+        if importlib.util.find_spec("streamlit") is None:
+            raise ConfigError(
+                "The interface needs the package streamlit",
+                code="E203",
+                hint='Install it with: pip install "crapai[ui]"',
+            )
+        if folder is not None:
+            _setup_file_log(folder)
+            Workspace.open(folder)  # fail early with E404 instead of inside the browser
+        command, environment = ui_command_line(folder, port, no_browser)
+        logger.info("Starting the interface on port %d", port)
+        typer.echo(messages.text("cli.ui.starting", port=port))
+        result = subprocess.run(command, env=environment, check=False)  # noqa: S603
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        raise _fail(error, messages, json_mode=False) from error
+    raise typer.Exit(result.returncode)
 
 
 @app.command("unlock")

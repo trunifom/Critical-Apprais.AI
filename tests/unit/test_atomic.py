@@ -110,7 +110,7 @@ def test_retries_five_times_at_200_ms_then_succeeds(
     target = tmp_path / "results.xlsx"
     calls = _lock_target(monkeypatch, target, failures=5)
     pauses: list[float] = []
-    result = atomic_write_bytes(target, b"data", sleep=pauses.append)
+    result = atomic_write_bytes(target, b"data", sleep=pauses.append, delay_s=0.2)
     assert result.path == target and not result.used_alternative
     assert len(calls) == 6  # first try + 5 retries
     assert pauses == [0.2] * 5
