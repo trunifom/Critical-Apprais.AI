@@ -1,0 +1,70 @@
+# Deutsche Oberflächentexte (Schweizer Schreibweise, "ss"). Neue Schlüssel zuerst in en.yaml anlegen.
+# Aufgabe T-M1-12 ergänzt die übrigen Bereiche; hier stehen die Texte der Befehlszeile (T-M1-11).
+cli:
+  init:
+    done: "Projekt angelegt: {path}"
+    next: "Als Nächstes: project.yaml bearbeiten (mindestens ein Einschlusskriterium) und danach Dateien importieren."
+    example: "Beispiel: {command} import {path} <datei> --label <name>"
+  import:
+    done: "{records} Datensatz/Datensätze aus {file} als \"{label}\" importiert, davon {abstracts} mit Abstract. Das Projekt enthält jetzt {total} Datensätze."
+    format: "Format: {format} ({reason})"
+    encoding: "Zeichenkodierung: {encoding}"
+    mapping: "Verwendete Spalten: {mapping}"
+    note: "Hinweis: {note}"
+  warning:
+    no_abstracts: "Warnung: Keiner dieser Datensätze hat einen Abstract. Das Screening braucht Abstracts (oder die Option nur Titel)."
+    low_abstract_ratio: "Warnung: Weniger als 60 % dieser Datensätze haben einen Abstract."
+    empty_records: "Warnung: {count} Datensatz/Datensätze haben weder Titel noch Abstract und sind als EMPTY_RECORD markiert."
+  status:
+    title: "Projekt: {title}"
+    folder: "Ordner: {path}"
+    records: "Datensätze: {records} (mit Abstract: {abstracts}, leer: {empty}, Duplikate: {duplicates})"
+    sources: "Quellen:"
+    source_line: "  {label}: {count}"
+    no_records: "Noch keine Datensätze. Dateien importieren mit: {command} import <ordner> <datei> --label <name>"
+    config_ok: "Konfiguration: in Ordnung"
+    config_problem: "Die Konfiguration braucht Aufmerksamkeit: {problem}"
+    in_use: "Das Projekt wird gerade von einem anderen Prozess benutzt."
+  error:
+    prefix: "Fehler {code}"
+    details: "Einzelheiten"
+    action: "Was tun"
+    unexpected: "Es ist ein unerwarteter Fehler aufgetreten. Einzelheiten stehen in der Protokolldatei .sara/app.log."
+
+errors:
+  E101:
+    title: "Der Dateityp wird nicht unterstützt oder wurde nicht erkannt."
+    action: "Exportieren Sie die Suchergebnisse erneut als RIS, NBIB, BibTeX, CSV oder XLSX."
+  E102:
+    title: "In der Datei wurden keine Datensätze gefunden."
+    action: "Prüfen Sie, ob der Export leer ist, und exportieren Sie ihn erneut."
+  E103:
+    title: "Die Datei konnte mit dieser Zeichenkodierung nicht gelesen werden."
+    action: "Versuchen Sie eine andere Kodierung, zum Beispiel --encoding cp1252."
+  E104:
+    title: "Eine Spalte konnte nicht zugeordnet werden."
+    action: "Nennen Sie die Spalte selbst, zum Beispiel --map abstract=<spalte>."
+  E106:
+    title: "Diese Datei wurde bereits importiert."
+    action: "Mit --force importieren Sie sie erneut; die Datensätze sind dann doppelt vorhanden."
+  E201:
+    title: "In der project.yaml fehlt eine Pflichtangabe."
+    action: "Ergänzen Sie die fehlende Angabe in der project.yaml."
+  E203:
+    title: "Eine Angabe in der project.yaml hat einen ungültigen Wert."
+    action: "Korrigieren Sie die aufgeführten Angaben in der project.yaml."
+  E401:
+    title: "Eine Datei konnte nicht geschrieben werden."
+    action: "Schliessen Sie die Datei in anderen Programmen und prüfen Sie die Ordnerrechte."
+  E402:
+    title: "Das Projekt wird von einem anderen Prozess benutzt."
+    action: "Beenden Sie zuerst den anderen Lauf. Läuft keiner, ist die Sperre veraltet und kann übernommen werden."
+  E403:
+    title: "Es ist nicht genug Speicherplatz vorhanden."
+    action: "Schaffen Sie Speicherplatz und versuchen Sie es erneut."
+  E404:
+    title: "Der Ordner ist kein Projekt dieser Version, oder eine Projektdatei ist beschädigt."
+    action: "Wählen Sie den richtigen Ordner, stellen Sie data/.backup wieder her oder führen Sie die Migration durch."
+  E999:
+    title: "Es ist ein unerwarteter Fehler aufgetreten."
+    action: "Sehen Sie in die Protokolldatei .sara/app.log und melden Sie das Problem."

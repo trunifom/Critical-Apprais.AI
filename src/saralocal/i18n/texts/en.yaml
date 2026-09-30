@@ -178,3 +178,74 @@ notifications:
     Your review is now running in the background and may take some time depending on system load.  
     Results and download links will be sent to **{email}**.  
     Submitted items: **{total}**.
+
+# ---- Command line (task T-M1-11). Added for Critical Apprais.AI; keep in sync with de.yaml. ----
+cli:
+  init:
+    done: "Project created: {path}"
+    next: "Next: edit project.yaml (at least one inclusion criterion), then import your files."
+    example: "Example: {command} import {path} <file> --label <name>"
+  import:
+    done: "Imported {records} record(s) from {file} as \"{label}\": {abstracts} with abstract. The project now holds {total} record(s)."
+    format: "Format: {format} ({reason})"
+    encoding: "Text encoding: {encoding}"
+    mapping: "Columns used: {mapping}"
+    note: "Note: {note}"
+  warning:
+    no_abstracts: "Warning: none of these records has an abstract. Screening needs abstracts (or the title-only option)."
+    low_abstract_ratio: "Warning: fewer than 60 % of these records have an abstract."
+    empty_records: "Warning: {count} record(s) have neither title nor abstract and are marked EMPTY_RECORD."
+  status:
+    title: "Project: {title}"
+    folder: "Folder: {path}"
+    records: "Records: {records} (with abstract: {abstracts}, empty: {empty}, duplicates: {duplicates})"
+    sources: "Sources:"
+    source_line: "  {label}: {count}"
+    no_records: "No records yet. Import files with: {command} import <folder> <file> --label <name>"
+    config_ok: "Configuration: OK"
+    config_problem: "Configuration needs attention: {problem}"
+    in_use: "The project is in use by another process."
+  error:
+    prefix: "Error {code}"
+    details: "Details"
+    action: "What to do"
+    unexpected: "An unexpected error occurred. Details are in the log file .sara/app.log."
+
+# Error texts: what happened - why - what to do (plan chapter 26.4, ADR 0012).
+errors:
+  E101:
+    title: "The file type is not supported or not recognised."
+    action: "Export the search results again as RIS, NBIB, BibTeX, CSV or XLSX."
+  E102:
+    title: "No records were found in the file."
+    action: "Check that the export is not empty and export it again."
+  E103:
+    title: "The file could not be read with this text encoding."
+    action: "Try another encoding, for example --encoding cp1252."
+  E104:
+    title: "A column could not be assigned."
+    action: "Name the column yourself, for example --map abstract=<column>."
+  E106:
+    title: "This file has already been imported."
+    action: "Use --force to import it again; the records will then exist twice."
+  E201:
+    title: "A required setting is missing in project.yaml."
+    action: "Add the missing setting to project.yaml."
+  E203:
+    title: "A setting in project.yaml has an invalid value."
+    action: "Correct the listed settings in project.yaml."
+  E401:
+    title: "A file could not be written."
+    action: "Close the file in other programs and check the folder permissions."
+  E402:
+    title: "The project is in use by another process."
+    action: "Finish the other run first. If none is running, the lock is stale and can be taken over."
+  E403:
+    title: "There is not enough disk space."
+    action: "Free some disk space and try again."
+  E404:
+    title: "The folder is not a project of this version, or a project file is damaged."
+    action: "Select the correct folder, or restore data/.backup or run the migration."
+  E999:
+    title: "An unexpected error occurred."
+    action: "See the log file .sara/app.log and report the problem."
