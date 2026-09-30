@@ -37,7 +37,7 @@ Commit-Schema: `type(scope): Zusammenfassung (Karten-ID)`; Ende der Nachricht: d
 | Punkt | Stand |
 |---|---|
 | Branch | Nur `main`. Die frühen Task-Branches wurden fast-forward nach `main` gemergt und gelöscht. Push: `git push origin main` durch den Projektleiter |
-| Tests | 464 passed (`python -m pytest -q`) |
+| Tests | 470 passed (`python -m pytest -q`) |
 | Lint / Typen | `ruff` sauber (ohne `reference/`), `mypy src` sauber |
 | CI | `.github/workflows/ci.yml` geschrieben (Linux/Windows/macOS x Python 3.11-3.13), noch nie auf GitHub gelaufen |
 | Extras in `pyproject.toml` | `import` (rispy, pybtex, openpyxl, pymupdf, pdfplumber, pylatexenc), `cli` (typer, rich), `dev`, u. a. Neue Abhängigkeiten ausserhalb der Extras: vorher fragen |
@@ -63,7 +63,7 @@ Reihenfolge = empfohlene Arbeitsreihenfolge. Aufwand in Stunden (Schätzung der 
 | [x] | T-M0-02 | Layer-Test (`tests/unit/test_layering.py`, ohne import-linter) | | 2026-09-30 15:00 | `38d230a` |
 | [x] | T-M0-02 | CI-Workflow `.github/workflows/ci.yml`, Kartenstatus | | 2026-09-30 15:01 | `58472eb` |
 | [x] | T-M0-01 | Lizenz des Codes: PolyForm Noncommercial 1.0.0 (`LICENSE`, ADR 0016). **Offen bleiben:** Rechteinhaber klären, Fremdmaterial vor Veröffentlichung prüfen | 2 | 2026-09-30 16:52 | `c04f8c0` |
-| [ ] | T-M0-03 | Umbenennung technischer Namen (nur nach Entscheid des Projektleiters) | 3 | | |
+| [x] | T-M0-03 | Umbenennung: Kurzform CrAp-AI, Paket und Befehl `crapai`, Zustandsordner `.crapai/`, Umgebungsvariablen `CRAPAI_` (ADR 0017) | 3 | 2026-09-30 17:04 | `4bf0075` |
 
 ### M1 - Import steht (Meilenstein A)
 
