@@ -12,8 +12,8 @@ One file per task. Pick the first task whose dependencies are done. Update the `
 | [T-M1-03](T-M1-03.md) | M1 | Workspace: folder layout, schema version, lock with heartbeat, atomic writes | 6 | T-M1-01 | done (review) |
 | [T-M1-04](T-M1-04.md) | M1 | Format detection (sniffing) for RIS/NBIB/BibTeX/CSV/XLSX/ZIP | 4 | T-M1-01 | done (review) |
 | [T-M1-05](T-M1-05.md) | M1 | RIS reader (continuation lines, headers, type table) | 5 | T-M1-04 | done |
-| [T-M1-06](T-M1-06.md) | M1 | NBIB/MEDLINE reader | 4 | T-M1-04 | todo |
-| [T-M1-07](T-M1-07.md) | M1 | BibTeX reader (pre-clean, pybtex, tolerant fallback) | 6 | T-M1-04 | todo |
+| [T-M1-06](T-M1-06.md) | M1 | NBIB/MEDLINE reader | 4 | T-M1-04 | done |
+| [T-M1-07](T-M1-07.md) | M1 | BibTeX reader (pre-clean, pybtex, tolerant fallback) | 6 | T-M1-04 | done |
 | [T-M1-08](T-M1-08.md) | M1 | Table reader (CSV/TSV/XLSX): encoding, delimiter, column mapping | 5 | T-M1-04 | todo |
 | [T-M1-09](T-M1-09.md) | M1 | PDF-ZIP reader with quality flags (DEFERRED: full text is not part of v1) | 4 | T-M1-04 | deferred (ADR 0015 - full text later) |
 | [T-M1-10](T-M1-10.md) | M1 | Normalisation and records.csv writer/reader, source hashes, import log | 5 | T-M1-05, T-M1-06, T-M1-07, T-M1-08 | todo |
