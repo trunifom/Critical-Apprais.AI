@@ -37,7 +37,7 @@ Commit-Schema: `type(scope): Zusammenfassung (Karten-ID)`; Ende der Nachricht: d
 | Punkt | Stand |
 |---|---|
 | Branch | Nur `main`. Die frühen Task-Branches wurden fast-forward nach `main` gemergt und gelöscht. Push: `git push origin main` durch den Projektleiter |
-| Tests | 875 passed (`python -m pytest -q`) |
+| Tests | 907 passed (`python -m pytest -q`) |
 | Lint / Typen | `ruff` sauber (ohne `reference/`), `mypy src` sauber |
 | CI | `.github/workflows/ci.yml` geschrieben (Linux/Windows/macOS x Python 3.11-3.13), noch nie auf GitHub gelaufen |
 | Extras in `pyproject.toml` | `import` (rispy, pybtex, openpyxl, pymupdf, pdfplumber, pylatexenc), `cli` (typer, rich), `dev`, u. a. Neue Abhängigkeiten ausserhalb der Extras: vorher fragen |
@@ -120,7 +120,7 @@ neue Module in die Architektur, Änderungen ins `CHANGELOG.md`, Stand ins `READM
 | [x] | T-M2-05 | `cost/tokenizers.py`, `cost/pricing.py`, `cost/estimator.py` neu geschrieben (echte Texte, Kostenband, Worst Case), `services/cost.py`, `pricing.csv` | 6 | 2026-09-30 18:58 | `4218e74` |
 | [x] | T-M2-07 | `prisma/events.py`, `prisma/flow.py`, `services/events.py`: Ereignisse in `data/events.jsonl`, Flusszahlen daraus abgeleitet, Orakeltest gegen den Vorgänger (beide Berichtsmodi) | 5 | 2026-09-30 19:08 | `c170335` |
 | [x] | T-M2-08 | `prisma/prefilters.py`, `services/prefilter.py`, neue Gründe `PREFILTER_*`, ADR 0019; `crapai check` ruft sie zwischen Dedup und Gültigkeit auf | 5 | 2026-09-30 19:19 | `98c4576` |
-| [ ] | T-M2-06 | Dauerschätzung, Kostenbestätigung, `crapai check` | 4 | | |
+| [x] | T-M2-06 | `cost/duration.py` (Dauer, Bestätigungsregel), Kosten-, Token- und Dauerausgabe in `crapai check` | 4 | 2026-09-30 19:24 | `c0a0fba` |
 | [ ] | T-M2-02 | optionale unscharfe Duplikatsuche mit Prüfliste (`rapidfuzz` ist im Extra noch nicht enthalten: vorher fragen) | 4 | | |
 
 ### Prüfung "alles dokumentiert, committet, getestet?" (Sitzung vom 2026-09-30)
@@ -142,7 +142,7 @@ M3: T-M3-01 Provider-Protokoll + MockProvider, -02 OpenAI-kompatibel (SwissGPT z
 
 ## 5. Nächster Schritt (bitte aktuell halten)
 
-**Meilenstein A ist erreicht und M1 ist vollständig** (T-M1-09 bleibt zurückgestellt). M2: `T-M2-01` (Duplikate), `T-M2-03` (Gültigkeit) , `T-M2-04` (Preflight, `crapai check`) und `T-M2-05` (Kostenschätzung), `T-M2-07` (PRISMA-Ereignisse) und `T-M2-08` (Vorfilter) sind fertig. **Nächster Schritt: `T-M2-06`** (Dauerschätzung, Kostenbestätigung, Kostenteil in `crapai check`), danach Meilenstein M3. **Zurückgestellt, nicht vergessen:** `T-M2-02` unscharfe Duplikatsuche (braucht `rapidfuzz`). Pflege der Dokumentation: Benutzerhandbuch, Entwicklerdokumentation, Architektur, README, CHANGELOG nach jeder Aufgabe mitführen.
+**Meilenstein A ist erreicht und M1 ist vollständig** (T-M1-09 bleibt zurückgestellt). M2: `T-M2-01` (Duplikate), `T-M2-03` (Gültigkeit) , `T-M2-04` (Preflight, `crapai check`) und `T-M2-05` (Kostenschätzung), `T-M2-07` (PRISMA-Ereignisse) und `T-M2-08` (Vorfilter) und `T-M2-06` (Dauer, Kostenausgabe) sind fertig; **Meilenstein M2 ist vollständig bis auf das zurückgestellte `T-M2-02`**. **Nächster Schritt: Meilenstein M3** (Anbieter-Schnittstelle, Prompt-Bau, Antwortschema und Parser, Screening-Lauf), siehe `tasks/README.md`. **Zurückgestellt, nicht vergessen:** `T-M2-02` unscharfe Duplikatsuche (braucht `rapidfuzz`). Pflege der Dokumentation: Benutzerhandbuch, Entwicklerdokumentation, Architektur, README, CHANGELOG nach jeder Aufgabe mitführen.
 
 ## 6. Abweichungen und offene Punkte
 
