@@ -9,10 +9,10 @@ import pytest
 import yaml
 from typer.testing import CliRunner
 
-from saralocal import cli
-from saralocal.cli import app
-from saralocal.i18n.required import ERROR_CODES
-from saralocal.io.records_store import RECORD_COLUMNS
+from crapai import cli
+from crapai.cli import app
+from crapai.i18n.required import ERROR_CODES
+from crapai.io.records_store import RECORD_COLUMNS
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
@@ -53,7 +53,7 @@ def test_every_cli_option_is_documented_in_the_manual(command: str) -> None:
     options = set(re.findall(r"--[a-z][a-z-]*", result.output)) - {"--help"}
     assert options, command
     for option in options:
-        assert option in MANUAL, f"{option} of 'sara {command}' is missing in BENUTZERHANDBUCH.md"
+        assert option in MANUAL, f"{option} of 'crapai {command}' is missing in BENUTZERHANDBUCH.md"
 
 
 def test_manual_does_not_document_options_the_cli_lacks() -> None:
@@ -68,8 +68,8 @@ def test_manual_does_not_document_options_the_cli_lacks() -> None:
 def test_error_codes_in_the_manual_have_texts_in_both_languages() -> None:
     codes = set(re.findall(r"\bE\d{3}\b", MANUAL))
     assert codes, "the manual should list error codes"
-    en = yaml.safe_load(read(ROOT / "src/saralocal/i18n/texts/en.yaml"))["errors"]
-    de = yaml.safe_load(read(ROOT / "src/saralocal/i18n/texts/de.yaml"))["errors"]
+    en = yaml.safe_load(read(ROOT / "src/crapai/i18n/texts/en.yaml"))["errors"]
+    de = yaml.safe_load(read(ROOT / "src/crapai/i18n/texts/de.yaml"))["errors"]
     for code in codes:
         assert code in ERROR_CODES and code in en and code in de, code
 
@@ -92,7 +92,7 @@ def test_developer_doc_lists_exactly_the_records_columns() -> None:
 
 
 def test_architecture_names_every_module_that_exists() -> None:
-    package = ROOT / "src" / "saralocal"
+    package = ROOT / "src" / "crapai"
     for path in sorted(package.rglob("*.py")):
         relative = path.relative_to(package)
         if path.name == "__init__.py" or relative.parts[0] in {"cost", "criteria", "legacy.py"}:

@@ -11,7 +11,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-SRC = Path(__file__).resolve().parents[2] / "src" / "saralocal"
+SRC = Path(__file__).resolve().parents[2] / "src" / "crapai"
 
 # Third-party packages the core must never import (GUI, CLI, LLM SDKs).
 FORBIDDEN_THIRD_PARTY = frozenset(
@@ -45,7 +45,7 @@ def layer_violations(root: Path) -> list[str]:
         for module in sorted(imported_modules(path.read_text(encoding="utf-8"))):
             parts = module.split(".")
             forbidden = parts[0] in FORBIDDEN_THIRD_PARTY
-            upward = parts[0] == "saralocal" and len(parts) > 1 and parts[1] in UPPER_LAYERS
+            upward = parts[0] == "crapai" and len(parts) > 1 and parts[1] in UPPER_LAYERS
             if forbidden or upward:
                 violations.append(f"{relative.as_posix()}: {module}")
     return violations
@@ -61,7 +61,7 @@ def test_detector_flags_forbidden_and_upward_imports(tmp_path: Path) -> None:
     # Allowed: the cli layer is not core.
     (tmp_path / "cli" / "app.py").write_text("import typer\n", encoding="utf-8")
     (tmp_path / "engine.py").write_text(
-        "import streamlit as st\nfrom saralocal.cli import app\n", encoding="utf-8"
+        "import streamlit as st\nfrom crapai.cli import app\n", encoding="utf-8"
     )
     (tmp_path / "provider.py").write_text(
         "def build():\n    from openai import OpenAI\n    return OpenAI\n", encoding="utf-8"
@@ -69,7 +69,7 @@ def test_detector_flags_forbidden_and_upward_imports(tmp_path: Path) -> None:
     (tmp_path / "clean.py").write_text("import json\nimport pandas\n", encoding="utf-8")
 
     assert layer_violations(tmp_path) == [
-        "engine.py: saralocal.cli",
+        "engine.py: crapai.cli",
         "engine.py: streamlit",
         "provider.py: openai",
     ]

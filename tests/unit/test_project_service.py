@@ -6,10 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from saralocal.config.loader import load_project_config
-from saralocal.errors import ConfigError, SaraError, StorageError
-from saralocal.services.importing import ImportRequest, import_source
-from saralocal.services.project import (
+from crapai.config.loader import load_project_config
+from crapai.errors import ConfigError, SaraError, StorageError
+from crapai.services.importing import ImportRequest, import_source
+from crapai.services.project import (
     available_templates,
     create_project,
     project_status,

@@ -14,8 +14,8 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from pydantic import ValidationError
 
-from saralocal.errors import StorageError
-from saralocal.io.records_store import (
+from crapai.errors import StorageError
+from crapai.io.records_store import (
     BOOLEAN_COLUMNS,
     RECORD_COLUMNS,
     Record,
@@ -278,7 +278,7 @@ def test_locked_file_is_an_error_unless_an_alternative_is_allowed(
 ) -> None:
     import os
 
-    from saralocal.project import atomic
+    from crapai.project import atomic
 
     path = tmp_path / "records.csv"
     write_records(path, [make(title="old")])

@@ -19,7 +19,7 @@ der Agent ohne Rückfrage loslegen kann, aber an definierten Stellen anhält.
    VS-Code-Passwortabfrage nicht funktioniert. Der Agent pusht **nicht** ohne Ihre ausdrückliche Bestätigung und fragt nie nach Tokens.
 2. **Git-Identität:** Global ist `trug <trug@zhaw.ch>` gesetzt. Für dieses Repository legen Sie fest, welcher Name/welche E-Mail in die Commits soll
    (der GitHub-Besitzer der URL heisst `trunifom`). Der Agent setzt sie **lokal im Repository**, nie global.
-3. **Technische Namen** (Ordner/Paket/Befehl): Solange nicht entschieden, gelten die Arbeitsnamen `SARA-Local` / `saralocal` / `sara` weiter
+3. **Technische Namen** (Ordner/Paket/Befehl): Solange nicht entschieden, gelten die Arbeitsnamen `SARA-Local` / `crapai` / `crapai` weiter
    (Aufgabe `T-M0-03`). Wenn Sie schon entschieden haben, tragen Sie die Namen unten in Abschnitt 3 ein.
 
 ---
@@ -64,7 +64,7 @@ Zahlen): Was nicht belegt ist, kommt als `null`/Annahme in eine Datendatei oder 
 | Lizenzen fremder PDFs | Für die Projektleitung unkritisch (Open Access, Hochschulzugang). Offen bleibt nur die Lizenz des **Codes** |
 | Speicherformat | CSV + JSONL kanonisch, XLSX nur Export (ADR 0001-0003) |
 | Sprache | Code/Docstrings/Logs/Kommentare **Englisch**; Dokumente in `docs/` **Deutsch** (Schweizer Schreibweise "ss"); UI zweisprachig (en, de) |
-| Technische Namen (vorläufig) | Ordner `SARA-Local`, Paket `saralocal`, Befehl `sara`, Zustandsordner `.sara/`. **Nicht selbst umbenennen** (Aufgabe T-M0-03). Falls der Projektleiter hier Namen einträgt, gelten diese: `<PAKET/CLI/REPO-NAMEN: noch offen>` |
+| Technische Namen (vorläufig) | Ordner `SARA-Local`, Paket `crapai`, Befehl `crapai`, Zustandsordner `.crapai/`. **Nicht selbst umbenennen** (Aufgabe T-M0-03). Falls der Projektleiter hier Namen einträgt, gelten diese: `<PAKET/CLI/REPO-NAMEN: noch offen>` |
 
 ## 4. Umgebung und Repository
 
@@ -168,7 +168,7 @@ Wenn Name/E-Mail nicht genannt wurden: **frage nach** (Stopp-Regel), nimm nicht 
 1. `README.md`: Namenshinweis oben vorhanden? Schnellstart korrekt? Passt die Aussage "Git ist hier nicht initialisiert" noch? **Aktualisiere den Satz** im Abschnitt
    "Vor der Veröffentlichung" (Repo ist jetzt initialisiert, Remote gesetzt, Push ausstehend). Sonst nichts Inhaltliches ändern.
 2. `.gitignore` und `.gitattributes`: bestehen bereits. Prüfe, dass ausgeschlossen sind: `.venv/`, `__pycache__/`, `.pytest_cache/`, `.ruff_cache/`, `.mypy_cache/`, `.env`,
-   `tests/data_large/*` (ausser `tests/data_large/README.md`), `.sara/`, `runs/`. Prüfe, dass `.gitattributes` Testdaten und `reference/**` als `-text` führt
+   `tests/data_large/*` (ausser `tests/data_large/README.md`), `.crapai/`, `runs/`. Prüfe, dass `.gitattributes` Testdaten und `reference/**` als `-text` führt
    (Zeilenenden dürfen nicht umgeschrieben werden, sonst schlagen `tests/unit/test_fixture_inventory.py` und `test_legacy_golden.py` auf anderen Rechnern fehl).
    Ergänze bei Bedarf Einträge; entferne nichts.
 3. **Keine LICENSE hinzufügen** (Lizenz des Codes ist offen, Aufgabe T-M0-01). Erwähne es im Bericht.
@@ -230,7 +230,7 @@ Später (M4-M8: Ausgabe/Excel/PRISMA-Grafik, Statistik, Streamlit-Oberfläche, w
 1. Karte in `tasks/T-….md` lesen, genannte Plankapitel mit `python scripts/plan_chapter.py <Nr>` lesen, `docs/MIGRATION.md` und die genannten Dateien in `reference/` ansehen.
 2. Branch: `git switch -c task/T-M1-05-ris-reader` (Präfix `task/`, Karten-ID, Kurzname).
 3. **Test zuerst oder gemeinsam** (Fixtures aus `tests/data/`, Sollzahlen aus `EXPECTED.json`, bei Altergebnissen Golden-Test wie `tests/unit/test_legacy_golden.py`).
-4. Implementieren in `src/saralocal/...` (portierte Dateien tragen Kopfzeile `# PORTED from SARA-App: <Pfad>` und nennen Änderungen).
+4. Implementieren in `src/crapai/...` (portierte Dateien tragen Kopfzeile `# PORTED from SARA-App: <Pfad>` und nennen Änderungen).
 5. Prüfen: `python -m pytest -q` (ganz) und `python -m ruff check .`; bei Bedarf `python -m mypy src`.
 6. Doku nachführen: Status-Zeile der Karte, `docs/MIGRATION.md` (nur die betroffenen Zeilen), betroffenes Plankapitel, falls sich Verhalten ändert; ADR bei struktureller Entscheidung.
 7. Commit (freigegeben): `git add <konkrete Dateien>` (kein blindes `-A` in Phase C), `git diff --cached --name-only` prüfen, dann
@@ -279,7 +279,7 @@ Kurz und faktisch. Keine Vermutungen als Tatsachen darstellen. Wenn etwas nicht 
 - Kein Label aus einer unbrauchbaren Modellantwort ableiten (`parse_error` statt `INCLUDE`).
 - Keine echten LLM-Aufrufe in Tests; Live-Tests nur mit `@pytest.mark.live` und nur auf Anweisung.
 - Kein `git push --force`, kein `git reset --hard` auf fremde Arbeit, kein Umschreiben veröffentlichter Historie, keine globalen Git-Änderungen, kein `--no-verify`.
-- Nutzertexte nie mit "SARA" bezeichnen; Produktname aus `saralocal.branding.PRODUCT_NAME`.
+- Nutzertexte nie mit "SARA" bezeichnen; Produktname aus `crapai.branding.PRODUCT_NAME`.
 - Definition of done: siehe `AGENTS.md` Abschnitt 6 (Typen, Docstrings, Tests, ruff, i18n, Fehlercodes, Doku, Kartenstatus).
 
 ## 13. Woran du Erfolg erkennst
@@ -299,7 +299,7 @@ AGENTS.md                      Regeln            docs/NAMING_AND_HISTORY.md   Na
 docs/INDEX.md                  Landkarte         docs/PROJEKTPLAN.md          Spezifikation (Kap. 1-40)
 docs/MIGRATION.md              Alt -> Neu        docs/adr/                    Entscheide 0001-0015
 tasks/                         33 Karten         templates/                   Beispielkonfiguration, Prompts, Modelle
-src/saralocal/                 neuer Code        reference/                   Vorgänger-Code (nur lesen)
+src/crapai/                 neuer Code        reference/                   Vorgänger-Code (nur lesen)
 tests/unit/                    Tests             tests/data/EXPECTED.json     Sollzahlen der Fixtures
 ```
 

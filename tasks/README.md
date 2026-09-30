@@ -24,7 +24,7 @@ One file per task. Pick the first task whose dependencies are done. Update the `
 | [T-M2-03](T-M2-03.md) | M2 | Missing abstract, NOT_SCREENABLE, retracted and quality flags | 3 | T-M1-10 | todo |
 | [T-M2-04](T-M2-04.md) | M2 | Preflight service (codes) and CLI output | 4 | T-M2-03 | todo |
 | [T-M2-05](T-M2-05.md) | M2 | Tokenizers per provider and price source; exact estimate with real texts | 6 | T-M1-10 | partially done (estimator ported) |
-| [T-M2-06](T-M2-06.md) | M2 | Duration estimate, cost confirmation, `sara check` | 4 | T-M2-04, T-M2-05 | todo |
+| [T-M2-06](T-M2-06.md) | M2 | Duration estimate, cost confirmation, `crapai check` | 4 | T-M2-04, T-M2-05 | todo |
 | [T-M2-07](T-M2-07.md) | M2 | PRISMA events for import and dedup (events.jsonl) | 5 | T-M2-01 | todo |
 | [T-M2-08](T-M2-08.md) | M2 | Deterministic pre-filters (language, year, publication type, retracted) | 5 | T-M1-10, T-M2-03 | todo |
 | [T-M3-01](T-M3-01.md) | M3 | LLMProvider protocol and MockProvider with scenarios S1-S15 | 8 | T-M1-01 | done (review) |

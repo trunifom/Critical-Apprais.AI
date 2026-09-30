@@ -37,18 +37,18 @@ Die Software darf für **nicht kommerzielle Zwecke** frei genutzt, verändert un
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -e ".[import,cli]"
-sara --version
+crapai --version
 ```
 
-Ausgabe: `Critical Apprais.AI 0.0.1`. Der Befehl heisst vorläufig `sara`; er kann später umbenannt werden.
+Ausgabe: `Critical Apprais.AI 0.0.1`. Der Befehl heisst `crapai` (Kurzform des Produkts: CrAp-AI).
 Bei jedem neuen Terminal die Umgebung zuerst mit `.\.venv\Scripts\Activate.ps1` aktivieren.
 
 ## 3. Schnellstart in fünf Minuten
 
 ```powershell
-sara init mein-review --from-template demo        # 1. Projekt anlegen
-sara import mein-review pubmed.ris --label PubMed # 2. Datei importieren
-sara status mein-review                           # 3. Stand ansehen
+crapai init mein-review --from-template demo        # 1. Projekt anlegen
+crapai import mein-review pubmed.ris --label PubMed # 2. Datei importieren
+crapai status mein-review                           # 3. Stand ansehen
 ```
 
 1. **Projekt anlegen.** `mein-review` ist ein neuer Ordner (er darf noch nicht existieren oder muss leer sein). Die Vorlage `demo` enthält ein
@@ -56,7 +56,7 @@ sara status mein-review                           # 3. Stand ansehen
 2. **Importieren.** `--label` ist Ihr Name für die Quelle (z. B. die Datenbank). Sie können mehrere Dateien auf einmal angeben.
 3. **Status.** Zeigt Anzahl Datensätze, Datensätze mit Abstract, Quellen und ob die Konfiguration in Ordnung ist.
 
-`sara init` nimmt zusätzlich `--title "Mein Titel"` (Standard: Ordnername) und `--from-template` (Name `blank`/`demo` oder Pfad einer eigenen YAML-Datei).
+`crapai init` nimmt zusätzlich `--title "Mein Titel"` (Standard: Ordnername) und `--from-template` (Name `blank`/`demo` oder Pfad einer eigenen YAML-Datei).
 Deutsche Meldungen erhalten Sie automatisch, wenn in der `project.yaml` `language: de` steht, oder mit `--lang de`.
 
 ## 4. Das Projekt (der Ordner)
@@ -70,7 +70,7 @@ mein-review/
 │  ├─ records.import.jsonl   Protokoll der Importe
 │  └─ .backup/               die letzten 5 Sicherungen von records.csv
 ├─ runs/  human/  reports/   für spätere Funktionen (Screening-Läufe, menschliche Entscheidungen, Berichte)
-└─ .sara/                    Technisches: Version, Sperre, Protokoll (app.log)
+└─ .crapai/                    Technisches: Version, Sperre, Protokoll (app.log)
 ```
 
 * Sie können den Ordner kopieren, zippen und archivieren. Er ist die vollständige Grundlage Ihres Reviews.
@@ -101,10 +101,10 @@ Gute Kriterien sind kurz und prüfbar („Erwachsene ab 18 Jahren“, nicht „g
 
 Fehler in der Datei werden mit Pfad und Grund gemeldet, z. B. `limits.rpm: Input should be greater than 0`.
 
-## 5. Dateien importieren: `sara import`
+## 5. Dateien importieren: `crapai import`
 
 ```powershell
-sara import mein-review pubmed.ris embase.bib --label PubMed --label Embase
+crapai import mein-review pubmed.ris embase.bib --label PubMed --label Embase
 ```
 
 ### 5.1 Unterstützte Formate
@@ -159,7 +159,7 @@ Nach dem Import erscheinen bei Bedarf Warnungen, und der Rückgabecode ist **4**
 | 2 | Systemproblem (Datei gesperrt, Speicher voll, Projekt in Benutzung, unerwarteter Fehler) |
 | 4 | Ergebnis mit Warnungen |
 
-## 6. Stand ansehen: `sara status`
+## 6. Stand ansehen: `crapai status`
 
 ```
 Projekt: Demo review (example, replace with your own)
@@ -171,7 +171,7 @@ Konfiguration: in Ordnung
 ```
 
 Bei einem leeren oder unvollständigen Projekt erscheint „Die Konfiguration braucht Aufmerksamkeit: …“ mit dem ersten Problem, z. B. fehlende Einschlusskriterien.
-`sara status mein-review --json` liefert dieselben Angaben maschinenlesbar.
+`crapai status mein-review --json` liefert dieselben Angaben maschinenlesbar.
 Läuft gerade ein anderer Prozess im Projekt, wird das gemeldet.
 
 ## 7. Die Tabelle `records.csv` lesen
@@ -208,7 +208,7 @@ Ein Fehler wird in vier Zeilen erklärt: **Fehler CODE: Was ist passiert · Waru
 | E402 | Projekt in Benutzung | anderen Lauf beenden; ist keiner aktiv, ist die Sperre veraltet |
 | E403 | Speicherplatz voll | Platz schaffen |
 | E404 | kein Projektordner dieser Version oder Datei beschädigt | richtigen Ordner wählen, Sicherung aus `data/.backup` verwenden |
-| E999 | unerwarteter Fehler | `.sara/app.log` ansehen und den Fehler melden |
+| E999 | unerwarteter Fehler | `.crapai/app.log` ansehen und den Fehler melden |
 
 Weitere Codes (E202, E301-E307 Anbieter, E501/E502 Statistik) betreffen Funktionen, die noch folgen.
 

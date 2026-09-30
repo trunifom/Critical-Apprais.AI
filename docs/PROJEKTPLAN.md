@@ -1,6 +1,6 @@
 # Critical Apprais.AI – Projektplan und technische Spezifikation
 
-**Produktname:** **Critical Apprais.AI** (Arbeitsnamen der technischen Bezeichner: Ordner `SARA-Local`, Paket `saralocal`, Befehl `sara`)
+**Produktname:** **Critical Apprais.AI** (Arbeitsnamen der technischen Bezeichner: Ordner `SARA-Local`, Paket `crapai`, Befehl `crapai`)
 **Vorgeschichte:** Diese Software ersetzt nicht SARA, sondern **folgt** der früheren Software **SARA** (Prototyp `SARA`, Web-App `SARA-App`). SARA ist Vorgänger und Wissensquelle; das neue Produkt heisst nicht SARA. Namensregeln: `docs/NAMING_AND_HISTORY.md`.
 **Status:** Planungsentwurf v0.3, Stand 2026-09-30 (v0.2: Teil II Kapitel 25–34 Vertiefungen; v0.3: Teil III Kapitel 35–40 Erkenntnisse aus dem Abschlussbericht, Wiederverwendung, Tests/Testdaten/Assets, Starterpaket, offene Entscheidungen)
 **Bezug:** Nachfolger der Vorgängersoftware `SARA-App` (Streamlit + Supabase + Background-Worker) und des Prototyps `SARA`
@@ -78,7 +78,7 @@
 
 **Was neu und besser wird:** Die Punkte aus Kapitel 3. Die wichtigsten sind strukturierte LLM-Antworten statt "letzte Zeile = XXX/YYY", parallele Aufrufe mit sauberem Rate-Limiting, Checkpoint und Wiederaufnahme nach Abbruch, ein Run-Manifest für lückenlose Reproduzierbarkeit und eine eingebaute Evaluation gegen menschliche Entscheidungen.
 
-**Empfohlener Weg:** Ein Kern als Python-Bibliothek, darauf drei dünne Bedienschichten: (1) CLI, (2) lokale Streamlit-Oberfläche (`sara ui`), (3) optionaler Excel-Modus. Die Umsetzung erfolgt in acht Meilensteinen (Kapitel 21). Ein brauchbarer Prototyp per CLI entsteht nach Meilenstein 3.
+**Empfohlener Weg:** Ein Kern als Python-Bibliothek, darauf drei dünne Bedienschichten: (1) CLI, (2) lokale Streamlit-Oberfläche (`crapai ui`), (3) optionaler Excel-Modus. Die Umsetzung erfolgt in acht Meilensteinen (Kapitel 21). Ein brauchbarer Prototyp per CLI entsteht nach Meilenstein 3.
 
 ---
 
@@ -220,7 +220,7 @@ Bei der Durchsicht des Codes sind folgende Schwächen aufgefallen. Sie sind der 
 | F17 | Prompt-Varianten wählbar, eigene Prompts als Datei | Soll |
 | F18 | Konsens über mehrere Läufe (Mehrheit) | Kann |
 | F19 | Batch-APIs der Anbieter (günstiger, langsamer) | Kann |
-| F20 | Lokale Oberfläche (`sara ui`) | Soll |
+| F20 | Lokale Oberfläche (`crapai ui`) | Soll |
 
 ### 4.4 Nicht-funktionale Anforderungen
 
@@ -290,7 +290,7 @@ Regel: **Abhängigkeiten zeigen nur nach unten.** Der Kern kennt weder Streamlit
 | Variante | Vorteile | Nachteile | Empfehlung |
 |---|---|---|---|
 | **CLI + YAML** | Schnell zu bauen, gut testbar, skriptbar, ideal für Wiederholungsläufe | Schwelle für Nicht-Technische | **Meilenstein 1–3 (Pflicht)** |
-| **Lokale Streamlit-UI** (`sara ui`) | Bekannt aus SARA-App, Formulare für Kriterien, Fortschrittsbalken, Tabellenansicht | Läuft im Browser, Streamlit-Neuladen erschwert lange Läufe (Lauf muss im Hintergrundprozess laufen) | **Meilenstein 5** |
+| **Lokale Streamlit-UI** (`crapai ui`) | Bekannt aus SARA-App, Formulare für Kriterien, Fortschrittsbalken, Tabellenansicht | Läuft im Browser, Streamlit-Neuladen erschwert lange Läufe (Lauf muss im Hintergrundprozess laufen) | **Meilenstein 5** |
 | **Excel-Modus** | Kriterien und Ergebnisse in einer vertrauten Umgebung, kein Terminal nötig | Zusätzlicher Aufwand, Excel-Sperren | Optional (Meilenstein 7) |
 | Desktop-App (PySide/Tkinter/Electron) | Eigenständig, kein Browser | Höchster Aufwand, neues Wissen | Später prüfen |
 
@@ -328,7 +328,7 @@ mein-review/
 │  ├─ test_retest_2026-09-30.csv
 │  └─ evaluation_run-001_vs_human.csv
 ├─ prompts/                         # Optional: eigene Prompt-Varianten
-└─ .sara/
+└─ .crapai/
    ├─ lock                          # Lock-Datei (PID, Startzeit)
    ├─ app.log                       # Technisches Log (rotierend)
    └─ version                       # Schema-Version des Projektordners
@@ -341,7 +341,7 @@ mein-review/
 - **Abgeleitete Dateien sind jederzeit neu erzeugbar** aus `records.csv` plus `screening.jsonl`. Wer `results.xlsx` löscht oder in Excel bearbeitet, verliert nichts.
 - **Atomares Schreiben.** Dateien werden zuerst in `*.tmp` geschrieben und dann umbenannt (`os.replace`). Das gilt für alle ausser dem Append-only-JSONL.
 - **Sperren erkennen.** Ist `results.xlsx` in Excel geöffnet (`PermissionError`), schreibt das Tool `results.<zeitstempel>.xlsx` und meldet es klar.
-- **Schema-Version** in `.sara/version`, damit spätere Versionen alte Ordner migrieren können.
+- **Schema-Version** in `.crapai/version`, damit spätere Versionen alte Ordner migrieren können.
 
 ---
 
@@ -447,7 +447,7 @@ Die Zuordnung `UNCERTAIN → label` ist per Konfiguration wählbar (`uncertain_p
 
 ### 8.1 Schritt 1 – Projekt anlegen
 
-`sara init <ordner>` bzw. Formular in der UI.
+`crapai init <ordner>` bzw. Formular in der UI.
 
 Eingaben: Titel, Beschreibung, 1–10 Forschungsziele, Framework (PICOS, SPIDER, PECO, PIRD, CUSTOM), Kriterien je Feld (Einschluss/Ausschluss), Modus (`abstract` oder `fulltext`), LLM-Einstellungen.
 Ausgabe: `project.yaml` (Schema in Kapitel 16) und die Ordnerstruktur.
@@ -456,7 +456,7 @@ Validierung: mindestens ein Ziel, mindestens ein Einschlusskriterium, Feldnamen 
 
 ### 8.2 Schritt 2 – Import
 
-`sara import <ordner> <datei>... [--label "PubMed"]`
+`crapai import <ordner> <datei>... [--label "PubMed"]`
 
 - Erkennung des Dateityps über Endung und Inhalt (Portierung von `_detect_file_type`). **Formatdetails, Spaltenabbildungen und beobachtete Eigenheiten der Beispieldateien stehen in Kapitel 25, die Spaltendefinitionen in Kapitel 26.**
 - Kopie der Originaldatei nach `sources/`, SHA-256 berechnen und protokollieren. Wiederholter Import derselben Datei (gleicher Hash) wird erkannt und nachgefragt.
@@ -498,7 +498,7 @@ Leerer oder nur aus Leerraum bestehender Abstract → `has_abstract=False`, `exc
 
 ### 8.5 Schritt 5 – Preflight und Kostenschätzung
 
-`sara check <ordner>` (läuft automatisch vor jedem Lauf).
+`crapai check <ordner>` (läuft automatisch vor jedem Lauf).
 
 Preflight-Ergebnis je Quelle (Portierung von `PreflightService`, Codes bleiben):
 - `OK`, `WARNING` (Abstract-Anteil unter 60 %), `ERROR` (keine Datensätze, keine Abstracts im Abstract-Modus, nicht lesbar).
@@ -510,11 +510,11 @@ Kostenschätzung (Portierung von `TokenEstimator`, mit Verbesserungen):
 - Ausgabe: erwartete Ein-/Ausgabetokens, Kostenbereich (± Unsicherheit), geschätzte Dauer aus RPM/TPM/Parallelität.
 - Preise aus einer editierbaren Datei `pricing.csv` (Spalten wie im Bestand: `provider, model, price_input_per_1k, price_output_per_1k, currency`) mit Datum "gültig am". Preise ändern sich, die Datei gehört dem Benutzer. Bei unbekanntem Modell: nur Tokens, keine Kosten.
 - **Bestätigung**: Der Lauf startet erst nach `--yes` oder Bestätigung in der UI. Ein `max_cost` in `project.yaml` bricht den Lauf sicher ab, wenn die laufenden Kosten die Grenze überschreiten.
-- Probelauf: `sara screen --sample 20` verarbeitet 20 zufällige Datensätze (fester Seed), damit Kriterien vor dem grossen Lauf getestet werden können. Dieser Lauf ist als `sample` markiert und zählt nicht für PRISMA.
+- Probelauf: `crapai screen --sample 20` verarbeitet 20 zufällige Datensätze (fester Seed), damit Kriterien vor dem grossen Lauf getestet werden können. Dieser Lauf ist als `sample` markiert und zählt nicht für PRISMA.
 
 ### 8.6 Schritt 6 – Screening-Lauf
 
-`sara screen <ordner> [--repeats N] [--sample K] [--resume] [--yes]`
+`crapai screen <ordner> [--repeats N] [--sample K] [--resume] [--yes]`
 
 Ablauf der Engine:
 
@@ -525,7 +525,7 @@ Ablauf der Engine:
 5. Antwort validieren gegen das Schema. Bei Schemafehler: bis zu `max_parse_retries` neu anfragen (mit Hinweis auf den Fehler).
 6. Ergebnis sofort als Zeile an `screening.jsonl` anhängen und flushen (`os.fsync` in Intervallen).
 7. Fortschritt melden (Zähler, Kosten bisher, Restdauer, Fehlerzahl).
-8. Bei Abbruchsignal (Strg+C): laufende Aufrufe zu Ende führen (kurze Frist), Lock lösen, Manifest auf `interrupted` setzen, Hinweis `sara screen … --resume`.
+8. Bei Abbruchsignal (Strg+C): laufende Aufrufe zu Ende führen (kurze Frist), Lock lösen, Manifest auf `interrupted` setzen, Hinweis `crapai screen … --resume`.
 9. Am Ende: Zusammenführung und Export (8.7, 8.8), Manifest auf `completed`.
 
 `--repeats N` führt N unabhängige Läufe nacheinander aus (`run-001` … `run-00N`) für Test-Retest. Jeder Lauf hat sein eigenes Manifest. Die Läufe teilen sich nichts ausser den Eingabedaten.
@@ -637,7 +637,7 @@ Pro Antwort werden Tokens und Kosten gespeichert. Der Lauf zeigt laufende Summen
 
 ### 9.7 Batch-APIs (optional, Meilenstein 8)
 
-Batch-Schnittstellen der Anbieter sind günstiger, liefern aber erst nach Minuten bis Stunden. Modell: `sara screen --batch` reicht alle Anfragen ein, speichert die Batch-ID im Manifest und `sara fetch` holt die Ergebnisse später ab. Das passt zur Dateilogik (kein Prozess muss laufen).
+Batch-Schnittstellen der Anbieter sind günstiger, liefern aber erst nach Minuten bis Stunden. Modell: `crapai screen --batch` reicht alle Anfragen ein, speichert die Batch-ID im Manifest und `sara fetch` holt die Ergebnisse später ab. Das passt zur Dateilogik (kein Prozess muss laufen).
 
 ---
 
@@ -749,7 +749,7 @@ Prompts sind Englisch (wie bisher, gut belegt für Screening). Kriterien dürfen
 | Änderung von Kriterien, Prompt oder Modell zwischen zwei Sitzungen | `--resume` prüft den Manifest-Hash. Bei Abweichung: Abbruch mit Erklärung. Man startet stattdessen einen neuen Lauf. **Ergebnisse verschiedener Konfigurationen werden nie in einem Lauf gemischt** |
 | Doppelte Ergebniszeilen desselben Datensatzes | Erlaubt (Wiederholungen). Gültig ist die letzte Zeile pro `study_uid` |
 
-Idempotenz: `sara screen --resume` mehrmals hintereinander aufgerufen verändert nichts, wenn alles erledigt ist.
+Idempotenz: `crapai screen --resume` mehrmals hintereinander aufgerufen verändert nichts, wenn alles erledigt ist.
 
 ---
 
@@ -765,7 +765,7 @@ Idempotenz: `sara screen --resume` mehrmals hintereinander aufgerufen verändert
   "status": "completed",                  // running | interrupted | completed | failed
   "started_at": "2026-09-30T14:05:12+02:00",
   "finished_at": "2026-09-30T14:31:40+02:00",
-  "software": {"name": "sara-local", "version": "0.3.0", "python": "3.11.9", "platform": "Windows-11"},
+  "software": {"name": "crapai", "version": "0.3.0", "python": "3.11.9", "platform": "Windows-11"},
   "dependencies": {"openai": "1.x", "pandas": "2.x", "..." : "..."},
   "project": {"title": "…", "framework": "PICOS", "mode": "abstract"},
   "criteria_hash": "sha256:…",
@@ -799,7 +799,7 @@ Der API-Schlüssel oder Teile davon erscheinen **nie** im Manifest.
 - Hash der Eingabedaten und des Prompts (Änderungen sind nachweisbar).
 - Erfasstes tatsächlich vom Anbieter gemeldetes Modell (Anbieter aktualisieren Modell-Aliasse).
 - Software- und Paketversionen.
-- Ein Befehl `sara verify <lauf>`: prüft, ob alle Hashes noch stimmen (Ergebnisse wurden nicht nachträglich verändert), und meldet Abweichungen.
+- Ein Befehl `crapai verify <lauf>`: prüft, ob alle Hashes noch stimmen (Ergebnisse wurden nicht nachträglich verändert), und meldet Abweichungen.
 
 ---
 
@@ -831,18 +831,18 @@ Grenzen, die das Tool beachtet: höchstens 32 767 Zeichen pro Zelle (Volltexte w
 ### 13.3 Weitere Ausgaben
 
 - `prisma_flow.json`, `prisma_flow.png`, `prisma_flow.svg`.
-- Optional RIS-Export der eingeschlossenen Studien (`sara export --ris included`) für die Weiterverwendung in Zotero/EndNote. Das entspricht der Export-Funktion aus der Fachbeschreibung (CSV, JSON, RIS, BibTeX).
+- Optional RIS-Export der eingeschlossenen Studien (`crapai export --ris included`) für die Weiterverwendung in Zotero/EndNote. Das entspricht der Export-Funktion aus der Fachbeschreibung (CSV, JSON, RIS, BibTeX).
 - `reports/*` aus der Auswertung (Kapitel 14).
 
 ---
 
 ## 14. Evaluation und Statistik
 
-Die Skripte in `sara_statistics/` werden Teil des Pakets (`sara stats …`), ohne feste Pfade.
+Die Skripte in `sara_statistics/` werden Teil des Pakets (`crapai stats …`), ohne feste Pfade.
 
 ### 14.1 Test-Retest
 
-`sara stats test-retest <ordner> [--runs run-001,run-002,…]`
+`crapai stats test-retest <ordner> [--runs run-001,run-002,…]`
 
 - Lädt die Labels der gewählten Läufe, verbindet über `study_uid`.
 - Paarweise: Übereinstimmung in Prozent, Cohens Kappa, Interpretation nach Landis & Koch (Kategorien wie im Bestand), Anzahl gemeinsamer Datensätze.
@@ -851,7 +851,7 @@ Die Skripte in `sara_statistics/` werden Teil des Pakets (`sara stats …`), ohn
 
 ### 14.2 Vergleich mit menschlicher Entscheidung
 
-`sara stats evaluate <ordner> --run run-001 --human human/reviewer_A.csv [--match study_uid|doi|title]`
+`crapai stats evaluate <ordner> --run run-001 --human human/reviewer_A.csv [--match study_uid|doi|title]`
 
 Kennzahlen (wie `calculate_metrics` im Bestand, plus Ergänzungen):
 
@@ -865,15 +865,15 @@ Kennzahlen (wie `calculate_metrics` im Bestand, plus Ergänzungen):
 
 ### 14.3 Inter-Rater unter Menschen
 
-`sara stats inter-rater --human human/reviewer_A.csv human/reviewer_B.csv` berechnet Kappa und Übereinstimmung zwischen menschlichen Bewerter:innen und erzeugt die Liste der Konflikte.
+`crapai stats inter-rater --human human/reviewer_A.csv human/reviewer_B.csv` berechnet Kappa und Übereinstimmung zwischen menschlichen Bewerter:innen und erzeugt die Liste der Konflikte.
 
 ### 14.4 Konsens über mehrere Läufe (optional)
 
-`sara consensus <ordner> --runs run-001,run-002,run-003 --rule majority|any_include|all_include` erzeugt einen abgeleiteten Lauf `consensus-…`. Die Regel `any_include` maximiert die Sensitivität.
+`crapai consensus <ordner> --runs run-001,run-002,run-003 --rule majority|any_include|all_include` erzeugt einen abgeleiteten Lauf `consensus-…`. Die Regel `any_include` maximiert die Sensitivität.
 
 ### 14.5 Prompt-Vergleich
 
-`sara compare run-001 run-002` zeigt Unterschiede in Entscheidungen, Kosten und Dauer zweier Läufe (z. B. `baseline_abstract` gegen `gpt_improved_abstract`). Grundlage für die methodische Frage "welche Prompt-Variante ist besser".
+`crapai compare run-001 run-002` zeigt Unterschiede in Entscheidungen, Kosten und Dauer zweier Läufe (z. B. `baseline_abstract` gegen `gpt_improved_abstract`). Grundlage für die methodische Frage "welche Prompt-Variante ist besser".
 
 ---
 
@@ -882,44 +882,44 @@ Kennzahlen (wie `calculate_metrics` im Bestand, plus Ergänzungen):
 ### 15.1 CLI-Befehle (Typer)
 
 ```
-sara init <ordner>                         Projekt anlegen (interaktiv oder --from-template)
-sara import <ordner> <dateien...>          Dateien importieren (--label, --map, --encoding)
-sara check <ordner>                        Preflight + Kosten- und Zeitschätzung
-sara dedup <ordner> [--strategy S]         Duplikate (neu) markieren, Prüfliste erzeugen
-sara screen <ordner>                       Screening-Lauf (--sample K, --repeats N, --resume, --yes, --model M)
-sara status <ordner>                       Läufe, Fortschritt, Kosten
-sara export <ordner> [--run R] [--format xlsx|csv|ris|bib]
-sara stats test-retest | evaluate | inter-rater  <ordner> …
-sara consensus <ordner> …                  Konsens über Läufe
-sara compare <run-a> <run-b>               Läufe vergleichen
-sara verify <ordner> [--run R]             Hashes und Konsistenz prüfen
-sara models                                Verfügbare Anbieter/Modelle/Preise anzeigen
-sara config set-key <provider>             API-Schlüssel im OS-Schlüsselbund ablegen
-sara ui [ordner]                           Lokale Oberfläche starten
-sara doctor                                Umgebung prüfen (Python, Pakete, Schlüssel, Netz)
+crapai init <ordner>                         Projekt anlegen (interaktiv oder --from-template)
+crapai import <ordner> <dateien...>          Dateien importieren (--label, --map, --encoding)
+crapai check <ordner>                        Preflight + Kosten- und Zeitschätzung
+crapai dedup <ordner> [--strategy S]         Duplikate (neu) markieren, Prüfliste erzeugen
+crapai screen <ordner>                       Screening-Lauf (--sample K, --repeats N, --resume, --yes, --model M)
+crapai status <ordner>                       Läufe, Fortschritt, Kosten
+crapai export <ordner> [--run R] [--format xlsx|csv|ris|bib]
+crapai stats test-retest | evaluate | inter-rater  <ordner> …
+crapai consensus <ordner> …                  Konsens über Läufe
+crapai compare <run-a> <run-b>               Läufe vergleichen
+crapai verify <ordner> [--run R]             Hashes und Konsistenz prüfen
+crapai models                                Verfügbare Anbieter/Modelle/Preise anzeigen
+crapai config set-key <provider>             API-Schlüssel im OS-Schlüsselbund ablegen
+crapai ui [ordner]                           Lokale Oberfläche starten
+crapai doctor                                Umgebung prüfen (Python, Pakete, Schlüssel, Netz)
 ```
 
 Beispielsitzung:
 
 ```console
-$ sara init mein-review --template picos
-$ sara import mein-review sources/pubmed.ris sources/embase.bib --label PubMed --label Embase
+$ crapai init mein-review --template picos
+$ crapai import mein-review sources/pubmed.ris sources/embase.bib --label PubMed --label Embase
   Importiert: 812 (PubMed), 640 (Embase). Warnungen: 3 Datensätze ohne Titel.
-$ sara check mein-review
+$ crapai check mein-review
   Datensätze: 1452 | Duplikate: 190 | ohne Abstract: 23 | an LLM: 1239
   Modell: gpt-4o-mini | Eingabe ~1.08 Mio Tokens | Ausgabe ~0.18 Mio | Kosten ~0.30–0.42 USD | Dauer ~12 Min
-$ sara screen mein-review --sample 20        # Probelauf
-$ sara screen mein-review --repeats 3 --yes  # drei Läufe für Test-Retest
+$ crapai screen mein-review --sample 20        # Probelauf
+$ crapai screen mein-review --repeats 3 --yes  # drei Läufe für Test-Retest
   [run-001] ███████████████████░ 1180/1239  Kosten 0.38 USD  Fehler 2  ETA 0:41
-$ sara stats test-retest mein-review
-$ sara export mein-review --run run-001 --format xlsx
+$ crapai stats test-retest mein-review
+$ crapai export mein-review --run run-001 --format xlsx
 ```
 
 Rückgabecodes: 0 = ok, 1 = Benutzerfehler (Eingabe), 2 = Systemfehler (Netz/Datei), 3 = Lauf unterbrochen (wieder aufnehmbar), 4 = Ergebnis mit Warnungen.
 
-### 15.2 Lokale Oberfläche (`sara ui`)
+### 15.2 Lokale Oberfläche (`crapai ui`)
 
-Streamlit, bewusst **ohne** Login und Datenbank. Wichtige Regel: **Lange Läufe laufen nicht im Streamlit-Prozess**, sondern als eigener Kindprozess (`sara screen …`). Die UI liest nur `screening.jsonl` und `manifest.json` und zeigt den Fortschritt an. Damit überlebt ein Lauf ein Neuladen des Browsers.
+Streamlit, bewusst **ohne** Login und Datenbank. Wichtige Regel: **Lange Läufe laufen nicht im Streamlit-Prozess**, sondern als eigener Kindprozess (`crapai screen …`). Die UI liest nur `screening.jsonl` und `manifest.json` und zeigt den Fortschritt an. Damit überlebt ein Lauf ein Neuladen des Browsers.
 
 Seiten (angelehnt an SARA-App):
 
@@ -936,7 +936,7 @@ Seiten (angelehnt an SARA-App):
 
 ### 15.3 Excel-Modus (optional)
 
-Vorlage `SARA_Vorlage.xlsx` mit Blättern `Projekt`, `Kriterien`, `Datensätze`. Die Forschende Person trägt Ziele/Kriterien in Excel ein und kopiert Datensätze in das Blatt. `sara run-xlsx datei.xlsx` liest, verarbeitet und schreibt die Ergebnisse in Spalten derselben Arbeitsmappe (neue Kopie, Original bleibt unberührt). Das ist der niedrigste Einstieg für Personen ohne Terminal. Intern wird daraus trotzdem ein normaler Projektordner erzeugt.
+Vorlage `SARA_Vorlage.xlsx` mit Blättern `Projekt`, `Kriterien`, `Datensätze`. Die Forschende Person trägt Ziele/Kriterien in Excel ein und kopiert Datensätze in das Blatt. `crapai run-xlsx datei.xlsx` liest, verarbeitet und schreibt die Ergebnisse in Spalten derselben Arbeitsmappe (neue Kopie, Original bleibt unberührt). Das ist der niedrigste Einstieg für Personen ohne Terminal. Intern wird daraus trotzdem ein normaler Projektordner erzeugt.
 
 ---
 
@@ -1014,13 +1014,13 @@ output:
 ### 16.2 Schlüssel und Umgebung
 
 - Standard: Umgebungsvariable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, …).
-- Bequem: `sara config set-key openai` legt den Schlüssel im **OS-Schlüsselbund** ab (`keyring`: Windows Credential Manager, macOS Keychain).
+- Bequem: `crapai config set-key openai` legt den Schlüssel im **OS-Schlüsselbund** ab (`keyring`: Windows Credential Manager, macOS Keychain).
 - Optional: `.env` neben dem Programm, **nie** im Projektordner, standardmässig in `.gitignore`.
 - Schlüssel erscheinen weder in Log, Manifest noch Fehlermeldungen (Maskierung).
 
 ### 16.3 Präzedenz
 
-CLI-Argument > Umgebungsvariable > `project.yaml` > Benutzerkonfiguration (`~/.config/sara/config.yaml`) > eingebaute Voreinstellung.
+CLI-Argument > Umgebungsvariable > `project.yaml` > Benutzerkonfiguration (`~/.config/crapai/config.yaml`) > eingebaute Voreinstellung.
 
 ### 16.4 Validierung
 
@@ -1038,7 +1038,7 @@ Alle Konfigurationen werden mit **pydantic v2** validiert. Fehler nennen Feld un
 | Daten | `pandas` | Bestehendes Wissen. `polars` nur falls Grössen es erfordern |
 | Konfiguration/Schemas | `pydantic` v2, `PyYAML` (oder `ruamel.yaml` für Kommentar-Erhalt) | |
 | CLI | `typer` + `rich` (Fortschritt, Tabellen) | |
-| UI | `streamlit`, `streamlit-aggrid` | Nur optional installierbar (`pip install sara-local[ui]`) |
+| UI | `streamlit`, `streamlit-aggrid` | Nur optional installierbar (`pip install crapai[ui]`) |
 | Bibliografie | `rispy`, `bibtexparser`, `pybtex`, eigener NBIB-Parser | Aus SARA-App |
 | PDF | `pymupdf` (Import heisst `fitz`), Fallback `pdfplumber` | Achtung: Paketname `pymupdf`, nicht `fitz` (L13) |
 | LLM | `openai`, `anthropic` (optional) | Provider-Extras |
@@ -1058,13 +1058,13 @@ Bewusst **nicht** mehr enthalten: `supabase`, `streamlit-authenticator`, `st_pag
 ### 17.2 Repository-Struktur
 
 ```
-sara-local/
+crapai/
 ├─ pyproject.toml                 # Metadaten, Extras: [ui], [anthropic], [ocr], [dev]
 ├─ uv.lock
 ├─ README.md
 ├─ CHANGELOG.md
 ├─ LICENSE
-├─ src/saralocal/
+├─ src/crapai/
 │  ├─ __init__.py
 │  ├─ cli.py                      # Typer-App
 │  ├─ services/                   # project.py, importing.py, screening.py, export.py, evaluation.py
@@ -1101,7 +1101,7 @@ sara-local/
 
 ### 17.3 Verteilung
 
-1. **Entwickler/Fortgeschrittene:** `pipx install sara-local` oder `uv tool install sara-local` (Extras `[ui]`).
+1. **Entwickler/Fortgeschrittene:** `pipx install crapai` oder `uv tool install crapai` (Extras `[ui]`).
 2. **Forschende ohne Python:** Windows-Installer bzw. portable `.exe` mit **PyInstaller** oder `briefcase`. Streamlit lässt sich bündeln, ist aber gross (mehrere hundert MB). Deshalb Meilenstein 7 und Test auf einem sauberen Rechner.
 3. **Institutsrechner mit Einschränkungen:** Anleitung für Installation ohne Adminrechte (Benutzer-Installation), Proxy-Einstellungen (`HTTPS_PROXY`), Zertifikate (Firmen-CA).
 4. Versionsschema SemVer. Der Projektordner trägt seine Schema-Version für Migrationen.
@@ -1121,7 +1121,7 @@ sara-local/
 | Statistik | Kappa und Metriken gegen bekannte Werte (`sara_statistics/reports/*`) | pytest |
 | Live-Smoke | Ein winziger echter API-Aufruf, **nur manuell** oder mit Marker `@pytest.mark.live`, nicht in CI | pytest |
 | UI | Streamlit `AppTest` für Kernseiten | streamlit.testing |
-| Packaging | Frische virtuelle Umgebung, `sara doctor`, Beispielprojekt | CI-Matrix (Windows, macOS, Linux) |
+| Packaging | Frische virtuelle Umgebung, `crapai doctor`, Beispielprojekt | CI-Matrix (Windows, macOS, Linux) |
 
 ### 18.2 Akzeptanztests (für die Abnahme)
 
@@ -1130,7 +1130,7 @@ sara-local/
 - **AT3:** Kill des Prozesses bei 50 % und `--resume`: kein Datensatz doppelt bezahlt (jede `study_uid` hat genau eine `ok`-Zeile), Endergebnis gleich wie ein ungestörter Lauf.
 - **AT4:** Manipulierte Antwort ("Ich denke, einschliessen") führt nicht zu `label=1`, sondern zu `parse_error`.
 - **AT5:** Geöffnete `results.xlsx` blockiert nichts. Alternativdatei wird geschrieben.
-- **AT6:** `sara verify` erkennt eine nachträglich geänderte `screening.jsonl`.
+- **AT6:** `crapai verify` erkennt eine nachträglich geänderte `screening.jsonl`.
 - **AT7:** Test-Retest über drei Mock-Läufe reproduziert die erwarteten Kappa-Werte.
 - **AT8:** Kein API-Schlüssel taucht in einer der erzeugten Dateien oder im Log auf (automatischer Scan im Test).
 
@@ -1184,7 +1184,7 @@ Lizenz- und Rechtshinweis (im Handbuch): Anbieter-Nutzungsbedingungen und Urhebe
 
 **Stand der Umsetzung:** Die Übernahme ist im Starterpaket `SARA-Local/` begonnen: siehe Kapitel 36 (Inventar), `docs/MIGRATION.md` (Status je Datei) und `reference/` (Snapshots). Vier Module sind bereits portiert und getestet.
 
-Vorschlag zum Vorgehen: **Neues Repository** (`sara-local`), Kopieren der übernommenen Module mit anschliessender Bereinigung. Kein Fork der bestehenden App, damit deren Historie und Deployment unberührt bleiben. Eine kurze `MIGRATION.md` hält fest, woher jedes Modul stammt.
+Vorschlag zum Vorgehen: **Neues Repository** (`crapai`), Kopieren der übernommenen Module mit anschliessender Bereinigung. Kein Fork der bestehenden App, damit deren Historie und Deployment unberührt bleiben. Eine kurze `MIGRATION.md` hält fest, woher jedes Modul stammt.
 
 ---
 
@@ -1196,7 +1196,7 @@ Aufwände sind grobe Schätzungen in Personentagen (PT) für eine erfahrene Pyth
 |---|---|---|---|---|
 | **M0** | Setup und Entscheide | Repo, `pyproject.toml`, CI, Lint/Typen, offene Entscheide (Kap. 23) klären, Testdaten kuratieren | Leeres Paket baut auf 3 Plattformen. Entscheidungsliste beantwortet | 2 |
 | **M1** | Projektordner und Import | Workspace, Lock, atomares Schreiben, Config (pydantic), Reader RIS/BIB/NBIB/CSV/XLSX, Normalisierung, `records.csv`, Quellen-Hash | AT1. Regressionstest gegen alte Datensatzzahlen | 6 |
-| **M2** | Dedup, Preflight, Kosten | Dedup-Strategien inkl. Prüfliste, Missing-Abstract, Preflight-Codes, Token-Zählung, Preisdatei, Schätzung | `sara check` liefert Zahlen, die mit `estimator` des Bestands übereinstimmen (±Toleranz) | 4 |
+| **M2** | Dedup, Preflight, Kosten | Dedup-Strategien inkl. Prüfliste, Missing-Abstract, Preflight-Codes, Token-Zählung, Preisdatei, Schätzung | `crapai check` liefert Zahlen, die mit `estimator` des Bestands übereinstimmen (±Toleranz) | 4 |
 | **M3** | Screening-Kern (**erster Prototyp**) | Provider-Interface + OpenAI + Mock, Prompt-Builder, Schema, Limiter, Retry, Engine, Checkpoint, Resume, Manifest | AT2, AT3, AT4. Realer Probelauf mit 20 Datensätzen | 9 |
 | **M4** | Ausgabe und PRISMA | `results.csv/xlsx` (Formatierung, Blätter), Events, `prisma_flow.json/png`, Konsistenzprüfung, `verify` | AT5, AT6. Abgleich der Flusszahlen mit Bestandsläufen | 6 |
 | **M5** | Auswertung | Test-Retest (+ Fleiss), Evaluate gegen Mensch (+ WSS, KI), Inter-Rater, Human-Import/Export (Blatt "To review"), `compare` | AT7. Reproduktion der Berichte in `sara_statistics/reports/` | 6 |
@@ -1222,7 +1222,7 @@ Aufwände sind grobe Schätzungen in Personentagen (PT) für eine erfahrene Pyth
 | R4 | Parser scheitern an exotischen RIS/BibTeX/NBIB-Exporten | mittel | mittel | Mehrere Fallbacks (bereits im Bestand), fehlertolerante Zeilenbehandlung, Testkorpus wächst mit jedem Problemfall |
 | R5 | PDF-Text ist unbrauchbar (Scans, Spalten, Formeln) | mittel | mittel | Markierung `NO_TEXT`, optionale OCR, Vorschau der extrahierten Länge im Preflight |
 | R6 | Streamlit-Neustarts beenden Läufe | hoch (falls falsch gebaut) | hoch | Lauf in eigenem Prozess (Kap. 15.2), UI liest nur Dateien |
-| R7 | Windows-Besonderheiten (Pfadlängen, Dateisperren, Kodierung, Proxy) | hoch | mittel | Frühe Tests auf Windows, atomares Schreiben mit Wiederholung, UTF-8 überall, `sara doctor` |
+| R7 | Windows-Besonderheiten (Pfadlängen, Dateisperren, Kodierung, Proxy) | hoch | mittel | Frühe Tests auf Windows, atomares Schreiben mit Wiederholung, UTF-8 überall, `crapai doctor` |
 | R8 | Kosten geraten ausser Kontrolle | niedrig | mittel | Bestätigung, `max_cost`, Probelauf, klare Schätzung |
 | R9 | Datenschutzbedenken (Daten gehen an US-Anbieter) | mittel | hoch | Anbieterwahl inkl. Schweizer Anbieter und lokaler Modelle, Hinweis im Ablauf, keine Standard-Weitergabe ohne Bestätigung |
 | R10 | Grosse Datensätze (über 50 000) sprengen Speicher/Excel | niedrig | mittel | Streaming beim Schreiben, optional Parquet, Excel-Hinweis auf Zeilenlimit |
@@ -1322,7 +1322,7 @@ Dauer                 ≈ max( N / RPM_eff , Tokens_gesamt / TPM_eff ) [Minuten]
 | `label` (0/1) | `label` (0/1) |
 | – | `criteria_summary`, `consistent`, `screen_status`, `run_id`, `model_returned`, `prompt_hash`, Token/Kosten |
 
-Ein kleines Hilfsskript `sara legacy-import <alte_ergebnisse.csv>` liest alte Läufe (Kodierungs- und Trennzeichen-Erkennung) in das neue Schema, damit frühere Test-Retest-Daten (`data/project-0x_*`) weiter auswertbar bleiben.
+Ein kleines Hilfsskript `crapai legacy-import <alte_ergebnisse.csv>` liest alte Läufe (Kodierungs- und Trennzeichen-Erkennung) in das neue Schema, damit frühere Test-Retest-Daten (`data/project-0x_*`) weiter auswertbar bleiben.
 
 ### D. Glossar
 
@@ -1389,7 +1389,7 @@ Die Kapitel 25 bis 34 vertiefen die Themen Dateiformate, Datenwörterbuch, GUI/D
 | CSV | `data/records.csv` | Kanonische Datensätze |
 | JSONL | `screening.jsonl`, `events.jsonl`, `records.import.jsonl` | Append-only-Protokolle |
 | JSON | `manifest.json`, `prisma_flow.json` | Strukturierte Einzeldokumente |
-| Text | `.sara/app.log` | Technisches Log |
+| Text | `.crapai/app.log` | Technisches Log |
 | Textdatei je Volltext | `data/fulltext/<study_uid>.txt` | Extrahierter PDF-Text |
 
 **Ausgabe (Export)**
@@ -1707,7 +1707,7 @@ test.zip
 | Ergebnis | `results.csv`, `results.xlsx` | |
 | Legacy-Export | `<YYYYMMDD-HHMM>_<projekt-uuid>_run-NN.csv` | `20251118-1152_fd78b160-235c-4cf4-85c1-f0ececec353d_run-01.csv` |
 
-Der Legacy-Export (`sara export --legacy`) schreibt Ergebnisse im Namensschema, das `sara_statistics/src/config.py` mit dem Muster `*_run-*.csv` erwartet. So funktionieren die alten Auswertungen (Test-Retest) auch mit neuen Läufen unverändert weiter.
+Der Legacy-Export (`crapai export --legacy`) schreibt Ergebnisse im Namensschema, das `sara_statistics/src/config.py` mit dem Muster `*_run-*.csv` erwartet. So funktionieren die alten Auswertungen (Test-Retest) auch mit neuen Läufen unverändert weiter.
 
 ### 25.8 Ausgabeformate im Detail
 
@@ -1741,7 +1741,7 @@ Darstellung:
 
 **B. Blatt "To review"**
 
-Enthält, in dieser Reihenfolge: (1) `UNCERTAIN`, (2) `consistent=false`, (3) Fehlerstatus (`parse_error`, `api_error`, `too_long`, `truncated`), (4) eine Zufallsstichprobe von `EXCLUDE` (Standard 10 %, mindestens 20, Seed im Manifest) und (5) optional `INCLUDE` (5 %). Spalten: `study_uid`, `title`, `abstract`, `decision`, `reasoning`, `criteria_summary`, **`Human decision`** (Dropdown `INCLUDE, EXCLUDE`), `Human note`. Die Gruppierung ("warum steht der Datensatz hier") steht in einer Spalte `review_reason`. Beim Rückimport (`sara import-human`) werden nur `study_uid`, `Human decision`, `Human note` gelesen.
+Enthält, in dieser Reihenfolge: (1) `UNCERTAIN`, (2) `consistent=false`, (3) Fehlerstatus (`parse_error`, `api_error`, `too_long`, `truncated`), (4) eine Zufallsstichprobe von `EXCLUDE` (Standard 10 %, mindestens 20, Seed im Manifest) und (5) optional `INCLUDE` (5 %). Spalten: `study_uid`, `title`, `abstract`, `decision`, `reasoning`, `criteria_summary`, **`Human decision`** (Dropdown `INCLUDE, EXCLUDE`), `Human note`. Die Gruppierung ("warum steht der Datensatz hier") steht in einer Spalte `review_reason`. Beim Rückimport (`crapai import-human`) werden nur `study_uid`, `Human decision`, `Human note` gelesen.
 
 **C. Blatt "PRISMA"**: Tabelle Kennzahl/Wert (Schlüssel wie in `prisma_flow.json`) und das eingebettete PNG.
 
@@ -1941,19 +1941,19 @@ Jede Meldung an Nutzer:innen hat einen Code, eine Klartextmeldung, eine möglich
 | E105 | Import | ZIP enthält keine lesbaren PDFs | Nur Bilder/Scans | OCR verwenden oder Quelle prüfen |
 | E106 | Import | Datei wurde bereits importiert | Gleicher SHA-256 | Mit `--force` erneut importieren |
 | E201 | Konfiguration | Pflichtfeld fehlt | z. B. keine Einschlusskriterien | `project.yaml` ergänzen |
-| E202 | Konfiguration | Unbekanntes Modell | Nicht im Katalog | `sara models` prüfen oder `models.yaml` erweitern |
+| E202 | Konfiguration | Unbekanntes Modell | Nicht im Katalog | `crapai models` prüfen oder `models.yaml` erweitern |
 | E203 | Konfiguration | Ungültiger Wert | Wertebereich verletzt | Angabe korrigieren |
-| E301 | LLM | Schlüssel fehlt oder ungültig | Umgebungsvariable nicht gesetzt | `sara config set-key` |
+| E301 | LLM | Schlüssel fehlt oder ungültig | Umgebungsvariable nicht gesetzt | `crapai config set-key` |
 | E302 | LLM | Rate-Limit überschritten | Zu viele Anfragen | Parallelität senken (automatisch) |
 | E303 | LLM | Eingabe zu lang | Kontextfenster überschritten | Volltextstrategie ändern |
 | E304 | LLM | Antwort ungültig | Schema verletzt | Wird wiederholt; bei Häufung Modell wechseln |
-| E305 | LLM | Dienst nicht erreichbar | Netzwerk/Proxy | Verbindung prüfen, `sara doctor` |
+| E305 | LLM | Dienst nicht erreichbar | Netzwerk/Proxy | Verbindung prüfen, `crapai doctor` |
 | E306 | LLM | Inhalt abgelehnt | Sicherheitsfilter | Datensatz manuell prüfen |
 | E307 | LLM | Guthaben/Kontingent erschöpft | Abrechnungsproblem | Konto prüfen, `--resume` |
 | E401 | Datei | Datei gesperrt | In Excel geöffnet | Datei schliessen; Alternativdatei wurde geschrieben |
 | E402 | Datei | Projekt in Benutzung | Lock vorhanden | Anderen Lauf beenden |
 | E403 | Datei | Nicht genügend Speicherplatz | Datenträger voll | Platz schaffen, `--resume` |
-| E404 | Datei | Projektordner beschädigt/veraltet | Schema-Version | `sara migrate` |
+| E404 | Datei | Projektordner beschädigt/veraltet | Schema-Version | `crapai migrate` |
 | E501 | Statistik | Zu wenige gemeinsame Datensätze | Läufe passen nicht zusammen | Läufe prüfen |
 | E502 | Statistik | Menschliche Datei nicht zuordenbar | Schlüsselspalte falsch | `--match doi` |
 
@@ -2221,7 +2221,7 @@ Der Bestand verwendet `#f9a825` als **Schriftfarbe** für Warnungen. Auf Weiss l
 
 | Thema | Vorgabe |
 |---|---|
-| Start | `sara ui` startet `streamlit run` mit festem Port (Standard 8501, frei wählbar) und öffnet den Browser |
+| Start | `crapai ui` startet `streamlit run` mit festem Port (Standard 8501, frei wählbar) und öffnet den Browser |
 | Netzwerk | `server.address = "127.0.0.1"`, damit die Anwendung nicht im Netz erreichbar ist. Kein CORS/XSRF abschalten |
 | Statistik | `browser.gatherUsageStats = false` |
 | Kopfloser Betrieb | `server.headless = true`, Browser öffnet die App selbst |
@@ -2229,7 +2229,7 @@ Der Bestand verwendet `#f9a825` als **Schriftfarbe** für Warnungen. Auf Weiss l
 | Dateiauswahl | Streamlit hat keinen nativen Ordnerdialog. Umsetzung: Textfeld + Knopf "Durchsuchen", der über `tkinter.filedialog` in einem Hilfsprozess einen Dialog öffnet; Rückfall: Pfad eintippen mit Auto-Vervollständigung aus dem Dateisystem |
 | Sitzungszustand | `st.session_state` nur für UI-Zustand (Filter, Auswahl). Alle fachlichen Zustände liegen im Projektordner |
 | Neuladen | Jede Seite muss beim Neuladen aus dem Projektordner den Zustand rekonstruieren können (keine Abhängigkeit von `session_state`) |
-| Lange Läufe | Nie im Streamlit-Prozess. UI startet `sara screen …` als Kindprozess (`subprocess.Popen`, Windows: `CREATE_NEW_PROCESS_GROUP`) und liest Fortschritt aus Dateien |
+| Lange Läufe | Nie im Streamlit-Prozess. UI startet `crapai screen …` als Kindprozess (`subprocess.Popen`, Windows: `CREATE_NEW_PROCESS_GROUP`) und liest Fortschritt aus Dateien |
 | Fortschrittsanzeige | Fragment mit Auffrischung (`@st.fragment(run_every="2s")`, ab Streamlit 1.37; Version im Lockfile prüfen), sonst `st.rerun` mit Wartezeit |
 | Caching | `@st.cache_data` für teure Berechnungen (Tabelle laden), Schlüssel enthält Dateizeit/Hash |
 | Grosse Tabellen | AgGrid mit serverseitigem Ausschnitt oder Paginierung; nie 20 000 Zeilen in den Browser laden |
@@ -2259,7 +2259,7 @@ font = "sans serif"
 ### 27.10 CLI-Design (Terminal-Oberfläche)
 
 - Werkzeug: `typer` (Befehle, Hilfe) und `rich` (Tabellen, Fortschritt, Farben).
-- Hilfetexte: jeder Befehl mit Kurzbeschreibung, Beispielen, Standardwerten; `sara --help` gliedert in Gruppen (Projekt, Daten, Lauf, Auswertung, System).
+- Hilfetexte: jeder Befehl mit Kurzbeschreibung, Beispielen, Standardwerten; `crapai --help` gliedert in Gruppen (Projekt, Daten, Lauf, Auswertung, System).
 - Farben: grün = ok, gelb = Warnung, rot = Fehler, blau = Hinweis. `NO_COLOR` und `--no-color` respektieren; ohne Terminal (Umleitung) keine Farb-/Fortschrittscodes.
 - Fortschritt: eine Zeile mit Balken, Zähler, Kosten, Fehler, Restzeit, aktualisiert ohne Zeilenumbruch.
 - Maschinenlesbar: `--json` gibt Ergebnisse als JSON auf stdout (Meldungen auf stderr), damit Skripte den Ablauf steuern können.
@@ -2294,7 +2294,7 @@ font = "sans serif"
    │                                                                       │
    │  ┌───────────┐   spawn    ┌────────────────┐                          │
    │  │ UI-Prozess│──────────► │ Worker-Prozess │──── HTTPS ────────────────┼──► LLM-Anbieter
-   │  │ (Streamlit)│           │ (`sara screen`)│                          │    (OpenAI / Anthropic /
+   │  │ (Streamlit)│           │ (`crapai screen`)│                          │    (OpenAI / Anthropic /
    │  └─────┬─────┘            └───────┬────────┘                          │     SwissGPT / lokal)
    │        │ liest                    │ schreibt                          │
    │        ▼                          ▼                                   │
@@ -2377,14 +2377,14 @@ class SecretStore(Protocol):
 | Prozess | Aufgabe | Lebensdauer |
 |---|---|---|
 | CLI-Aufruf | Kurze Befehle (import, check, export, stats) | Sekunden |
-| **Worker** (`sara screen`) | Langer Lauf, alle API-Aufrufe | Minuten bis Stunden, unabhängig von UI/Terminal-Fenster (bei Bedarf `--detach`) |
-| UI (`sara ui`) | Anzeige, Konfiguration, Start/Stopp des Workers | Solange der Browser offen ist |
+| **Worker** (`crapai screen`) | Langer Lauf, alle API-Aufrufe | Minuten bis Stunden, unabhängig von UI/Terminal-Fenster (bei Bedarf `--detach`) |
+| UI (`crapai ui`) | Anzeige, Konfiguration, Start/Stopp des Workers | Solange der Browser offen ist |
 
 **Kommunikation UI ↔ Worker nur über Dateien:**
 
 - Fortschritt: UI liest `manifest.json` (Status, Zähler, aktualisiert alle 2 s) und das Ende von `screening.jsonl`.
 - Steuerung: UI schreibt `runs/<id>/control.json` (`{"command":"pause"|"resume"|"stop","at":"…"}`). Der Worker prüft die Datei jede Sekunde.
-- Lebenszeichen: Worker aktualisiert alle 10 s `.sara/lock` (`pid`, `heartbeat`). Gilt als abgestürzt, wenn der Herzschlag älter als 60 s ist und der Prozess nicht existiert.
+- Lebenszeichen: Worker aktualisiert alle 10 s `.crapai/lock` (`pid`, `heartbeat`). Gilt als abgestürzt, wenn der Herzschlag älter als 60 s ist und der Prozess nicht existiert.
 - Vorteil: Keine Sockets, keine Ports, keine Firewall-Fragen, plattformunabhängig.
 
 **Innerhalb des Workers (asyncio)**
@@ -2480,14 +2480,14 @@ SaraError                       (Basis; hat code, user_message, hint, details)
 
 | Log | Ort | Inhalt | Format |
 |---|---|---|---|
-| Technisches Log | `.sara/app.log` (rotierend, 5 × 5 MB) | Ablauf, Warnungen, Fehler mit Stack | JSON-Zeilen: `ts, level, logger, msg, run_id, study_uid, code` |
+| Technisches Log | `.crapai/app.log` (rotierend, 5 × 5 MB) | Ablauf, Warnungen, Fehler mit Stack | JSON-Zeilen: `ts, level, logger, msg, run_id, study_uid, code` |
 | Ereignislog (Fach) | `events.jsonl` | PRISMA-relevante Ereignisse | JSONL (Kap. 12.2) |
 | Lauf-Ergebnisse | `screening.jsonl` | Pro Datensatz | JSONL |
 | Konsole | stderr | Lesbar für Menschen | `rich` |
 
 - **Schutz:** Ein Log-Filter maskiert Schlüsselmuster (`sk-…`, `Bearer …`, `x-api-key: …`) in Nachrichten und Ausnahmedetails. Abstracts stehen nur im Debug-Level und nur auf ausdrücklichen Wunsch (`--log-content`) im Log.
 - **Korrelation:** `run_id` und `study_uid` als Felder in jeder relevanten Log-Zeile.
-- **Support-Paket:** `sara bundle-logs` erzeugt ein ZIP mit Log (maskiert), Manifest, `doctor`-Ausgabe, ohne Datensätze und Schlüssel.
+- **Support-Paket:** `crapai bundle-logs` erzeugt ein ZIP mit Log (maskiert), Manifest, `doctor`-Ausgabe, ohne Datensätze und Schlüssel.
 - **Metriken im Manifest:** Durchsatz (Datensätze/Minute), Latenz-Median und -95. Perzentil, Wiederholungsrate, Fehlerrate, Kosten pro 1 000 Datensätze.
 
 ### 28.9 Persistenz-Details
@@ -2497,7 +2497,7 @@ SaraError                       (Basis; hat code, user_message, hint, details)
 - **Sperren:** Lock-Datei mit Herzschlag (Kap. 28.4) statt Betriebssystem-Dateisperre, weil diese auf Netzlaufwerken unzuverlässig ist. Ergänzend `portalocker` auf `records.csv` beim Schreiben.
 - **Ordner auf Netzlaufwerk:** Warnung; `fsync` und atomare Umbenennung sind dort nicht garantiert.
 - **Sicherung:** Vor jeder Änderung an `records.csv` (Dedup, Import) wird `data/.backup/records.<zeit>.csv` abgelegt (die letzten 5 behalten).
-- **Integrität:** `sara verify` (Kap. 12.3) prüft Hashes und Konsistenz zwischen `records.csv`, Manifest und `screening.jsonl`.
+- **Integrität:** `crapai verify` (Kap. 12.3) prüft Hashes und Konsistenz zwischen `records.csv`, Manifest und `screening.jsonl`.
 
 ### 28.10 Leistung und Skalierung
 
@@ -2514,7 +2514,7 @@ Ein Leistungstest mit 20 000 synthetischen Datensätzen und einem `MockProvider`
 
 ### 28.11 Erweiterbarkeit
 
-- **Entry Points** (`pyproject.toml`) für Erweiterungen von aussen: `saralocal.readers`, `saralocal.providers`, `saralocal.exporters`, `saralocal.prompts`. Damit kann ein Institut z. B. einen eigenen Importer oder einen Anbieter hinzufügen, ohne den Kern zu ändern.
+- **Entry Points** (`pyproject.toml`) für Erweiterungen von aussen: `crapai.readers`, `crapai.providers`, `crapai.exporters`, `crapai.prompts`. Damit kann ein Institut z. B. einen eigenen Importer oder einen Anbieter hinzufügen, ohne den Kern zu ändern.
 - **Prompt-Varianten** und **Modellkatalog** sind Daten (YAML), keine Klassen.
 - **Hooks (optional):** `before_run`, `after_result`, `after_run` für Automatisierung (z. B. Benachrichtigung). Standardmässig keine.
 - **Stabilität:** Öffentliche Schnittstellen erst ab 1.0 versioniert (SemVer). Bis dahin im Changelog als "instabil" gekennzeichnet.
@@ -2522,9 +2522,9 @@ Ein Leistungstest mit 20 000 synthetischen Datensätzen und einem `MockProvider`
 ### 28.12 Versionierung und Migration
 
 - **Software:** SemVer. Version steht im Manifest jedes Laufs.
-- **Ordner-Schema:** `.sara/version` (Ganzzahl). Beim Öffnen prüft die Software: gleich → ok; älter → `sara migrate` bietet Migration mit Backup an; neuer → Öffnen verweigern ("Bitte Critical Apprais.AI aktualisieren").
+- **Ordner-Schema:** `.crapai/version` (Ganzzahl). Beim Öffnen prüft die Software: gleich → ok; älter → `crapai migrate` bietet Migration mit Backup an; neuer → Öffnen verweigern ("Bitte Critical Apprais.AI aktualisieren").
 - **Dateischemata:** `schema` in JSON/JSONL-Objekten. Leser sind rückwärtskompatibel (neue Felder optional). Migrationsskripte in `migrations/000N_*.py` mit Test.
-- **Legacy-Import** (`sara legacy-import`) ist ein Migrationspfad von SARA-App (Kap. 24 C).
+- **Legacy-Import** (`crapai legacy-import`) ist ein Migrationspfad von SARA-App (Kap. 24 C).
 
 ### 28.13 Architekturentscheidungen (ADR-Verzeichnis)
 
@@ -2649,7 +2649,7 @@ Mit einem grossen Modell (angenommen 20-fache Preise) wären es etwa 6,80 USD, m
 3. **Umgang mit fehlender Information festlegen.** "Ist das Alter nicht genannt, Verdikt `unclear`."
 4. **Synonyme und Beispiele** nennen (z. B. "digitale Gesundheitskompetenz (eHealth Literacy, Digital Health Literacy)").
 5. **Ausschlusskriterien nur, wenn eindeutig aus Titel/Abstract erkennbar.** Sonst gehören sie in die Volltextphase.
-6. **Keine Widersprüche** zwischen Einschluss und Ausschluss (`sara lint-criteria`: einfache Prüfungen wie leere Felder, identische Texte, sehr lange Felder).
+6. **Keine Widersprüche** zwischen Einschluss und Ausschluss (`crapai lint-criteria`: einfache Prüfungen wie leere Felder, identische Texte, sehr lange Felder).
 7. **Sprache:** Kriterien dürfen Deutsch sein; bei mehrsprachigen Abstracts ist eine englische Formulierung robuster.
 
 **Prompts verbessern (Kalibrierungsschleife)**
@@ -2675,7 +2675,7 @@ Pilotmenge (mit Mensch-Referenz) → Lauf → Falsch-Negative und Falsch-Positiv
 - Auch bei `temperature=0` sind Antworten nicht garantiert identisch (Rechenreihenfolge, Modellupdates, Lastverteilung). Ein `seed` hilft nur teilweise. Deshalb wird **gemessen** statt versprochen: Test-Retest mit mindestens 3 Läufen, Kappa und Liste instabiler Datensätze (Kap. 14.1).
 - **Instabilität ist ein Signal.** Datensätze, bei denen die Läufe abweichen, sind meist Grenzfälle und gehören auf die Prüfliste.
 - **Konsens:** Mehrheitsentscheid über 3 Läufe reduziert Zufallsfehler, kostet aber das Dreifache. Alternative: nur `UNCERTAIN` und Abweichler ein zweites Mal bewerten lassen (günstiger, ~10–20 % der Datensätze).
-- **Modellwechsel:** Wenn der Anbieter ein Modell ersetzt oder ein Alias auf eine neue Version zeigt, ändern sich Ergebnisse. Das Manifest speichert `model_returned`. `sara verify` warnt, wenn ein Lauf mit anderem `model_returned` fortgesetzt würde.
+- **Modellwechsel:** Wenn der Anbieter ein Modell ersetzt oder ein Alias auf eine neue Version zeigt, ändern sich Ergebnisse. Das Manifest speichert `model_returned`. `crapai verify` warnt, wenn ein Lauf mit anderem `model_returned` fortgesetzt würde.
 - **Sampling-Parameter:** `temperature`, `top_p` nicht beide verändern. Im Bestand werden zusätzlich `frequency_penalty` und `presence_penalty` aus Secrets gesetzt; für Screening sind sie nicht nötig (Standard 0).
 
 ### 29.7 Typische Fehlerbilder und Gegenmassnahmen
@@ -2733,14 +2733,14 @@ Das Tool gibt keine Rechtsberatung. Es zeigt vor dem ersten Lauf pro Anbieter ei
 1. **Referenz erzeugen:** Zwei Menschen screenen unabhängig eine Zufallsmenge (Seed dokumentieren), Konflikte werden gelöst (Konsens). Ergebnis in `human/consensus.csv`. Keine Modellwerte einsetzen.
 2. **Stichprobengrösse:** Die Unsicherheit der Sensitivität hängt von der Zahl relevanter Studien ab. Beispiel: Bei 100 relevanten Studien und gemessener Sensitivität 0,95 liegt die 95-%-Konfidenzhälfte bei etwa ±4 Prozentpunkten (Wilson-Intervall grob 0,89–0,98). Mit 30 relevanten Studien ist das Intervall deutlich breiter. Das Tool zeigt die Intervalle immer an.
 3. **Ziele vorab festlegen:** z. B. untere Grenze der Sensitivität, maximal akzeptierte Zahl verpasster Studien, gewünschte Arbeitsersparnis (WSS@95). Diese Ziele stehen im Protokoll, nicht erst nach der Messung.
-4. **Messen** mit `sara stats evaluate` (Kap. 14.2), inkl. Auswertung nach `decision`.
+4. **Messen** mit `crapai stats evaluate` (Kap. 14.2), inkl. Auswertung nach `decision`.
 5. **Menschliche Fehlerquote mitdenken:** Auch Menschen übersehen Studien; die Referenz ist kein perfekter Massstab. Uneinigkeit der beiden menschlichen Reviewer (Kappa) mitberichten.
 6. **Laufende Kontrolle:** Im Hauptlauf eine Zufallsstichprobe der `EXCLUDE` durch Menschen prüfen lassen; bei Überschreitung der akzeptierten Fehlerrate Prompt/Modell überarbeiten und neu laufen lassen.
 7. **Dokumentieren** (Kap. 30).
 
 ### 29.12 Berichterstattung über den KI-Einsatz
 
-In Publikation und Protokoll sollten mindestens stehen: Anbieter, **genaues Modell und Version** (wie im Manifest `model_returned`), Datum der Läufe, Parameter (Temperatur, Seed), **vollständiger Prompt und Kriterien** (Anhang), Anzahl Läufe, Validierungsergebnisse (Sensitivität, Spezifität mit Intervallen, Referenzmenge), Rolle der Menschen (was wurde geprüft), Abweichungen vom Protokoll, Kosten (optional). Für Evidenzsynthesen gibt es Berichtsleitlinien zum Einsatz von KI; welche Leitlinie für das jeweilige Fach massgeblich ist, ist vor der Publikation zu klären. `sara report` (Kap. 30) erzeugt die Angaben automatisch aus dem Manifest.
+In Publikation und Protokoll sollten mindestens stehen: Anbieter, **genaues Modell und Version** (wie im Manifest `model_returned`), Datum der Läufe, Parameter (Temperatur, Seed), **vollständiger Prompt und Kriterien** (Anhang), Anzahl Läufe, Validierungsergebnisse (Sensitivität, Spezifität mit Intervallen, Referenzmenge), Rolle der Menschen (was wurde geprüft), Abweichungen vom Protokoll, Kosten (optional). Für Evidenzsynthesen gibt es Berichtsleitlinien zum Einsatz von KI; welche Leitlinie für das jeweilige Fach massgeblich ist, ist vor der Publikation zu klären. `crapai report` (Kap. 30) erzeugt die Angaben automatisch aus dem Manifest.
 
 ---
 
@@ -2748,7 +2748,7 @@ In Publikation und Protokoll sollten mindestens stehen: Anbieter, **genaues Mode
 
 **Ziel:** Aus den vorhandenen Dateien (Manifest, Ereignisse, Kennzahlen) automatisch einen Bericht erzeugen, der in eine Methodensektion und einen Anhang übernommen werden kann. Das erspart Abschreibefehler und macht den Einsatz überprüfbar.
 
-`sara report <ordner> --run run-001 [--lang de|en] [--format md|docx]`
+`crapai report <ordner> --run run-001 [--lang de|en] [--format md|docx]`
 
 **Inhalt**
 
@@ -2769,7 +2769,7 @@ In Publikation und Protokoll sollten mindestens stehen: Anbieter, **genaues Mode
 
 Die Platzhalter werden automatisch gefüllt. Fehlt eine Angabe (z. B. Validierung), wird der Satz weggelassen und im Bericht ein sichtbarer Hinweis "**Noch zu ergänzen**" gesetzt. Es werden **nie** Zahlen erfunden.
 
-**Archivierung für Forschungsdatenmanagement:** `sara archive <ordner> [--include-sources] [--no-raw]` erzeugt `archive_<datum>.zip` mit `project.yaml`, `data/records.csv`, allen `runs/*/manifest.json`, `screening.jsonl`, `results.*`, `prisma_flow.*`, `reports/*`, Prompts sowie einer `CHECKSUMS.sha256`. Optional Quellen (Achtung Lizenz) und Rohantworten. Ohne API-Schlüssel und Logs. Geeignet für Ablage in einem Repositorium (z. B. institutionelles Repositorium, OSF).
+**Archivierung für Forschungsdatenmanagement:** `crapai archive <ordner> [--include-sources] [--no-raw]` erzeugt `archive_<datum>.zip` mit `project.yaml`, `data/records.csv`, allen `runs/*/manifest.json`, `screening.jsonl`, `results.*`, `prisma_flow.*`, `reports/*`, Prompts sowie einer `CHECKSUMS.sha256`. Optional Quellen (Achtung Lizenz) und Rohantworten. Ohne API-Schlüssel und Logs. Geeignet für Ablage in einem Repositorium (z. B. institutionelles Repositorium, OSF).
 
 ---
 
@@ -2790,28 +2790,28 @@ Die Platzhalter werden automatisch gefüllt. Fehlt eine Angabe (z. B. Validierun
 
 1. **Python installieren** (python.org oder Microsoft Store), Option "Add python.exe to PATH" aktivieren.
 2. **pipx installieren:** `py -m pip install --user pipx` und `py -m pipx ensurepath`, Terminal neu öffnen.
-3. **Critical Apprais.AI installieren:** `pipx install "sara-local[ui]"` (Server ohne UI: `pipx install sara-local`).
-4. **Umgebung prüfen:** `sara doctor`.
-5. **Schlüssel hinterlegen:** `sara config set-key openai` (Eingabe verdeckt, Ablage im Windows-Anmeldeinformationsspeicher).
-6. **Beispielprojekt:** `sara init C:\Reviews\demo --from-template demo` und `sara ui C:\Reviews\demo`.
+3. **Critical Apprais.AI installieren:** `pipx install "crapai[ui]"` (Server ohne UI: `pipx install crapai`).
+4. **Umgebung prüfen:** `crapai doctor`.
+5. **Schlüssel hinterlegen:** `crapai config set-key openai` (Eingabe verdeckt, Ablage im Windows-Anmeldeinformationsspeicher).
+6. **Beispielprojekt:** `crapai init C:\Reviews\demo --from-template demo` und `crapai ui C:\Reviews\demo`.
 
-**Update:** `pipx upgrade sara-local`. **Deinstallation:** `pipx uninstall sara-local`; Projektordner bleiben unberührt.
+**Update:** `pipx upgrade crapai`. **Deinstallation:** `pipx uninstall crapai`; Projektordner bleiben unberührt.
 
-**Portable `.exe`-Variante (Meilenstein M7):** Entpacken, `sara.exe ui`. Keine Python-Installation nötig. Grösse voraussichtlich mehrere hundert MB wegen Streamlit, pandas und matplotlib.
+**Portable `.exe`-Variante (Meilenstein M7):** Entpacken, `crapai.exe ui`. Keine Python-Installation nötig. Grösse voraussichtlich mehrere hundert MB wegen Streamlit, pandas und matplotlib.
 
 ### 31.3 Firmennetz, Proxy und Zertifikate (ZHAW-relevant)
 
-- **Proxy:** Umgebungsvariablen `HTTPS_PROXY` und `HTTP_PROXY` (ggf. `NO_PROXY`). `sara doctor` zeigt erkannte Werte.
+- **Proxy:** Umgebungsvariablen `HTTPS_PROXY` und `HTTP_PROXY` (ggf. `NO_PROXY`). `crapai doctor` zeigt erkannte Werte.
 - **Firmenzertifikate:** In Netzen mit HTTPS-Prüfung liegt das Firmenzertifikat im Windows-Zertifikatsspeicher, Python verwendet ihn aber nicht automatisch. Lösung: Abhängigkeit **`truststore`** aufnehmen und beim Start `truststore.inject_into_ssl()` aufrufen, damit Python den Betriebssystem-Speicher nutzt. Alternativ `SSL_CERT_FILE` auf eine CA-Datei setzen. (Hinweis: Git ist auf diesem Rechner auf `schannel` konfiguriert, also auf den Windows-Speicher. Dasselbe Prinzip nutzt `truststore`.)
 - **Login-/Passwortabfragen** gibt es in Critical Apprais.AI nicht. Der Zugang zu GitHub ist nur für die Entwicklung relevant, nicht für die Nutzung.
 
 ### 31.4 Ordnerwahl und Datensicherung
 
 - **Kurzer, einfacher Pfad**, z. B. `C:\Reviews\<projekt>`. Keine Netzlaufwerke, keine synchronisierten Ordner für **aktive** Läufe (Kap. 28.9).
-- Nach Abschluss: Ordner kopieren oder `sara archive`. Sicherung ist Sache der Nutzer:innen; das Tool legt zusätzlich lokale Sicherungen von `records.csv` an.
+- Nach Abschluss: Ordner kopieren oder `crapai archive`. Sicherung ist Sache der Nutzer:innen; das Tool legt zusätzlich lokale Sicherungen von `records.csv` an.
 - Personenbezogene oder vertrauliche Daten: Zugriffsrechte des Ordners prüfen, Datenträgerverschlüsselung (BitLocker) verwenden.
 
-### 31.5 `sara doctor` (Beispielausgabe)
+### 31.5 `crapai doctor` (Beispielausgabe)
 
 ```
 Critical Apprais.AI 0.3.0   Python 3.11.9   Windows-11
@@ -2831,23 +2831,23 @@ Ergebnis: 0 Fehler, 1 Warnung
 
 | Symptom | Wahrscheinliche Ursache | Lösung |
 |---|---|---|
-| `E301` Schlüssel fehlt | Umgebungsvariable nicht gesetzt oder anderes Terminal | `sara config set-key <anbieter>`; Terminal neu öffnen |
-| `E305` Dienst nicht erreichbar / SSL-Fehler | Proxy oder Firmenzertifikat | Kap. 31.3; `sara doctor` |
+| `E301` Schlüssel fehlt | Umgebungsvariable nicht gesetzt oder anderes Terminal | `crapai config set-key <anbieter>`; Terminal neu öffnen |
+| `E305` Dienst nicht erreichbar / SSL-Fehler | Proxy oder Firmenzertifikat | Kap. 31.3; `crapai doctor` |
 | Lauf sehr langsam, viele `E302` | Limits des Kontos niedrig | `limits.rpm/tpm` senken, Tarif prüfen; Lauf setzt automatisch fort |
 | `E401` Datei gesperrt | `results.xlsx` in Excel geöffnet | Datei schliessen; Alternativdatei liegt im Ordner |
-| `E402` Projekt in Benutzung | Vorheriger Lauf hängt oder läuft noch | `sara status`; nach Absturz `--resume` (Sperre wird nach Rückfrage übernommen) |
+| `E402` Projekt in Benutzung | Vorheriger Lauf hängt oder läuft noch | `crapai status`; nach Absturz `--resume` (Sperre wird nach Rückfrage übernommen) |
 | Umlaute falsch in Excel | CSV ohne BOM geöffnet | `results.csv` (mit BOM) verwenden oder XLSX |
 | Import findet keine Abstracts | Export ohne Abstracts / falsche Spalte | Exportoptionen in der Datenbank prüfen; `--map abstract=…` |
 | Viele Duplikate erkannt, aber verschiedene Studien | Titel-Strategie zu grob | Strategie `doi_or_title` mit DOI; Prüfliste ansehen |
 | Ergebnis „alles UNCERTAIN“ | Kriterien zu unspezifisch oder Abstracts zu kurz | Kriterien präzisieren; Pilot |
-| Streamlit zeigt leere Seite nach Neustart | Alter Prozess belegt Port | Anderen Port wählen (`sara ui --port 8502`) |
+| Streamlit zeigt leere Seite nach Neustart | Alter Prozess belegt Port | Anderen Port wählen (`crapai ui --port 8502`) |
 | `pip` findet Pakete nicht | Firmenproxy | Proxy setzen oder internes Paket-Repositorium |
 | Sehr langer Import bei 11-MB-BibTeX | Regex-Rückfall | Erste Datei prüfen, sonst Meldung mit Datei/Zeile melden |
 | Kosten höher als geschätzt | Längere Ausgaben oder Wiederholungen | Manifest `usage`; `max_output_tokens` senken; Schätzung mit Probelauf abgleichen |
 
 ### 31.7 Unterstützung und Fehlermeldung
 
-`sara bundle-logs` erzeugt ein maskiertes Support-Paket (ohne Datensätze und Schlüssel). Fehlerberichte sollen enthalten: Befehl, Fehlercode, `doctor`-Ausgabe, Softwareversion. Ein Vorlagentext (Issue-Template) im Repository führt dies auf.
+`crapai bundle-logs` erzeugt ein maskiertes Support-Paket (ohne Datensätze und Schlüssel). Fehlerberichte sollen enthalten: Befehl, Fehlercode, `doctor`-Ausgabe, Softwareversion. Ein Vorlagentext (Issue-Template) im Repository führt dies auf.
 
 ---
 
@@ -2859,7 +2859,7 @@ Ergebnis: 0 Fehler, 1 Warnung
 |---|---|---|---|
 | 1 | Protokoll und Kriterien festlegen (idealerweise vorab registrieren) | Team, `Kriterien` | Finale Kriterienliste |
 | 2 | Datenbanken durchsuchen, **jede Suche separat** exportieren (RIS/NBIB/BibTeX, mit Abstracts) | Datenbanken | Rohdateien in `sources/` |
-| 3 | Importieren, Quellen benennen, Vorprüfung lesen | `sara import`, `sara check` | `records.csv`, Preflight |
+| 3 | Importieren, Quellen benennen, Vorprüfung lesen | `crapai import`, `crapai check` | `records.csv`, Preflight |
 | 4 | Duplikate prüfen (Prüfliste) | UI/`dedup` | bereinigte Markierungen |
 | 5 | **Pilot:** 50–200 Datensätze von Menschen bewerten lassen, mit KI vergleichen, Kriterien schärfen | `screen --sample`, `evaluate` | Kalibrierte Kriterien/Prompt |
 | 6 | Prompt und Kriterien **einfrieren** (Versionsmarke) | Git-Tag/Hash im Manifest | Nachweisbare Konfiguration |
@@ -2888,7 +2888,7 @@ Ergebnis: 0 Fehler, 1 Warnung
 - [ ] Stichprobe der `EXCLUDE` geprüft, Fehlerquote berechnet
 - [ ] Kennzahlen mit Intervallen gespeichert
 - [ ] PRISMA-Zahlen plausibel (`validate_rollup` ohne Warnung)
-- [ ] `sara verify` erfolgreich
+- [ ] `crapai verify` erfolgreich
 - [ ] Methodentext erzeugt und angepasst
 - [ ] Archiv erstellt, Sicherung vorhanden
 
@@ -3086,7 +3086,7 @@ Summe M1–M3: rund 156 h (ca. 19–20 Personentage) zuzüglich Einarbeitung, Re
 - [ ] CI-Matrix (Windows, macOS, Linux; Python 3.11–3.13) grün
 - [ ] `pip-audit`/`bandit` ohne kritische Befunde
 - [ ] Sauberer Installationstest in frischer Umgebung (`pipx install` aus dem gebauten Paket)
-- [ ] `sara doctor` auf einem zweiten Rechner (Windows, Firmennetz) getestet
+- [ ] `crapai doctor` auf einem zweiten Rechner (Windows, Firmennetz) getestet
 - [ ] Beispielprojekt läuft durch (Mock und mindestens ein Live-Anbieter)
 - [ ] Handbuch und Fehlercode-Tabelle aktuell
 - [ ] Lizenz und Drittlizenzen (`THIRD_PARTY.md`) geprüft
@@ -3236,7 +3236,7 @@ Erfolgskriterien für das neue Projekt (aus dem Bericht abgeleitet; **Zielwerte 
 |---|---|---|
 | `literature/Cao_2024_Prompting_is_all_you_need.pdf` (105 Seiten) | Cao et al.: *Prompting is all you need: LLMs for systematic review screening* | Grundlage der Prompt-Varianten; Vergleichsmassstab für Sensitivität/Spezifität |
 | `literature/Delgado-Chaves_2025_PNAS_LLM_literature_screening.pdf` (10 Seiten) | PNAS 2025;122(2):e2411962122: *Transforming literature screening: the emerging role of large language models in systematic reviews* | LLM als Vorfilter; Kriterien-Verfeinerung mit LLM-Hilfe; Argumentation im Methodenteil |
-| `guidelines/bmj.n160.full.pdf` (36 Seiten) | PRISMA 2020 explanation and elaboration (BMJ 2021;372:n160) | Berichtspunkte für `sara report`; Definition der Flusszahlen |
+| `guidelines/bmj.n160.full.pdf` (36 Seiten) | PRISMA 2020 explanation and elaboration (BMJ 2021;372:n160) | Berichtspunkte für `crapai report`; Definition der Flusszahlen |
 | `guidelines/PRISMA_2020_expanded_checklist.pdf` (10 Seiten), `PRISMA_2020_checklist.docx` | Erweiterte Checkliste / Checkliste PRISMA 2020 | Abbildung "Checkliste-Punkt -> Datei/Kennzahl im Projektordner" (Idee: `sara prisma-checklist`) |
 | `guidelines/PRISMA-ScR-Fillable-Checklist_11Sept2019.pdf` (2 Seiten) | PRISMA-ScR (Scoping Reviews) | Wie oben für Scoping Reviews (Projekt DHEM) |
 | `guidelines/ANU_Frameworks_PICO_SPIDER_SPICE.pdf` (2 Seiten) | ANU LibGuide: Frameworks PICO, SPIDER, SPICE | Hilfetexte und Felder der Frameworks (Kap. 27.4); SPICE ist im Code nicht vorhanden, PIRD im Code aber nicht in dieser Quelle |
@@ -3272,11 +3272,11 @@ Datei für Datei: `docs/MIGRATION.md` (lebendes Dokument mit Status).
 
 | Neues Modul | Herkunft | Änderung | Tests |
 |---|---|---|---|
-| `saralocal/enums.py` | `core/enums.py` | Kopfzeile | 4 |
-| `saralocal/cost/estimator.py` | `core/estimator.py` | Kopfzeile | 6 |
-| `saralocal/criteria/template.py` | `core/criteria_template.py` | i18n-Importpfad | 7 |
-| `saralocal/i18n/` (+ `texts/en.yaml`, `fallback.py`) | `i18n.py`, `texts/*` | Importpfade, E-Mail-Vorlagen aus `en.yaml` entfernt | 3 |
-| `saralocal/legacy.py` (neu) | Logik aus `sara_statistics/src/test_retest.py` | ohne scikit-learn, mit Kodierungs-Fallback | 4 (Golden) |
+| `crapai/enums.py` | `core/enums.py` | Kopfzeile | 4 |
+| `crapai/cost/estimator.py` | `core/estimator.py` | Kopfzeile | 6 |
+| `crapai/criteria/template.py` | `core/criteria_template.py` | i18n-Importpfad | 7 |
+| `crapai/i18n/` (+ `texts/en.yaml`, `fallback.py`) | `i18n.py`, `texts/*` | Importpfade, E-Mail-Vorlagen aus `en.yaml` entfernt | 3 |
+| `crapai/legacy.py` (neu) | Logik aus `sara_statistics/src/test_retest.py` | ohne scikit-learn, mit Kodierungs-Fallback | 4 (Golden) |
 | `templates/prompts/*.yaml` | `core/prompts.json` | YAML-Container, Text geprüft identisch | (Round-Trip im Erzeugungsskript) |
 | Testdaten-Orakel `tests/data/EXPECTED.json` (neu) | Datensatzzahlen per unabhängiger Zählung | | 21 |
 
@@ -3344,7 +3344,7 @@ Nicht kopiert: `data/new 4.txt`, `new 5.txt`, `new 6.txt` (untracked Notizen ohn
 
 **Format der Ergebnisdateien** (`legacy_runs/*/…_run-NN.csv`): Semikolon-CSV, Kopf `study_uid;type_of_reference;title;authors;date;journal_name;volume;number;abstract;year;start_page;doi;notes;keywords;journal;file_name;source_label;is_duplicate;duplicate_of;has_abstract;exclusion_reason;exclusion_details;id;text;reasoning;decision;label` (Spalten 23-27 sind die Modellergebnisse). Mindestens `project-01_dhl/…run-01.csv` ist **nicht UTF-8** (Byte `0xA0`). Dateiname: `<YYYYMMDD-HHMM>_<Projekt-UUID>_run-NN.csv`.
 
-**Sollberichte** (`expected/`): `<YYYYMMDD-HHMM>_test-retest-summary_<projekt>.{txt,csv}` und `…inter-rater_report_summary_….{txt,csv}`. Der Text-Bericht hat Kopf (Projekt, Datum), *SUMMARY STATISTICS* (Anzahl Vergleiche, Ø/Min/Max κ mit Interpretation), *DETAILED RESULTS* (Tabelle) und *INTERPRETATION GUIDE* (Landis & Koch). Das CSV der Inter-Rater-Auswertung ist **semikolon-getrennt** (im Gegensatz zu den Test-Retest-CSV mit Komma). Diese Formate sind Vorlage für `sara stats` (Kap. 14, 25.8 J) und Golden-Files.
+**Sollberichte** (`expected/`): `<YYYYMMDD-HHMM>_test-retest-summary_<projekt>.{txt,csv}` und `…inter-rater_report_summary_….{txt,csv}`. Der Text-Bericht hat Kopf (Projekt, Datum), *SUMMARY STATISTICS* (Anzahl Vergleiche, Ø/Min/Max κ mit Interpretation), *DETAILED RESULTS* (Tabelle) und *INTERPRETATION GUIDE* (Landis & Koch). Das CSV der Inter-Rater-Auswertung ist **semikolon-getrennt** (im Gegensatz zu den Test-Retest-CSV mit Komma). Diese Formate sind Vorlage für `crapai stats` (Kap. 14, 25.8 J) und Golden-Files.
 
 **Mapping Läufe <-> Bericht:** siehe Tabelle in 35.2.
 
@@ -3365,7 +3365,7 @@ Zehn Ordner `Review Task <id8>_<id8>` mit der zusammengeführten Datensatztabell
 | `assets/ai_brain.json` (31 KB), `assets/robot.json` (246 KB) | Lottie-Animationen (`streamlit-lottie`). Optional auf Start- und Ladeseiten |
 | `assets/setup.drawio`, `setup.png` | Architekturzeichnung des alten Systems (mit Supabase). Als **Vorlage** neu zeichnen (Kap. 28.1) |
 | `docs/imgs/SARA.png` (1,4 MB) | Bild/Logo |
-| `src/saralocal/i18n/texts/en.yaml` | UI-Texte des Kriterien-/Upload-/Vorprüfungs-Ablaufs, Hilfetexte mit Markdown |
+| `src/crapai/i18n/texts/en.yaml` | UI-Texte des Kriterien-/Upload-/Vorprüfungs-Ablaufs, Hilfetexte mit Markdown |
 | `reference/sara-app/streamlit/config.toml` | nur `maxUploadSize = 150` (neues Theme in Kap. 27.9) |
 | `reference/sara-app/pages/*.py`, `utils/ui_helpers.py`, `graphs.py` | Bausteine (Kap. 36.4) |
 
@@ -3424,7 +3424,7 @@ SARA-Local/
 │  ├─ reports/          DFF-Abschlussbericht
 │  ├─ imgs/             SARA.png
 │  └─ legacy/           alte Handbücher und README
-├─ src/saralocal/       enums · criteria · cost · i18n (+texts) · legacy
+├─ src/crapai/       enums · criteria · cost · i18n (+texts) · legacy
 ├─ tests/
 │  ├─ unit/             47 Tests
 │  ├─ data/             Fixtures + EXPECTED.json

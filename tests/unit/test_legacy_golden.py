@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from saralocal.legacy import cohen_kappa, interpret_kappa, load_runs, pairwise_stats
+from crapai.legacy import cohen_kappa, interpret_kappa, load_runs, pairwise_stats
 
 ROOT = Path(__file__).resolve().parents[1]
 PROJECTS = ["project-01_dhl", "project-02_dhl", "project-03_dhem"]

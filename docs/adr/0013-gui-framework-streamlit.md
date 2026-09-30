@@ -3,7 +3,7 @@
 Status: Angenommen (Entscheid der Projektleitung, 2026-09-30)
 
 ## Entscheidung
-Die lokale Oberfläche wird mit **Streamlit** gebaut (`sara ui`). Lange Läufe laufen im getrennten Worker-Prozess (ADR 0006); die UI liest nur Projektdateien.
+Die lokale Oberfläche wird mit **Streamlit** gebaut (`crapai ui`). Lange Läufe laufen im getrennten Worker-Prozess (ADR 0006); die UI liest nur Projektdateien.
 
 ## Alternativen
 Flet (die übernommenen Coding-Guidelines des Vorgängers setzen es voraus), NiceGUI/FastAPI, PySide6, Excel-Modus. Nicht gewählt.

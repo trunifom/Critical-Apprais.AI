@@ -9,10 +9,10 @@ from typing import Any
 import pytest
 import yaml
 
-from saralocal.i18n import I18n
-from saralocal.i18n.required import ERROR_CODES, ERROR_PARTS, required_keys
+from crapai.i18n import I18n
+from crapai.i18n.required import ERROR_CODES, ERROR_PARTS, required_keys
 
-TEXTS = Path(__file__).resolve().parents[2] / "src" / "saralocal" / "i18n" / "texts"
+TEXTS = Path(__file__).resolve().parents[2] / "src" / "crapai" / "i18n" / "texts"
 PLACEHOLDER = re.compile(r"\{(\w+)\}")
 
 

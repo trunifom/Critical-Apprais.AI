@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from saralocal import errors
-from saralocal.errors import (
+from crapai import errors
+from crapai.errors import (
     AuthError,
     ConfigError,
     ContentRefused,

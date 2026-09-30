@@ -41,7 +41,7 @@ Commit-Schema: `type(scope): Zusammenfassung (Karten-ID)`; Ende der Nachricht: d
 | Lint / Typen | `ruff` sauber (ohne `reference/`), `mypy src` sauber |
 | CI | `.github/workflows/ci.yml` geschrieben (Linux/Windows/macOS x Python 3.11-3.13), noch nie auf GitHub gelaufen |
 | Extras in `pyproject.toml` | `import` (rispy, pybtex, openpyxl, pymupdf, pdfplumber, pylatexenc), `cli` (typer, rich), `dev`, u. a. Neue Abhängigkeiten ausserhalb der Extras: vorher fragen |
-| Technische Namen | vorläufig `saralocal` / `sara` / `.sara/` (Umbenennung = T-M0-03, nur auf Anweisung) |
+| Technische Namen | endgültig (ADR 0017): Paket und Befehl `crapai`, Zustandsordner `.crapai/`, Umgebungsvariablen `CRAPAI_...`; Kurzform CrAp-AI |
 
 ## 4. Fortschritt (abhaken)
 
@@ -73,7 +73,7 @@ Reihenfolge = empfohlene Arbeitsreihenfolge. Aufwand in Stunden (Schätzung der 
 | [x] | T-M1-02 | `errors.py`: Ausnahmehierarchie `SaraError` mit Fehlercodes (Kap. 28.7, 26.4) | | 2026-09-30 15:09 | `5c22ef8` |
 | [x] | T-M1-02 | `config/models.py`: Pydantic-Modelle für `project.yaml` (kein API-Schlüssel speicherbar) | 6 | 2026-09-30 15:11 | `fcfb8f7` |
 | [x] | T-M1-02 | `config/loader.py`: Laden mit präzisen Fehlern (E201/E203, Pfad + Grund) | | 2026-09-30 15:12 | `2c3a108` |
-| [x] | T-M1-02 | `config/loader.py`: Rangfolge CLI > env (`SARA_ABSCHNITT__SCHLUESSEL`) > project.yaml > user > Standard | | 2026-09-30 15:14 | `e5403cc` |
+| [x] | T-M1-02 | `config/loader.py`: Rangfolge CLI > env (`CRAPAI_ABSCHNITT__SCHLUESSEL`) > project.yaml > user > Standard | | 2026-09-30 15:14 | `e5403cc` |
 | [x] | T-M1-03 | `project/atomic.py`: atomares Schreiben (`os.replace`, Wiederholung, Ausweichname) | 6 | 2026-09-30 15:15 | `4cacadf` |
 | [x] | T-M1-03 | `project/lock.py`: Lock mit Heartbeat, Übernahme veralteter Locks | 2026-09-30 15:17 | `17d426d` | |
 | [x] | T-M1-03 | `project/workspace.py`: Ordnerstruktur Kap. 6, Schema-Version | | 2026-09-30 15:17 | `54d3144` |
@@ -91,13 +91,13 @@ Reihenfolge = empfohlene Arbeitsreihenfolge. Aufwand in Stunden (Schätzung der 
 | [x] | T-M1-11 | `io/readers/dispatch.py` + `services/importing.py`: Import-Dienst (erkennen, lesen, Quelle kopieren, normalisieren, `records.csv`, Log; Lock; E106) | 3 | 2026-09-30 15:58 | `edefbdb` |
 | [x] | T-M1-11 | `services/project.py`: `create_project` aus Vorlage (`blank`, `demo`), `project_status` | | 2026-09-30 16:00 | `292650c` |
 | [x] | T-M1-11 | `i18n/messages.py` + Texte `cli.*`/`errors.*` in `en.yaml` und neuer `de.yaml` | | 2026-09-30 16:03 | `a0b1e61` |
-| [x] | T-M1-11 | `cli.py`: `sara init`, `sara import`, `sara status` (Exit-Codes Kap. 15.1, `--json`, `--lang`) | | 2026-09-30 16:10 | `cb2fa2f` |
+| [x] | T-M1-11 | `cli.py`: `crapai init`, `crapai import`, `crapai status` (Exit-Codes Kap. 15.1, `--json`, `--lang`) | | 2026-09-30 16:10 | `cb2fa2f` |
 | [x] | T-M1-11 | `tests/integration/test_milestone_a_import.py`: Abnahmetest Meilenstein A | | 2026-09-30 16:11 | `94b21db` |
 | [x] | T-M1-12 | `i18n/texts/de.yaml` + neue Schlüssel (kann jederzeit parallel; auf Wunsch des Projektleiters) | 4 | 2026-09-30 16:23 | `e1dd6e5` |
 | [-] | T-M1-09 | PDF-ZIP-Reader (zurückgestellt, ADR 0015: kein Volltext in v1) | 4 | | |
 
 **Meilenstein A ist erreicht (2026-09-30 16:11, `94b21db`).** Bedingung war: alle Fixtures aus `tests/data/` importierbar sind, die Zahlen `tests/data/EXPECTED.json` entsprechen
-und `sara init/import/status` läuft.
+und `crapai init/import/status` läuft.
 
 ### Nachträge und Dokumentation (laufend)
 
@@ -111,7 +111,7 @@ neue Module in die Architektur, Änderungen ins `CHANGELOG.md`, Stand ins `READM
 
 ### M2 bis M3 (erst nach Meilenstein A; Karten in `tasks/`)
 
-M2: T-M2-01 Dedup, -02 Fuzzy (optional), -03 fehlende Abstracts/Flags, -04 Preflight, -05 Tokenizer/Kosten, -06 Dauer/`sara check`,
+M2: T-M2-01 Dedup, -02 Fuzzy (optional), -03 fehlende Abstracts/Flags, -04 Preflight, -05 Tokenizer/Kosten, -06 Dauer/`crapai check`,
 -07 PRISMA-Ereignisse, -08 Vorfilter. M3: T-M3-01 Provider-Protokoll + MockProvider, -02 OpenAI-kompatibel (SwissGPT zuerst),
 -03 Retry, -04 Rate-Limiter, -05 Prompt-Builder, -06 Antwortschema/Parser, -07 Engine, -08 Checkpoint/Resume, -09 CLI `screen`,
 -10 Akzeptanztests. Pro Karte hier Zeilen ergänzen, sobald sie beginnt.
@@ -130,6 +130,6 @@ M2: T-M2-01 Dedup, -02 Fuzzy (optional), -03 fehlende Abstracts/Flags, -04 Prefl
 | offen | CI-Matrix (Python 3.13, macOS) ist ungeprüft, bis der erste GitHub-Lauf vorliegt |
 | offen | Fehlerkatalog (Kap. 26.4) hat keinen Code für "Ordner schon initialisiert / nicht leer"; `Workspace.create` nutzt E404 mit eigener Meldung. Projektleiter soll entscheiden, ob ein neuer Code aufgenommen wird |
 | 2026-09-30 | BibTeX-Reader ohne `pybtex` (eigener toleranter Scanner, ein Codepfad für gültige und ungültige Dateien); `pybtex` bleibt im Extra `import`. CI installiert jetzt `.[dev,import]` (pylatexenc) |
-| 2026-09-30 | Exit-Code 4 (Warnungen) bei `sara import`, wenn keine oder wenig (< 60 %) Abstracts vorhanden sind oder `EMPTY_RECORD` entstehen. Die Fixtures `example_db_nr1-3` haben keine Abstracts, deshalb liefert der Abnahmefall der Karte T-M1-11 Exit-Code 4 |
+| 2026-09-30 | Exit-Code 4 (Warnungen) bei `crapai import`, wenn keine oder wenig (< 60 %) Abstracts vorhanden sind oder `EMPTY_RECORD` entstehen. Die Fixtures `example_db_nr1-3` haben keine Abstracts, deshalb liefert der Abnahmefall der Karte T-M1-11 Exit-Code 4 |
 | offen | `import.mappings` in `project.yaml` (Kap. 25.5) ist noch nicht im Modell; die verwendete Spaltenzuordnung steht vorerst nur im Import-Log (`records.import.jsonl`, Feld `column_map`) |
 | offen | Rechteinhaber in der Zeile `Required Notice` (LICENSE) mit der Hochschule klären; Fremdmaterial (Literatur, Berichte, ZIP) vor einer öffentlichen Veröffentlichung prüfen oder ausschliessen (ADR 0016) |

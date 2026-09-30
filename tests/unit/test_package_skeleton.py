@@ -25,5 +25,5 @@ SUBPACKAGES = [
 
 @pytest.mark.parametrize("name", SUBPACKAGES)
 def test_subpackage_imports_and_has_docstring(name: str) -> None:
-    module = importlib.import_module(f"saralocal.{name}")
-    assert module.__doc__ and module.__doc__.strip(), f"saralocal.{name} needs a docstring"
+    module = importlib.import_module(f"crapai.{name}")
+    assert module.__doc__ and module.__doc__.strip(), f"crapai.{name} needs a docstring"

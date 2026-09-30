@@ -7,10 +7,10 @@ from pathlib import Path
 
 import pytest
 
-from saralocal.errors import StorageError
-from saralocal.project.workspace import SCHEMA_VERSION, Workspace, cloud_sync_hint
+from crapai.errors import StorageError
+from crapai.project.workspace import SCHEMA_VERSION, Workspace, cloud_sync_hint
 
-EXPECTED_FOLDERS = {"sources", "data", "runs", "human", "reports", "prompts", ".sara"}
+EXPECTED_FOLDERS = {"sources", "data", "runs", "human", "reports", "prompts", ".crapai"}
 
 
 def test_create_builds_the_layout_of_chapter_6(tmp_path: Path) -> None:
@@ -28,9 +28,9 @@ def test_paths_match_chapter_6(tmp_path: Path) -> None:
     assert ws.records_csv == tmp_path / "data" / "records.csv"
     assert ws.import_log == tmp_path / "data" / "records.import.jsonl"
     assert ws.backup_dir == tmp_path / "data" / ".backup"
-    assert ws.lock_file == tmp_path / ".sara" / "lock"
-    assert ws.version_file == tmp_path / ".sara" / "version"
-    assert ws.app_log == tmp_path / ".sara" / "app.log"
+    assert ws.lock_file == tmp_path / ".crapai" / "lock"
+    assert ws.version_file == tmp_path / ".crapai" / "version"
+    assert ws.app_log == tmp_path / ".crapai" / "app.log"
 
 
 def test_create_accepts_an_existing_empty_folder(tmp_path: Path) -> None:
@@ -51,7 +51,7 @@ def test_create_refuses_existing_project_and_non_empty_folder(tmp_path: Path) ->
         Workspace.create(other)
     assert "not empty" in info2.value.user_message
     assert (other / "notes.txt").read_text(encoding="utf-8") == "keep me"  # nothing touched
-    assert not (other / ".sara").exists()
+    assert not (other / ".crapai").exists()
 
 
 def test_open_roundtrip(tmp_path: Path) -> None:
@@ -111,6 +111,26 @@ def test_create_logs_a_warning_in_synchronised_folder(
     tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
     root = tmp_path / "OneDrive" / "review"
-    with caplog.at_level(logging.WARNING, logger="saralocal.project.workspace"):
+    with caplog.at_level(logging.WARNING, logger="crapai.project.workspace"):
         Workspace.create(root)
     assert any("synchronised" in record.message for record in caplog.records)
+
+
+def test_project_with_the_old_state_folder_gets_a_helpful_error(tmp_path: Path) -> None:
+    """Folders created before the rename (state folder .sara) are explained, not just refused."""
+    root = tmp_path / "old"
+    (root / ".sara").mkdir(parents=True)
+    (root / ".sara" / "version").write_text("1\n", encoding="utf-8")
+    with pytest.raises(StorageError) as info:
+        Workspace.open(root)
+    assert info.value.code == "E404"
+    assert ".sara" in info.value.user_message and ".crapai" in (info.value.hint or "")
+    assert info.value.details["legacy"] == ".sara"
+
+
+def test_state_folder_name_comes_from_branding() -> None:
+    from crapai import branding
+
+    assert branding.STATE_DIR_NAME == ".crapai" and Workspace(Path("x")).state_dir.name == ".crapai"
+    assert branding.CLI_NAME == "crapai" and branding.SHORT_NAME == "CrAp-AI"
+    assert branding.ENV_PREFIX == "CRAPAI_"

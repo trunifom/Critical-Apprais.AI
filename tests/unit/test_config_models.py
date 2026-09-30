@@ -10,7 +10,7 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
-from saralocal.config.models import ProjectConfig
+from crapai.config.models import ProjectConfig
 
 TEMPLATE = Path(__file__).resolve().parents[2] / "templates" / "project.example.yaml"
 

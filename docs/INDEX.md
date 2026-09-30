@@ -7,7 +7,7 @@ Einstieg für Menschen und KI-Agenten. **Projekt: Critical Apprais.AI** (Nachfol
 | Pfad | Inhalt | Sprache | Verlässlichkeit |
 |---|---|---|---|
 | `KICKOFF_PROMPT.md` | Start-Prompt für Agenten: Lesereihenfolge, Git-Einrichtung und erster Commit, Arbeitsablauf, Stopp-Regeln | de | **Zum Starten einfügen** |
-| `NAMING_AND_HISTORY.md` | Produktname, Vorgeschichte (SARA, SARA-App), Namensregeln, vorläufige Arbeitsnamen | de | **Zuerst lesen** |
+| `NAMING_AND_HISTORY.md` | Produktname, Kurzform, Vorgeschichte (SARA, SARA-App), Namensregeln, technische Namen | de | **Zuerst lesen** |
 | `PROJEKTPLAN.md` | Vollständige Spezifikation: Teil I (Kap. 1-24), Teil II Vertiefung (25-34), Teil III Starterpaket (35-40) | de | **Massgebend** für das neue Projekt |
 | `UMSETZUNGSPLAN_UND_FORTSCHRITT.md` | **Übergabeprotokoll:** Fortschrittsliste mit Datum, Uhrzeit und Commit-Hash, nächster Schritt | de | **Lebend, nach jedem Commit pflegen** |
 | `BENUTZERHANDBUCH.md` | Bedienung für Forschende (Installation, Befehle, Formate, Fehlermeldungen, FAQ) | de | **aktuell**, wird mit jeder Aufgabe nachgeführt |
@@ -19,7 +19,7 @@ Einstieg für Menschen und KI-Agenten. **Projekt: Critical Apprais.AI** (Nachfol
 | `coding/coding_guidelines.md` | Coding-Regeln, **angepasst** (Original daneben: `coding_guidelines.original.md`) | en | Massgebend |
 | `swissgpt/` | API-Beschreibung SwissGPT/AlpineAI (`.json` OpenAPI, `.docx`) | en | Herstellerdokument. Zeigt: **kein** `response_format`, **kein** `seed` |
 | `literature/` | 2 Fachpapiere zu LLM-gestütztem Screening / Prompting | en | Hintergrund (urheberrechtlich geschützt) |
-| `guidelines/` | PRISMA 2020 (Checkliste, erweitert), PRISMA-ScR, BMJ-Artikel zu PRISMA 2020, PICO/SPIDER/SPICE | en | Methodische Grundlage; Vorlage für `sara report` |
+| `guidelines/` | PRISMA 2020 (Checkliste, erweitert), PRISMA-ScR, BMJ-Artikel zu PRISMA 2020, PICO/SPIDER/SPICE | en | Methodische Grundlage; Vorlage für `crapai report` |
 | `reports/` | DFF-Abschlussbericht SARA 2025 (PDF) | de | Projekthintergrund (intern) |
 | `imgs/` | `SARA.png` (Logo/Bild) | - | |
 | `legacy/` | Handbücher aus früheren Repos (`USER_MANUAL`, `TERMINAL_GUIDE`, `SOFTWARE_ARCHITECTURE`) und README von SARA-App | de/en | **Teilweise veraltet** (siehe Abschnitt 4) |
@@ -43,7 +43,7 @@ Kapitel des Plans lesen mit `python scripts/plan_chapter.py <Nr>` (z. B. `25.2`)
 | Prompts, Antwortschema | Kap. 10, 29.5; `templates/prompts/` |
 | Checkpoint, Wiederaufnahme, Manifest | Kap. 11, 12.1, 28.4-28.9 |
 | Ausgabedateien (XLSX/CSV/RIS/PRISMA) | Kap. 13, 25.8 |
-| Statistik/Evaluation | Kap. 14, 29.11; Code: `src/saralocal/legacy.py`, `reference/sara-app/sara_statistics/src/` |
+| Statistik/Evaluation | Kap. 14, 29.11; Code: `src/crapai/legacy.py`, `reference/sara-app/sara_statistics/src/` |
 | GUI, Layout, Texte | Kap. 27; Code: `reference/sara-app/pages/review_setup.py`, `utils/ui_helpers.py`, `texts/en.yaml` |
 | CLI | Kap. 15.1, 27.10 |
 | Konfiguration | Kap. 16; `templates/project.example.yaml` |

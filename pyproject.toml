@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "sara-local"
+name = "crapai"
 version = "0.0.1"
 description = "Critical Apprais.AI: local, database-free LLM screening assistant for systematic reviews"
 readme = "README.md"
@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.scripts]
-sara = "saralocal.cli:main"  # provisional command name (task T-M0-03); needs the "cli" extra
+crapai = "crapai.cli:main"  # needs the "cli" extra
 
 [project.optional-dependencies]
 # Extras are introduced by the task cards (see tasks/). Listed here so agents know the plan.
@@ -30,7 +30,7 @@ stats = ["scikit-learn", "matplotlib"]
 dev = ["pytest", "pytest-asyncio", "hypothesis", "respx", "ruff", "mypy"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/saralocal"]
+packages = ["src/crapai"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
@@ -53,10 +53,10 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 [tool.ruff.lint.per-file-ignores]
 "scripts/generate_task_cards.py" = ["E501"]  # generator holds long card texts
 "scripts/plan_chapter.py" = ["SIM114"]
-"src/saralocal/enums.py" = ["E501", "UP", "I"]
-"src/saralocal/cost/estimator.py" = ["E501", "UP", "I", "SIM", "F401"]
-"src/saralocal/criteria/template.py" = ["E501", "UP", "I", "SIM"]
-"src/saralocal/i18n/**" = ["E501", "UP", "I", "SIM", "B", "F401", "E402"]
+"src/crapai/enums.py" = ["E501", "UP", "I"]
+"src/crapai/cost/estimator.py" = ["E501", "UP", "I", "SIM", "F401"]
+"src/crapai/criteria/template.py" = ["E501", "UP", "I", "SIM"]
+"src/crapai/i18n/**" = ["E501", "UP", "I", "SIM", "B", "F401", "E402"]
 
 [tool.mypy]
 python_version = "3.11"

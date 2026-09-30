@@ -8,9 +8,9 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from saralocal import cli
-from saralocal.cli import app
-from saralocal.io.records_store import read_records
+from crapai import cli
+from crapai.cli import app
+from crapai.io.records_store import read_records
 
 DATA = Path(__file__).resolve().parents[2] / "tests" / "data"
 RIS10 = DATA / "example_db_nr2_total-10_duplicates-3.ris"
@@ -29,7 +29,7 @@ def demo(tmp_path: Path) -> Path:
 
 
 def test_acceptance_init_demo_then_import_writes_ten_records(tmp_path: Path) -> None:
-    """The card's scenario: `sara init demo --from-template demo`, then import 10 records."""
+    """The card's scenario: `crapai init demo --from-template demo`, then import 10 records."""
     folder = tmp_path / "demo"
     result = invoke("init", folder, "--from-template", "demo", "--lang", "en")
     assert result.exit_code == 0, result.output
@@ -136,7 +136,7 @@ def test_import_errors_for_missing_folder_and_files(tmp_path: Path, demo: Path) 
 
 
 def test_locked_project_is_a_system_error_exit_2(demo: Path) -> None:
-    from saralocal.project.workspace import Workspace
+    from crapai.project.workspace import Workspace
 
     holder = Workspace(demo).lock()
     holder.acquire()
@@ -188,6 +188,6 @@ def test_unexpected_error_becomes_e999_with_exit_2(
 
 def test_project_log_file_is_written(demo: Path) -> None:
     invoke("import", demo, RIS10, "--lang", "en")
-    log = (demo / ".sara" / "app.log").read_text(encoding="utf-8")
+    log = (demo / ".crapai" / "app.log").read_text(encoding="utf-8")
     assert "Imported 10 record(s)" in log
     assert "Title" not in log  # no record content in the log

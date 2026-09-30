@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from saralocal.config.loader import (
+from crapai.config.loader import (
     deep_merge,
     env_overrides,
     load_project_config,
@@ -16,7 +16,7 @@ from saralocal.config.loader import (
     resolve_config,
     validate_config,
 )
-from saralocal.errors import ConfigError
+from crapai.errors import ConfigError
 
 TEMPLATE = Path(__file__).resolve().parents[2] / "templates" / "project.example.yaml"
 
@@ -140,12 +140,12 @@ def project_file(tmp_path: Path, **llm: object) -> Path:
 
 def test_env_overrides_parse_nested_names_and_types() -> None:
     env = {
-        "SARA_LLM__MODEL": "gpt-4o",
-        "SARA_LIMITS__RPM": "120",
-        "SARA_OUTPUT__CSV_BOM": "false",
-        "SARA_LIMITS__MAX_COST": "null",
-        "SARA_UNRELATED": "x",  # no nesting separator: ignored
-        "SARA_LLM__": "x",  # empty key: ignored
+        "CRAPAI_LLM__MODEL": "gpt-4o",
+        "CRAPAI_LIMITS__RPM": "120",
+        "CRAPAI_OUTPUT__CSV_BOM": "false",
+        "CRAPAI_LIMITS__MAX_COST": "null",
+        "CRAPAI_UNRELATED": "x",  # no nesting separator: ignored
+        "CRAPAI_LLM__": "x",  # empty key: ignored
         "OTHER__THING": "x",
     }
     assert env_overrides(env) == {
@@ -181,7 +181,7 @@ def test_precedence_cli_over_env_over_project_over_user_over_default(tmp_path: P
     config = resolve_config(
         path,
         cli={"limits": {"rpm": 7}},
-        environ={"SARA_LIMITS__RPM": "50", "SARA_LIMITS__MAX_CONCURRENCY": "3"},
+        environ={"CRAPAI_LIMITS__RPM": "50", "CRAPAI_LIMITS__MAX_CONCURRENCY": "3"},
         user_config_path=user,
     )
     assert config.limits.rpm == 7  # CLI beats env (50), project (500), user (1)
@@ -196,14 +196,14 @@ def test_missing_user_config_is_fine_and_invalid_override_is_reported(tmp_path: 
     path = project_file(tmp_path)
     assert resolve_config(path, environ={}, user_config_path=NO_USER).limits.rpm == 500
     with pytest.raises(ConfigError) as info:
-        resolve_config(path, environ={"SARA_LIMITS__RPM": "-3"}, user_config_path=NO_USER)
+        resolve_config(path, environ={"CRAPAI_LIMITS__RPM": "-3"}, user_config_path=NO_USER)
     assert "limits.rpm" in info.value.user_message
 
 
 def test_api_key_cannot_be_injected_through_env_or_cli(tmp_path: Path) -> None:
     path = project_file(tmp_path)
     for kwargs in (
-        {"environ": {"SARA_LLM__API_KEY": "sk-secret-value"}},
+        {"environ": {"CRAPAI_LLM__API_KEY": "sk-secret-value"}},
         {"cli": parse_cli_overrides(["llm.api_key=sk-secret-value"]), "environ": {}},
     ):
         with pytest.raises(ConfigError) as info:

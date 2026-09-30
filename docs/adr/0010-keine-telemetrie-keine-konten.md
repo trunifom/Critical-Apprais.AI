@@ -9,4 +9,4 @@ Kein Versand von Nutzungsdaten; Streamlit-Statistik aus.
 -
 
 ## Folgen
-Datenschutz; Support über `sara bundle-logs`.
+Datenschutz; Support über `crapai bundle-logs`.

@@ -9,16 +9,16 @@ from typing import Any
 import pytest
 import yaml
 
-from saralocal.errors import (
+from crapai.errors import (
     ConfigError,
     ImportFailed,
     ProviderError,
     SaraError,
     StorageError,
 )
-from saralocal.i18n.messages import Messages, resolve_language
+from crapai.i18n.messages import Messages, resolve_language
 
-TEXTS = Path(__file__).resolve().parents[2] / "src" / "saralocal" / "i18n" / "texts"
+TEXTS = Path(__file__).resolve().parents[2] / "src" / "crapai" / "i18n" / "texts"
 
 
 def flatten(node: Any, prefix: str = "") -> dict[str, str]:

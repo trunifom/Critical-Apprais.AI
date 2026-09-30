@@ -1,4 +1,4 @@
-from saralocal.i18n import I18n
+from crapai.i18n import I18n
 
 
 def test_english_texts_load_and_format() -> None:

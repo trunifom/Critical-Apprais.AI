@@ -20,7 +20,7 @@ python -m mypy src             # Typen
 | (Kern) | pandas, pydantic, pyyaml | immer |
 | `dev` | pytest, pytest-asyncio, hypothesis, respx, ruff, mypy | Entwicklung |
 | `import` | rispy, pybtex, openpyxl, pymupdf, pdfplumber, pylatexenc | Import; **benötigt** werden heute `openpyxl` (XLSX) und `pylatexenc` (BibTeX) |
-| `cli` | typer, rich | Befehl `sara` |
+| `cli` | typer, rich | Befehl `crapai` |
 | `llm-openai`, `llm-anthropic`, `ui`, `stats` | *(geplant)* | spätere Meilensteine |
 
 Neue Abhängigkeiten ausserhalb dieser Extras nur nach Rückfrage. CI: `.github/workflows/ci.yml` (Ruff, mypy, pytest auf Windows/Linux/macOS, Python 3.11-3.13, ohne `live`-Tests).
@@ -35,7 +35,7 @@ verträglich sein; im Zweifel nachfragen.
 
 | Pfad | Inhalt |
 |---|---|
-| `src/saralocal/` | der Code (Paketname vorläufig, Aufgabe T-M0-03) |
+| `src/crapai/` | der Code (Paket `crapai`, ADR 0017) |
 | `tests/unit`, `tests/integration` | Tests |
 | `tests/data/` | öffentliche Beispielexporte + `EXPECTED.json` (Sollzahlen), **nicht ändern** |
 | `tests/data_large/` | grosse Dateien, nicht versioniert (Marker `large`) |
@@ -49,7 +49,7 @@ verträglich sein; im Zweifel nachfragen.
 
 Alle Funktionen sind typisiert und haben Docstrings (Englisch). Hier die wichtigsten Einstiege.
 
-### 3.1 Fehler (`saralocal.errors`)
+### 3.1 Fehler (`crapai.errors`)
 
 ```python
 class SaraError(Exception):            # code, user_message, hint, details, text_key
@@ -60,22 +60,22 @@ EvaluationError (E501)
 ```
 Jede Auslösestelle darf den Code überschreiben (`ConfigError(..., code="E201")`). `details` enthält nie Geheimnisse oder Abstracts.
 
-### 3.2 Konfiguration (`saralocal.config`)
+### 3.2 Konfiguration (`crapai.config`)
 
 ```python
-from saralocal.config.loader import load_project_config, resolve_config, parse_cli_overrides
+from crapai.config.loader import load_project_config, resolve_config, parse_cli_overrides
 config = load_project_config(Path("project.yaml"))                    # ProjectConfig oder ConfigError
 config = resolve_config(path, cli=parse_cli_overrides(["llm.model=x"]), environ=os.environ)
 ```
 * Fehler: `E201` (Pflichtfeld fehlt), `E203` (ungültiger Wert / unbekannte Einstellung); Meldung listet **alle** Probleme als `yaml.pfad: Grund`.
-* Umgebungsvariablen: `SARA_<ABSCHNITT>__<SCHLUESSEL>` (z. B. `SARA_LLM__MODEL=gpt-4o`); Wert wird wie YAML typisiert. (Schema ist eine Umsetzungsentscheidung.)
-* Rangfolge: CLI > Umgebung > `project.yaml` > `~/.config/sara/config.yaml` > Standardwerte der Modelle.
+* Umgebungsvariablen: `CRAPAI_<ABSCHNITT>__<SCHLUESSEL>` (z. B. `CRAPAI_LLM__MODEL=gpt-4o`); Wert wird wie YAML typisiert. (Schema ist eine Umsetzungsentscheidung.)
+* Rangfolge: CLI > Umgebung > `project.yaml` > `~/.config/crapai/config.yaml` > Standardwerte der Modelle.
 * Ein API-Schlüssel kann nicht gespeichert werden; `llm.api_key_env` muss ein gültiger Variablenname sein.
 
-### 3.3 Projektordner (`saralocal.project`)
+### 3.3 Projektordner (`crapai.project`)
 
 ```python
-ws = Workspace.create(root)          # legt Ordner und .sara/version an (leerer/neuer Ordner)
+ws = Workspace.create(root)          # legt Ordner und .crapai/version an (leerer/neuer Ordner)
 ws = Workspace.open(root)            # prüft Schema-Version; StorageError E404
 with ws.lock(): ...                  # ProjectLock; E402 wenn belegt
 atomic_write_text(path, text)        # → WriteResult(path, used_alternative)
@@ -86,10 +86,10 @@ atomic_write_text(path, text)        # → WriteResult(path, used_alternative)
   `write_records` nutzt die Ausweichdatei **nicht** (`allow_alternative=False`): eine gesperrte `records.csv` ist `E401`, ohne Nebendatei und ohne Protokolleintrag.
   Abgeleitete Exporte (später) dürfen `allow_alternative=True` setzen.
 
-### 3.4 Import (`saralocal.io`, `saralocal.services.importing`)
+### 3.4 Import (`crapai.io`, `crapai.services.importing`)
 
 ```python
-from saralocal.services.importing import ImportRequest, import_source
+from crapai.services.importing import ImportRequest, import_source
 summary = import_source(Workspace(root), ImportRequest(Path("pubmed.ris"), label="PubMed"))
 ```
 `ImportRequest`: `path, label, encoding, delimiter, sheet, mapping, force`. `ImportSummary`: Zahlen, Format und Begründung,
@@ -109,14 +109,14 @@ Einzelbausteine:
 `RawRecord.fields` benutzt die internen Spaltennamen; Felder ohne Spalte in `records.csv` (`notes`, `database_name`, `publisher`, `place`,
 `edition`, `short_title`, `title_translated` u. a.) landen in `extra_json`, ebenso alle `extra`-Einträge (`ris_<TAG>`, `nbib_<TAG>`, `bib_<name>`, `col_<Spalte>`).
 
-### 3.5 Texte (`saralocal.i18n`)
+### 3.5 Texte (`crapai.i18n`)
 
 ```python
 messages = Messages(resolve_language(explicit=None, project_yaml=path))
 messages.text("cli.import.done", records=10, file="x.ris", label="A", abstracts=0, total=10)
 messages.error_lines(error)          # ["Fehler E106: …", "Warum: …", "Einzelheiten: …", "Was tun: …"]
 ```
-Texte nur in `src/saralocal/i18n/texts/en.yaml` und `de.yaml`; Platzhalter benannt (`{count}`), keine Satzverkettung. Neue Schlüssel zuerst
+Texte nur in `src/crapai/i18n/texts/en.yaml` und `de.yaml`; Platzhalter benannt (`{count}`), keine Satzverkettung. Neue Schlüssel zuerst
 in `en.yaml`, dann `de.yaml` (Schweizer Schreibweise, „Sie“). `tests/unit/test_i18n_parity.py` erzwingt gleiche Schlüssel und Platzhalter;
 `i18n/required.py` listet die Schlüssel, auf die Oberfläche und CLI angewiesen sind.
 
@@ -139,7 +139,7 @@ fulltext_of, zip_member, import_notes, extra_json`
 Ein JSON-Objekt je importierter Datei: `schema, timestamp (mit Zeitzone), source_file, sha256, source_label, format, records, abstracts, encoding,
 options (delimiter, sheet), column_map, notes, forced`.
 
-### 4.3 `.sara/lock`, `.sara/version`
+### 4.3 `.crapai/lock`, `.crapai/version`
 
 `version`: eine Ganzzahl (heute `1`). `lock`: siehe 3.3. `app.log`: rotierendes Log (1 MB × 3), enthält Vorgänge, keine Datensatzinhalte.
 
@@ -177,6 +177,6 @@ Arbeit gehört in `services/`; `cli.py` parst nur Argumente, wählt die Sprache,
 | `ModuleNotFoundError: typer` | `pip install -e ".[cli]"` |
 | BibTeX-Titel enthalten `{…}` | `pylatexenc` fehlt: `pip install -e ".[import]"` |
 | Windows-Konsole zeigt Sonderzeichen falsch | Die CLI stellt stdout auf UTF-8 um; sonst `chcp 65001` |
-| `E402` obwohl nichts läuft | veraltete Sperre; nach Bestätigung übernehmbar (`ProjectLock.acquire(take_over_stale=True)`), Datei `.sara/lock` |
-| `E404` bei `status` | Ordner ist kein Projekt (`.sara/version` fehlt) oder `records.csv` wurde von Hand verändert (`data/.backup/` nutzen) |
+| `E402` obwohl nichts läuft | veraltete Sperre; nach Bestätigung übernehmbar (`ProjectLock.acquire(take_over_stale=True)`), Datei `.crapai/lock` |
+| `E404` bei `status` | Ordner ist kein Projekt (`.crapai/version` fehlt) oder `records.csv` wurde von Hand verändert (`data/.backup/` nutzen) |
 | Tests langsam | `pytest -q tests/unit -k "not golden"`; grosse Dateien nur mit `data_large/` |

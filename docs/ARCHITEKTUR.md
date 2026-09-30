@@ -84,7 +84,7 @@ So bleibt der Kern ohne Oberfläche testbar und später von Streamlit und CLI ge
  data/records.import.jsonl
 ```
 
-Der Ablauf hält den **Projektordner** unter der Projektsperre (`.sara/lock`). Bricht das Programm mitten drin ab, ist
+Der Ablauf hält den **Projektordner** unter der Projektsperre (`.crapai/lock`). Bricht das Programm mitten drin ab, ist
 höchstens ein Import nicht protokolliert (die Datensätze stünden dann schon in `records.csv`); nie ist `records.csv` halb geschrieben.
 
 ## 5. Projektordner (Datenvertrag)
@@ -99,20 +99,20 @@ mein-review/
 │  └─ .backup/                 die letzten 5 Sicherungen von records.csv
 ├─ runs/                       [geplant] ein Ordner je Screening-Lauf
 ├─ human/  reports/  prompts/  [geplant/optional]
-└─ .sara/                      version (Schema), lock, app.log
+└─ .crapai/                      version (Schema), lock, app.log
 ```
 
 Formatregeln (Plan Kap. 25.7): CSV nach RFC 4180, UTF-8 **ohne** BOM, Zeilenende `\n`, Komma, minimales Quoting, leerer Wert = null,
 Booleans `true`/`false`, Listen `"A; B"`, `extra_json` als kompaktes JSON. JSONL: ein Objekt je Zeile, kompakt, `ensure_ascii=False`,
 nach jeder Zeile `flush` + `fsync`; eine kaputte **letzte** Zeile wird ignoriert, eine kaputte Zeile **in der Mitte** ist ein Fehler.
-`.sara/` und die technischen Namen (`saralocal`, `sara`) sind **vorläufig** (Aufgabe T-M0-03).
+Namen: Paket und Befehl `crapai`, Zustandsordner `.crapai/` (ADR 0017).
 
 ## 6. Fehlerbehandlung
 
 * Der Kern wirft nur `SaraError`-Unterklassen mit **Code** (Katalog Plan Kap. 26.4, E1xx Import, E2xx Konfiguration, E3xx Anbieter, E4xx Datei, E5xx Statistik).
 * An der Grenze (`cli.py`) werden Fehler abgefangen: Code → Ausgabe (`Fehler E106: … Warum … Einzelheiten … Was tun`) und **Rückgabecode**:
   0 in Ordnung, 1 Benutzerfehler, 2 Systemfehler (Datei, Sperre, Speicher, unerwartet), 4 Ergebnis mit Warnungen.
-* Unerwartete Ausnahmen: Traceback in `.sara/app.log`, dem Benutzer nur `E999` und der Klassenname (nie roher Text, der Geheimnisse enthalten könnte).
+* Unerwartete Ausnahmen: Traceback in `.crapai/app.log`, dem Benutzer nur `E999` und der Klassenname (nie roher Text, der Geheimnisse enthalten könnte).
 * Texte: `errors.<Code>.title|cause|action` in `en.yaml` und `de.yaml`; die Ausnahme selbst trägt eine englische, konkrete Meldung
   (Dateiname, Einstellung) für „Einzelheiten“.
 

@@ -8,11 +8,11 @@ from pathlib import Path
 
 import pytest
 
-from saralocal.errors import ImportFailed, StorageError
-from saralocal.io.import_log import read_entries, sha256_file
-from saralocal.io.records_store import read_records
-from saralocal.project.workspace import Workspace
-from saralocal.services.importing import ImportRequest, import_source
+from crapai.errors import ImportFailed, StorageError
+from crapai.io.import_log import read_entries, sha256_file
+from crapai.io.records_store import read_records
+from crapai.project.workspace import Workspace
+from crapai.services.importing import ImportRequest, import_source
 
 DATA = Path(__file__).resolve().parents[2] / "tests" / "data"
 EXPECTED = json.loads((DATA / "EXPECTED.json").read_text(encoding="utf-8"))
@@ -216,7 +216,7 @@ def test_locked_records_csv_fails_the_import_instead_of_writing_a_side_file(
     """
     import os
 
-    from saralocal.project import atomic
+    from crapai.project import atomic
 
     run(workspace, "example_AB_nr4.ris")
     before = workspace.records_csv.read_bytes()

@@ -9,8 +9,8 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from saralocal.cli import app
-from saralocal.io.records_store import read_records
+from crapai.cli import app
+from crapai.io.records_store import read_records
 
 DATA = Path(__file__).resolve().parents[1] / "data"
 EXPECTED = json.loads((DATA / "EXPECTED.json").read_text(encoding="utf-8"))

@@ -8,13 +8,13 @@ from pathlib import Path
 
 import pytest
 
-from saralocal.io.normalize import ImportContext, to_record, to_records
-from saralocal.io.readers.base import RawRecord
-from saralocal.io.readers.bibtex import read_bibtex
-from saralocal.io.readers.nbib import read_nbib
-from saralocal.io.readers.ris import read_ris
-from saralocal.io.readers.tabular import read_table
-from saralocal.io.records_store import RECORD_COLUMNS, read_records, write_records
+from crapai.io.normalize import ImportContext, to_record, to_records
+from crapai.io.readers.base import RawRecord
+from crapai.io.readers.bibtex import read_bibtex
+from crapai.io.readers.nbib import read_nbib
+from crapai.io.readers.ris import read_ris
+from crapai.io.readers.tabular import read_table
+from crapai.io.records_store import RECORD_COLUMNS, read_records, write_records
 
 DATA = Path(__file__).resolve().parents[2] / "tests" / "data"
 EXPECTED = json.loads((DATA / "EXPECTED.json").read_text(encoding="utf-8"))

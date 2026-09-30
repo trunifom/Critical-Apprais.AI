@@ -16,7 +16,7 @@ see `docs/PROJEKTPLAN.md` chapters 27 and 39). What changed is listed at the end
   explain *why*, not what the next line does.
 - Keep `docs/` aligned with real behavior. Mark roadmap details as *planned*, not implemented.
 - Files copied from `reference/` keep a header `PORTED from ...` naming the original and the changes.
-- The product is called "Critical Apprais.AI", never "SARA" (docs/NAMING_AND_HISTORY.md). Use `saralocal.branding.PRODUCT_NAME` in user-visible strings.
+- The product is called "Critical Apprais.AI", never "SARA" (docs/NAMING_AND_HISTORY.md). Use `crapai.branding.PRODUCT_NAME` in user-visible strings.
 
 ## Domain and module boundaries
 

@@ -1,6 +1,6 @@
 """Enum values are persisted in logs and files, so they must never change silently."""
 
-from saralocal.enums import EventType, Framework, PreflightIssueCode, PreflightStatus, RunStatus
+from crapai.enums import EventType, Framework, PreflightIssueCode, PreflightStatus, RunStatus
 
 
 def test_string_enum_str_returns_value() -> None:

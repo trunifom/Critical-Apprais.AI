@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from saralocal.errors import ImportFailed
-from saralocal.io.readers.detect import SourceFormat, detect_format
-from saralocal.io.readers.nbib import parse_nbib_text, read_nbib
+from crapai.errors import ImportFailed
+from crapai.io.readers.detect import SourceFormat, detect_format
+from crapai.io.readers.nbib import parse_nbib_text, read_nbib
 
 DATA = Path(__file__).resolve().parents[2] / "tests" / "data"
 EXPECTED = json.loads((DATA / "EXPECTED.json").read_text(encoding="utf-8"))

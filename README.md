@@ -1,7 +1,7 @@
 # Critical Apprais.AI
 
 > **Namenshinweis:** Diese Software heisst **Critical Apprais.AI**. Sie ist der Nachfolger der früheren Software **SARA** (Prototyp und Web-App *SARA-App*), aber **nicht** SARA.
-> Ordner, Python-Paket (`saralocal`) und Befehl (`sara`) tragen noch **vorläufige Arbeitsnamen**; die Umbenennung ist eine eigene Aufgabe (T-M0-03). Details: `docs/NAMING_AND_HISTORY.md`.
+> Kurzform: **CrAp-AI** (Python-Paket und Befehl: `crapai`, Zustandsordner `.crapai/`). Die früheren Arbeitsnamen `saralocal`/`sara` gibt es nicht mehr. Details: `docs/NAMING_AND_HISTORY.md`, ADR 0017.
 
 Lokale Python-Software für das **KI-gestützte Titel- und Abstract-Screening in systematischen Literaturreviews**.
 **Keine Datenbank, kein Server, keine Konten:** Der Projektordner auf Ihrem Rechner ist die Datenbank. Die Software liest Literaturexporte (RIS, NBIB, BibTeX, CSV, XLSX),
@@ -12,8 +12,8 @@ bereitet sie auf und wird sie zusammen mit Ihren Ein- und Ausschlusskriterien ei
 
 | Bereich | Stand |
 |---|---|
-| Projekt anlegen, Status (`sara init`, `sara status`) | **umgesetzt** |
-| Import RIS, NBIB/MEDLINE, BibTeX, CSV, TSV, XLSX (`sara import`) | **umgesetzt**, getestet gegen unabhängige Sollzahlen |
+| Projekt anlegen, Status (`crapai init`, `crapai status`) | **umgesetzt** |
+| Import RIS, NBIB/MEDLINE, BibTeX, CSV, TSV, XLSX (`crapai import`) | **umgesetzt**, getestet gegen unabhängige Sollzahlen |
 | Projektordner, atomares Schreiben, Sperre, Sicherungen, Import-Protokoll mit Prüfsummen | **umgesetzt** |
 | Konfiguration `project.yaml` (geprüft, Rangfolge CLI > Umgebung > Projekt > Benutzer) | **umgesetzt** |
 | Meldungen und Fehlertexte Deutsch/Englisch | **umgesetzt** |
@@ -41,9 +41,9 @@ py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev,import,cli]"
 
-sara init mein-review --from-template demo
-sara import mein-review tests/data/example_db_nr2_total-10_duplicates-3.ris --label PubMed
-sara status mein-review
+crapai init mein-review --from-template demo
+crapai import mein-review tests/data/example_db_nr2_total-10_duplicates-3.ris --label PubMed
+crapai status mein-review
 ```
 
 Ausführlich: **`docs/BENUTZERHANDBUCH.md`**.
@@ -69,7 +69,7 @@ Ausführlich: **`docs/BENUTZERHANDBUCH.md`**.
 ## Aufbau des Repositorys
 
 ```
-src/saralocal/     Programmcode (Schichten: cli → services → Kern; Details in docs/ARCHITEKTUR.md)
+src/crapai/     Programmcode (Schichten: cli → services → Kern; Details in docs/ARCHITEKTUR.md)
 tests/             unit/, integration/, data/ (Beispielexporte + EXPECTED.json), legacy_runs/, expected/
 docs/              Dokumentation (Deutsch), adr/, Spezifikation, Fachliteratur
 templates/         Beispielkonfiguration, Modellkatalog, Preise, Prompt-Varianten

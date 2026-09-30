@@ -8,7 +8,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from saralocal.io.normalize import clean_text, coerce_year, normalize_doi, normalize_list
+from crapai.io.normalize import clean_text, coerce_year, normalize_doi, normalize_list
 
 
 def test_clean_text_applies_nfc() -> None:

@@ -8,9 +8,9 @@ from pathlib import Path
 import pytest
 from openpyxl import Workbook
 
-from saralocal.errors import ImportFailed
-from saralocal.io.readers.detect import SourceFormat
-from saralocal.io.readers.tabular import (
+from crapai.errors import ImportFailed
+from crapai.io.readers.detect import SourceFormat
+from crapai.io.readers.tabular import (
     read_table,
     resolve_columns,
     unique_headers,

@@ -2,8 +2,7 @@
 
 **Kurz:** Die neue Software heisst **Critical Apprais.AI**. Es hat früher eine Software namens **SARA** gegeben
 (Prototyp, ZHAW). Critical Apprais.AI ist **nicht SARA**, sondern eine neue, lokale Software mit demselben fachlichen Ziel.
-Der Ordner, das Python-Paket und der Kommandozeilenbefehl tragen noch die **vorläufigen Arbeitsnamen** `SARA-Local`,
-`saralocal` und `sara` (siehe Abschnitt 4).
+Die Kurzform ist **CrAp-AI**; Python-Paket und Befehl heissen `crapai` (siehe Abschnitt 4).
 
 ## 1. Genealogie
 
@@ -32,7 +31,7 @@ liest die alten Testdaten, aber man baut kein "SARA 2".
 1. **Produktname:** exakt **Critical Apprais.AI** (grosses C, grosses A, Punkt, grosses AI). Kein "CriticalApprais", kein "Critical Appraisal AI"
    ohne Absprache.
 2. **Das neue Produkt wird nie "SARA" genannt** - nicht in der Oberfläche, in Hilfetexten, Berichten, Methodentexten, Manifesten, Dateikopfzeilen
-   oder in der README. Im Code steht der Anzeigename in **einer** Konstante (`saralocal/branding.py: PRODUCT_NAME`), nicht verstreut.
+   oder in der README. Im Code steht der Anzeigename in **einer** Konstante (`crapai/branding.py: PRODUCT_NAME`), nicht verstreut.
 3. **"SARA" ist erlaubt** nur für das Vorgängerprojekt: in `docs/legacy/`, `docs/reports/`, `reference/`, Kommentaren wie `PORTED from SARA-App`,
    Kapiteln über die Vorgeschichte, und in **archivierten Daten** (Lauf-Dateien, Berichte in `tests/legacy_runs/`, `tests/expected/`). Diese Dateien werden
    nicht umbenannt.
@@ -42,25 +41,27 @@ liest die alten Testdaten, aber man baut kein "SARA 2".
 6. **Nutzertexte** (i18n): kein "SARA". Der Zweck-Text auf der Startseite nennt Critical Apprais.AI.
 7. Wer im Bestand auf "SARA" in einem Nutzertext des **neuen** Codes stösst (z. B. in aus `reference/` kopierten Texten), ersetzt es durch `PRODUCT_NAME`.
 
-## 4. Vorläufige Arbeitsnamen (technische Bezeichner)
+## 4. Technische Namen (endgültig, ADR 0017)
 
-Die technischen Namen wurden angelegt, bevor der Produktname feststand. Sie bleiben **vorläufig unverändert**, damit Code, Tests und Doku
-konsistent bleiben. Agenten benennen sie **nicht auf eigene Faust um**. Die Umbenennung ist eine eigene Aufgabe (`tasks/T-M0-03.md`).
+Die Kurzform des Produkts ist **CrAp-AI** (Entscheid der Projektleitung, 2026-09-30). In Paket- und Befehlsnamen sind Bindestrich, Punkt und Grossbuchstaben
+nicht verwendbar, deshalb lauten die technischen Bezeichner in Kleinbuchstaben ohne Trennzeichen.
 
-| Bezeichner | Heute (Arbeitsname) | Wo | Hinweis |
-|---|---|---|---|
-| Ordner / Starterpaket | `SARA-Local` | `C:\Users\trug\Documents\GitHub\SARA-Local` | wird zum Repository-Namen |
-| Python-Paket | `saralocal` (`src/saralocal/`) | Importe in Code und Tests | Bindestrich/Punkt sind in Paketnamen nicht möglich |
-| Projektname in `pyproject.toml` | `sara-local` | | |
-| CLI-Befehl | `sara` (`sara import`, `sara screen`, ...) | Plan Kap. 15, 27.10, 31 | Kurzer Befehl nötig; Vorschlag in T-M0-03 |
-| Zustandsordner im Review-Projekt | `.sara/` | Plan Kap. 6 | Teil des Dateiformats -> vor v1 endgültig festlegen |
-| Umgebungsvariablen | `SWISSGPT_API_KEY` u. a. | `templates/` | anbieterbezogen, nicht produktbezogen |
+| Bezeichner | Name | Wo |
+|---|---|---|
+| Kurzform des Produkts | `CrAp-AI` | Texte, Kommunikation (im Code: `crapai.branding.SHORT_NAME`) |
+| Python-Paket | `crapai` (`src/crapai/`) | Importe in Code und Tests, Distributionsname in `pyproject.toml` |
+| CLI-Befehl | `crapai` (`crapai import`, `crapai screen`, ...) | Plan Kap. 15, 27.10, 31 |
+| Zustandsordner im Review-Projekt | `.crapai/` | Plan Kap. 6; Teil des Dateiformats |
+| Umgebungsvariablen (Einstellungen) | `CRAPAI_<ABSCHNITT>__<SCHLUESSEL>` | z. B. `CRAPAI_LLM__MODEL` |
+| Benutzerkonfiguration | `~/.config/crapai/config.yaml` | Plan Kap. 16.3 |
+| Repository | `Critical-Apprais.AI` | `https://github.com/trunifom/Critical-Apprais.AI` |
+| Anbieterschlüssel | `SWISSGPT_API_KEY` u. a. | anbieterbezogen, nicht produktbezogen |
 
-Wo der Plan "SARA-Local" schreibt, meint er den **Projekt-/Ordnernamen** (Arbeitsname) oder, in Prosa, die neue Software. Im Text wurde der Produktname
-`Critical Apprais.AI` dort eingesetzt, wo die Software gemeint ist. Befehle wie `sara screen` sind Platzhalter für den künftigen CLI-Namen.
+**Früher** (nur noch historisch): Ordner `SARA-Local`, Paket `saralocal`, Befehl `sara`, Zustandsordner `.sara/`, Umgebungsvariablen `SARA_...`, Distribution `sara-local`.
+Wo der Plan noch "SARA-Local" schreibt, meint er den Projektordner der neuen Software; die Befehlsbeispiele wurden auf `crapai` umgestellt.
 
-Optionen für die endgültigen Bezeichner (Entscheid offen, Aufgabe T-M0-03): Paket `criticalapprais` oder `apprais_ai`; CLI `apprais` oder `capprais`;
-Ordner/Repo `Critical-Apprais-AI`; Zustandsordner `.apprais/`. Punkt und Grossbuchstaben im Produktnamen sind für Paket- und Befehlsnamen nicht verwendbar.
+**Hinweis zur Wahl:** "CrAp" ist ein bewusst humorvoller Name. Für Suchmaschinen und offizielle Kommunikation bleibt der volle Name **Critical Apprais.AI** massgebend
+(Regel 1 in Abschnitt 3); die Kurzform ist für Paket, Befehl und Gespräch gedacht.
 
 ## 5. Wörterbuch alt -> neu (für Leser der alten Dokumente)
 

@@ -8,9 +8,9 @@ open `docs/INDEX.md`. Human readers: see `README.md`.
 **The product you are building is called "Critical Apprais.AI".** It is **not** SARA. A software called **SARA** existed before (a research prototype and a Streamlit/Supabase web app, `SARA-App`, from a ZHAW project); it is the *predecessor*. Critical Apprais.AI is a new, local software with the same professional goal. Read `docs/NAMING_AND_HISTORY.md` now.
 
 Naming rules (binding):
-- Write the product name exactly **Critical Apprais.AI**; use `saralocal.branding.PRODUCT_NAME` in user-visible strings.
+- Write the product name exactly **Critical Apprais.AI**; use `crapai.branding.PRODUCT_NAME` in user-visible strings.
 - Never call the new product "SARA" in UI texts, reports, manifests or new documents. "SARA", "SARA-App" and `reference/` describe the predecessor and are allowed only in historical/reference contexts.
-- The folder `SARA-Local`, the Python package `saralocal`, the CLI command `sara` and the state folder `.sara/` are **provisional working names** created before the name was chosen. Keep them until task `T-M0-03` renames them; do not rename on your own.
+- Short form of the product: **CrAp-AI**. Technical names (ADR 0017): Python package `crapai`, CLI command `crapai`, state folder `.crapai/`, environment prefix `CRAPAI_`. The old working names `SARA-Local`, `saralocal`, `sara` and `.sara/` are history.
 
 **Critical Apprais.AI** is a local Python tool for systematic literature reviews. It imports bibliographic exports
 (RIS, NBIB/MEDLINE, BibTeX, CSV/XLSX, ZIP of PDFs), prepares the records (normalise, mark duplicates, mark missing
@@ -29,13 +29,13 @@ decisions (with per-criterion verdicts and short justifications) into tables (CS
 | `docs/PROJEKTPLAN.md` | Full specification (German, chapters 1-40) | Source of truth for behaviour and formats. Use `python scripts/plan_chapter.py <n>` to print one chapter |
 | `docs/INDEX.md` | Map of all documents and a reading plan per task | Start here |
 | `docs/KICKOFF_PROMPT.md` | Start-Prompt with phases A-C (orientation, git setup + first commit, task loop) | Follow when starting |
-| `docs/NAMING_AND_HISTORY.md` | Product name, predecessor SARA, naming rules, provisional identifiers | Read first |
+| `docs/NAMING_AND_HISTORY.md` | Product name, short form, predecessor SARA, naming rules, technical identifiers | Read first |
 | `docs/MIGRATION.md` | Which old file becomes which new module, and its status | Update when you port something |
 | `docs/coding/coding_guidelines.md` | Coding rules | Binding |
 | `docs/adr/` | Architecture decision records | Add one when you make a structural decision |
 | `docs/swissgpt/`, `docs/literature/`, `docs/guidelines/`, `docs/reports/` | API spec, papers, PRISMA/PICO guidance, project report | Read-only background |
 | `docs/legacy/` | Old manuals from earlier repositories | Partly outdated, see `docs/INDEX.md` |
-| `src/saralocal/` | The new code base | Your work goes here |
+| `src/crapai/` | The new code base | Your work goes here |
 | `tests/unit`, `tests/integration` | Tests | Every change needs tests |
 | `tests/data/` | Small fixtures (public bibliographic exports) + `EXPECTED.json` (oracle counts) | Read-only |
 | `tests/data_large/` | Big fixtures (11.5 MB BibTeX, PDF ZIP, PRISMA snapshots), not versioned | Optional, mark tests `large` |
@@ -88,7 +88,7 @@ python -m pytest -q
 - Python >= 3.11, type hints everywhere, docstrings on public API, `logging` instead of `print`, `pathlib.Path`.
 - Code/docstrings/logs/comments in English. Documents in `docs/` in German (Swiss spelling: "ss").
 - Text files UTF-8; Excel exports UTF-8 with BOM; CSV dialect and JSONL rules in plan chapter 25.7.
-- All user-visible text lives in `src/saralocal/i18n/texts/*.yaml` (en, de). Errors have a code (plan chapter 26.4).
+- All user-visible text lives in `src/crapai/i18n/texts/*.yaml` (en, de). Errors have a code (plan chapter 26.4).
 - Ruff line length 100. Files ported verbatim keep their style until a task refactors them (see `pyproject.toml`).
 - Prefer small, focused modules; follow the layering in plan chapter 28.2.
 
@@ -119,7 +119,7 @@ python -m pytest -q
 ## 9. Known state at handover
 
 - The handover state (47 tests, four ported modules) is history. Milestone A is reached: config, project folder, format detection,
-  readers (RIS, NBIB, BibTeX, tables), normalisation, `records.csv`, import log, `sara init/import/status`, German + English texts.
+  readers (RIS, NBIB, BibTeX, tables), normalisation, `records.csv`, import log, `crapai init/import/status`, German + English texts.
 - Current state, test count and the next step: `docs/UMSETZUNGSPLAN_UND_FORTSCHRITT.md` (keep it current, it is the hand-over log).
 - Documentation set to maintain with every task: `docs/BENUTZERHANDBUCH.md`, `docs/ENTWICKLERDOKUMENTATION.md`, `docs/ARCHITEKTUR.md`,
   `README.md`, `CHANGELOG.md` (tests/unit/test_docs.py checks that they stay consistent with the code).

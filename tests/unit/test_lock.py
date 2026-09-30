@@ -10,8 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from saralocal.errors import StorageError
-from saralocal.project.lock import ProjectLock, pid_alive
+from crapai.errors import StorageError
+from crapai.project.lock import ProjectLock, pid_alive
 
 
 class Clock:
@@ -34,7 +34,7 @@ def make(path: Path, clock: Clock, *, pid: int, alive: set[int] | None = None) -
 
 def test_acquire_creates_lock_file_with_pid_and_times(tmp_path: Path) -> None:
     clock = Clock()
-    lock = make(tmp_path / ".sara" / "lock", clock, pid=111)  # parent folder is created
+    lock = make(tmp_path / ".crapai" / "lock", clock, pid=111)  # parent folder is created
     lock.acquire()
     info = lock.inspect()
     assert info is not None

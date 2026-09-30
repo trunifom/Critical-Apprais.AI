@@ -9,14 +9,14 @@ from pathlib import Path
 
 import pytest
 
-from saralocal.errors import ImportFailed
-from saralocal.io.readers.bibtex import (
+from crapai.errors import ImportFailed
+from crapai.io.readers.bibtex import (
     clean_abstract,
     clean_latex,
     parse_bibtex_text,
     read_bibtex,
 )
-from saralocal.io.readers.detect import SourceFormat
+from crapai.io.readers.detect import SourceFormat
 
 ROOT = Path(__file__).resolve().parents[2] / "tests"
 DATA = ROOT / "data"
@@ -61,7 +61,7 @@ def test_zotero_file_types_abstracts_and_dois() -> None:
 
 def test_bib_twin_agrees_with_ris_twin_on_titles() -> None:
     """The Zotero .bib and .ris hold the same 706 references; titles must agree."""
-    from saralocal.io.readers.ris import read_ris
+    from crapai.io.readers.ris import read_ris
 
     bib = read_bibtex(DATA / "pubmed_adhd_converted-zotero.bib").records
     ris = read_ris(DATA / "pubmed_adhd_converted-zotero.ris").records

@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from saralocal.errors import ImportFailed
-from saralocal.io.readers.base import (
+from crapai.errors import ImportFailed
+from crapai.io.readers.base import (
     RawRecord,
     ReadResult,
     decode_text,
@@ -15,7 +15,7 @@ from saralocal.io.readers.base import (
     read_text_file,
     unique_in_order,
 )
-from saralocal.io.readers.detect import SourceFormat
+from crapai.io.readers.detect import SourceFormat
 
 
 def test_decode_chain_and_newline_normalisation() -> None:

@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from saralocal.branding import PREDECESSOR_NAMES, PRODUCT_NAME
+from crapai.branding import PREDECESSOR_NAMES, PRODUCT_NAME
 
-SRC = Path(__file__).resolve().parents[2] / "src" / "saralocal"
+SRC = Path(__file__).resolve().parents[2] / "src" / "crapai"
 
 
 def test_product_name_is_exact_and_not_a_predecessor_name() -> None:

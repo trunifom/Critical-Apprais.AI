@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from saralocal.errors import ImportFailed
-from saralocal.io.readers.detect import (
+from crapai.errors import ImportFailed
+from crapai.io.readers.detect import (
     SNIFF_BYTES,
     DetectionResult,
     SourceFormat,

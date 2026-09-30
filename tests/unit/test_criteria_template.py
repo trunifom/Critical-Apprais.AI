@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from saralocal.criteria.template import CriteriaTemplate
+from crapai.criteria.template import CriteriaTemplate
 
 
 def test_picos_fields_in_order() -> None:

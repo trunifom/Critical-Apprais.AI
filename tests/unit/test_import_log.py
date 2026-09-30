@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from saralocal.errors import ImportFailed, StorageError
-from saralocal.io.import_log import (
+from crapai.errors import ImportFailed, StorageError
+from crapai.io.import_log import (
     ImportLogEntry,
     append_entry,
     ensure_not_imported,

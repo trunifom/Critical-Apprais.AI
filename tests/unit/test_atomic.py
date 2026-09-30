@@ -12,9 +12,9 @@ from typing import BinaryIO
 
 import pytest
 
-from saralocal.errors import StorageError
-from saralocal.project import atomic
-from saralocal.project.atomic import (
+from crapai.errors import StorageError
+from crapai.project import atomic
+from crapai.project.atomic import (
     alternative_path,
     atomic_write,
     atomic_write_bytes,
@@ -67,7 +67,7 @@ def test_killed_process_never_replaces_the_real_file(tmp_path: Path) -> None:
         """
         import os, sys
         from pathlib import Path
-        from saralocal.project.atomic import atomic_write
+        from crapai.project.atomic import atomic_write
 
         def writer(handle):
             handle.write(b"HALF WRITTEN")

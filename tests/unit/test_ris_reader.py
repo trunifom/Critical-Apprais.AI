@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from saralocal.errors import ImportFailed
-from saralocal.io.readers.detect import SourceFormat
-from saralocal.io.readers.ris import parse_ris_text, read_ris
+from crapai.errors import ImportFailed
+from crapai.io.readers.detect import SourceFormat
+from crapai.io.readers.ris import parse_ris_text, read_ris
 
 DATA = Path(__file__).resolve().parents[2] / "tests" / "data"
 EXPECTED = json.loads((DATA / "EXPECTED.json").read_text(encoding="utf-8"))
