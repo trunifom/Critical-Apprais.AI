@@ -28,13 +28,15 @@ import yaml
 
 from crapai import __version__
 from crapai.branding import CLI_NAME, PRODUCT_NAME
+from crapai.cli_progress import ProgressPrinter
 from crapai.config.overrides import effective_settings, reset_values, set_values
-from crapai.cost.duration import format_duration
+from crapai.cost.duration import Confirmation, decide_confirmation, format_duration
 from crapai.errors import UNEXPECTED_ERROR_CODE, ConfigError, SaraError
 from crapai.i18n.messages import Messages, resolve_language
 from crapai.logging_setup import attach_project_log, enable_console_log
 from crapai.project.lock import pid_alive
 from crapai.project.workspace import Workspace, cloud_sync_marker
+from crapai.services import screening as screening_service
 from crapai.services.cost import ProjectEstimate, estimate_project
 from crapai.services.dedup import dedup_project
 from crapai.services.export import (
@@ -54,6 +56,7 @@ _verbose = False  # set by --verbose; read when the project log is attached
 EXIT_OK = 0
 EXIT_USER_ERROR = 1
 EXIT_SYSTEM_ERROR = 2
+EXIT_INTERRUPTED = 3  # a run was paused or interrupted; it can be resumed
 EXIT_WARNINGS = 4
 
 # Preflight findings that stop the run (shown in red); all others are warnings (yellow).
@@ -945,6 +948,341 @@ def unlock_command(
         raise _fail(error, messages, json_mode=False) from error
     logger.info("Removed the stale project lock of PID %d", info.pid)
     typer.secho(messages.text("cli.unlock.removed"), fg="green")
+
+
+@app.command("screen")
+def screen_command(
+    folder: Annotated[Path, typer.Argument(help="Project folder.")],
+    sample: Annotated[
+        int | None,
+        typer.Option(
+            "--sample",
+            min=1,
+            help="Trial run with this many randomly drawn records (reproducible).",
+        ),
+    ] = None,
+    resume: Annotated[
+        bool,
+        typer.Option(
+            "--resume",
+            help="Continue the newest unfinished run (or the run named by --run-id).",
+        ),
+    ] = False,
+    run_id: Annotated[
+        str | None, typer.Option("--run-id", help="Run to resume (default: the newest).")
+    ] = None,
+    retry_failed: Annotated[
+        bool | None,
+        typer.Option(
+            "--retry-failed/--no-retry-failed",
+            help="On resume: try failed records again (default: run.retry_failed_on_resume).",
+        ),
+    ] = None,
+    yes: Annotated[
+        bool, typer.Option("--yes", help="Start without asking for confirmation.")
+    ] = False,
+    no_progress: Annotated[
+        bool, typer.Option("--no-progress", help="Do not show the progress bar.")
+    ] = False,
+    as_json: JsonOption = False,
+    lang: LangOption = None,
+) -> None:
+    """Screen the records of a project with the language model, in safe batches.
+
+    The records go to the model in batches (run.batch_size); after each batch the results are
+    checked on disk before the next one starts. Stop with Ctrl+C at any time: nothing done is
+    lost and "crapai screen FOLDER --resume" continues with the records still open.
+    Exit code 0 = completed, 4 = completed with failed records, 3 = paused or interrupted,
+    1 = failed (user can fix), 2 = failed (system problem such as a full disk).
+    Example: crapai screen my-review --sample 20
+    """
+    messages = Messages(resolve_language(lang, folder / "project.yaml"))
+    _setup_file_log(folder)
+    printer: ProgressPrinter | None = None
+    try:
+        workspace = Workspace.open(folder)
+        if not resume:
+            # Bring duplicates and validity up to date first, exactly like "crapai check".
+            check_project(workspace, update=True)
+        estimate, estimate_problem = _estimate_for_screen(workspace, resume)
+        if not yes:
+            _confirm_screen(estimate, estimate_problem, messages, as_json=as_json)
+        if not as_json and not no_progress:
+            printer = ProgressPrinter(messages)
+        _echo(messages.text("cli.screen.stop_hint"), json_mode=as_json)
+        result = screening_service.screen_project(
+            workspace,
+            screening_service.RunOptions(
+                sample=sample,
+                resume=(run_id or "latest") if (resume or run_id) else None,
+                retry_failed=retry_failed,
+                progress=printer,
+            ),
+        )
+    except typer.Exit:
+        raise
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        if printer is not None:
+            printer.close()
+        raise _fail(error, messages, json_mode=as_json) from error
+    if printer is not None:
+        printer.close()
+    raise typer.Exit(_print_screen_result(result, folder, messages, as_json=as_json))
+
+
+def _estimate_for_screen(workspace: Workspace, resume: bool) -> tuple[ProjectEstimate | None, str]:
+    """The cost estimate shown before a run, or ``(None, reason)`` if there is none."""
+    try:
+        return estimate_project(workspace), ""
+    except SaraError as error:
+        logger.warning("Cost estimate not available: %s", error.code)
+        return None, f"{error.code}: {error.user_message}"
+    except Exception as error:  # noqa: BLE001 - the estimate is optional; the run goes on
+        logger.exception("Cost estimate failed")
+        return None, type(error).__name__
+
+
+def _confirm_screen(
+    estimate: ProjectEstimate | None, problem: str, messages: Messages, *, as_json: bool
+) -> None:
+    """Show the estimate and ask, or refuse if nobody can be asked (plan 8.5)."""
+    if estimate is not None and estimate.estimate.cost is not None:
+        run = estimate.estimate
+        _echo(
+            messages.text(
+                "cli.screen.estimate",
+                low=f"{run.cost_low:.4f}",
+                high=f"{run.cost_high:.4f}",
+                worst=f"{run.cost_max:.4f}",
+                currency=run.currency,
+                duration=format_duration(estimate.duration.seconds),
+            ),
+            json_mode=as_json,
+        )
+        if estimate.over_limit:
+            _echo(
+                messages.text("cli.screen.over_limit", max_cost=estimate.max_cost),
+                json_mode=as_json,
+                colour="yellow",
+            )
+    else:
+        reason = problem or messages.text("cli.check.cost.no_price")
+        _echo(messages.text("cli.screen.estimate_none", reason=reason), json_mode=as_json)
+    decision = decide_confirmation(yes=False, interactive=_interactive())
+    if decision is Confirmation.REFUSE:
+        typer.secho(messages.text("cli.screen.declined"), fg="yellow", err=True)
+        raise typer.Exit(EXIT_USER_ERROR)
+    if not typer.confirm(messages.text("cli.screen.confirm"), err=as_json):
+        typer.echo(messages.text("cli.screen.declined"), err=True)
+        raise typer.Exit(EXIT_USER_ERROR)
+
+
+def _screen_exit_code(result: screening_service.RunResult) -> int:
+    """The exit code for how a run ended (see the docstring of the screen command)."""
+    state = result.summary.state
+    if state == "completed":
+        return EXIT_WARNINGS if result.summary.errors else EXIT_OK
+    if state in ("paused", "interrupted"):
+        return EXIT_INTERRUPTED
+    code = result.summary.last_error.get("code", "")
+    return EXIT_SYSTEM_ERROR if code in SYSTEM_ERROR_CODES else EXIT_USER_ERROR
+
+
+def _screen_json(result: screening_service.RunResult) -> dict[str, Any]:
+    summary = result.summary
+    return {
+        "run_id": result.run_id,
+        "state": summary.state,
+        "resumed": result.resumed,
+        "total": summary.total,
+        "done": summary.done,
+        "by_status": summary.by_status,
+        "cost": round(summary.cost, 6),
+        "tokens_in": summary.tokens_in,
+        "tokens_out": summary.tokens_out,
+        "stop_reason": summary.stop_reason,
+        "last_error": summary.last_error,
+        "warnings": result.warnings,
+        "folder": str(result.folder),
+    }
+
+
+def _print_screen_result(
+    result: screening_service.RunResult, folder: Path, messages: Messages, *, as_json: bool
+) -> int:
+    """Print how the run ended, what to do next, and return the exit code."""
+    summary = result.summary
+    code = _screen_exit_code(result)
+    if as_json:
+        typer.echo(json.dumps(_screen_json(result), ensure_ascii=False, indent=2))
+    colour = {"completed": "green", "paused": "yellow", "interrupted": "yellow"}.get(
+        summary.state, "red"
+    )
+    typer.secho(
+        messages.text(
+            f"cli.screen.result.{summary.state}",
+            run_id=result.run_id,
+            ok=summary.ok,
+            errors=summary.errors,
+            done=summary.done,
+            total=summary.total,
+            reason=summary.stop_reason or "-",
+        ),
+        fg=colour,
+        bold=True,
+        err=as_json,
+    )
+    if summary.last_error:
+        typer.secho(
+            messages.text(
+                "cli.screen.error_line",
+                code=summary.last_error.get("code", ""),
+                message=summary.last_error.get("message", ""),
+            ),
+            fg=colour,
+            err=True,
+        )
+    currency = result.manifest.usage.get("currency", "")
+    _echo(
+        messages.text(
+            "cli.screen.usage",
+            tokens_in=summary.tokens_in,
+            tokens_out=summary.tokens_out,
+            cost=f"{summary.cost:.4f}",
+            currency=currency,
+            duration=format_duration(summary.duration_s),
+        ),
+        json_mode=as_json,
+    )
+    for warning in result.warnings:
+        _echo(messages.text("cli.screen.warning", text=warning), json_mode=as_json, colour="yellow")
+    results_file = result.folder / "screening.jsonl"
+    _echo(messages.text("cli.screen.files", path=results_file), json_mode=as_json)
+    if summary.errors:
+        _echo(
+            messages.text("cli.screen.errors_hint", errors=summary.errors, file=results_file.name),
+            json_mode=as_json,
+            colour="yellow",
+        )
+    if summary.state != "completed" or summary.errors:
+        _echo(
+            messages.text("cli.screen.resume_hint", command=COMMAND, folder=folder),
+            json_mode=as_json,
+        )
+    return code
+
+
+@app.command("runs")
+def runs_command(
+    folder: Annotated[Path, typer.Argument(help="Project folder.")],
+    as_json: JsonOption = False,
+    lang: LangOption = None,
+) -> None:
+    """List the screening runs of a project with their state and counts.
+
+    Example: crapai runs my-review
+    """
+    messages = Messages(resolve_language(lang, folder / "project.yaml"))
+    _setup_file_log(folder)
+    try:
+        manifests = screening_service.list_runs(Workspace.open(folder))
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        raise _fail(error, messages, json_mode=as_json) from error
+    if as_json:
+        typer.echo(
+            json.dumps(
+                [
+                    {
+                        "run_id": m.run_id,
+                        "state": m.state,
+                        "kind": m.kind,
+                        "counts": m.counts,
+                        "usage": m.usage,
+                        "stop_reason": m.stop_reason,
+                        "updated_at": m.updated_at,
+                    }
+                    for m in manifests
+                ],
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return
+    if not manifests:
+        typer.echo(messages.text("cli.runs.none", command=COMMAND, folder=folder))
+        return
+    typer.echo(messages.text("cli.runs.header"))
+    for m in manifests:
+        done = m.counts.get("done", 0)
+        typer.echo(
+            messages.text(
+                "cli.runs.line",
+                run_id=m.run_id,
+                state=m.state,
+                kind=m.kind,
+                done=done,
+                total=m.counts.get("total", 0),
+                errors=done - m.counts.get("ok", 0),
+                cost=f"{float(m.usage.get('cost', 0.0)):.4f}",
+                currency=m.usage.get("currency", ""),
+            )
+        )
+
+
+def _send_control(folder: Path, command: str, run_id: str | None, lang: str | None) -> None:
+    """Write a pause/stop request for a running run (shared by the two commands)."""
+    messages = Messages(resolve_language(lang, folder / "project.yaml"))
+    _setup_file_log(folder)
+    try:
+        workspace = Workspace.open(folder)
+        store = screening_service.find_run(workspace, run_id or "latest")
+        manifest = store.load_manifest()
+        if manifest.state != "running":
+            typer.secho(
+                messages.text(
+                    "cli.control.not_running",
+                    run_id=manifest.run_id,
+                    state=manifest.state,
+                    command=command,
+                ),
+                fg="yellow",
+                err=True,
+            )
+            raise typer.Exit(EXIT_USER_ERROR)
+        screening_service.request_control(workspace, manifest.run_id, command)
+    except typer.Exit:
+        raise
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        raise _fail(error, messages, json_mode=False) from error
+    logger.info("Sent %s to run %s", command, manifest.run_id)
+    typer.echo(messages.text("cli.control.sent", command=command, run_id=manifest.run_id))
+
+
+@app.command("pause")
+def pause_command(
+    folder: Annotated[Path, typer.Argument(help="Project folder.")],
+    run_id: Annotated[str | None, typer.Option("--run-id", help="Run (default: newest).")] = None,
+    lang: LangOption = None,
+) -> None:
+    """Ask a running screening run (in another terminal or the interface) to pause.
+
+    The requests in flight are finished, then the run stops in the state "paused".
+    Example: crapai pause my-review
+    """
+    _send_control(folder, "pause", run_id, lang)
+
+
+@app.command("stop")
+def stop_command(
+    folder: Annotated[Path, typer.Argument(help="Project folder.")],
+    run_id: Annotated[str | None, typer.Option("--run-id", help="Run (default: newest).")] = None,
+    lang: LangOption = None,
+) -> None:
+    """Ask a running screening run to stop (state "interrupted"; it can be resumed).
+
+    Example: crapai stop my-review
+    """
+    _send_control(folder, "stop", run_id, lang)
 
 
 def main() -> None:

@@ -325,6 +325,191 @@ crapai config reset mein-review limits.rpm  # eine Einstellung zurück (ohne Nam
 
 Die Hinweise zur Abstract-Qualität sind **nur Hinweise**: Sie schliessen nie einen Datensatz aus. Falsch gesetzte Werte kosten deshalb nichts ausser einer Warnung.
 
+## 6k. Das Screening: `crapai screen`
+
+Dieser Befehl schickt die Datensätze, die nicht ausgeschlossen sind, **einzeln** an das Sprachmodell und speichert für jeden Datensatz einen Vorschlag (`INCLUDE`, `EXCLUDE` oder `UNCERTAIN`) mit Begründung. **Die Vorschläge ersetzen nie Ihre Entscheidung:** jeder Vorschlag wird von Menschen geprüft.
+
+### Der Grundgedanke: nichts geht verloren
+
+Ein Lauf mit 80'000 Datensätzen dauert Stunden. Irgendwann kann etwas schiefgehen: das Netz fällt aus, das Guthaben ist aufgebraucht, der Rechner geht in den Ruhezustand. Das Programm ist deshalb so gebaut, dass **jeder Abbruch bekannt, protokolliert und behebbar** ist:
+
+* Jedes Ergebnis wird **sofort** an die Datei `screening.jsonl` angehängt und auf den Datenträger geschrieben. Bricht der Lauf bei 79'000 ab, sind die 79'000 Ergebnisse gespeichert.
+* Die Datensätze werden in **Päckchen** (`run.batch_size`, Standard 1000) verarbeitet. Nach jedem Päckchen prüft das Programm **auf dem Datenträger**, ob für jeden Datensatz des Päckchens wirklich eine Ergebniszeile steht, zählt die Fehler, schreibt einen Zwischenstand und macht erst dann weiter. Ein Problem fällt so nach höchstens einem Päckchen auf.
+* Jeder Halt hat einen **Zustand** und einen **Code** (siehe unten), steht im Protokoll und in der Datei `manifest.json` des Laufs.
+* `crapai screen mein-review --resume` macht **genau dort weiter**: bereits erledigte Datensätze werden nicht noch einmal bezahlt, die restlichen (im Beispiel die letzten 1000) werden in einer neuen Sitzung abgeschlossen.
+* Der **Fortschrittsbalken** ist immer sichtbar: Prozent, erledigte und gesamte Datensätze, Anzahl ok und Fehler, aktuelles Päckchen, bisherige Kosten, geschätzte Restzeit und die Zahl der gleichzeitigen Anfragen.
+
+### Vorbereitung
+
+1. Projekt anlegen, Dateien importieren, `crapai check mein-review` ausführen (Abschnitt 6b). Der Befehl `screen` aktualisiert Duplikate und Gültigkeit selbst noch einmal.
+2. **Modell und Anbieter** in der `project.yaml` (oder im Formular der Oberfläche) einstellen:
+
+   ```yaml
+   llm:
+     provider: openai_compatible           # SwissGPT, Azure, vLLM, LM Studio ...
+     base_url: "https://<adresse-des-dienstes>/v1"
+     model: "<modellname>"
+     api_key_env: SWISSGPT_API_KEY         # NAME der Umgebungsvariable, nie der Schlüssel
+   ```
+
+   Für OpenAI selbst: `provider: openai`, `model: gpt-4o-mini`, `api_key_env: OPENAI_API_KEY` (ohne `base_url`). Der Anbieter `anthropic` ist in dieser Version noch nicht verfügbar (E203).
+3. **Den Schlüssel setzen, ohne ihn irgendwo zu speichern**, in derselben Terminalsitzung, in der Sie `crapai` starten:
+
+   ```powershell
+   $env:SWISSGPT_API_KEY = "…"      # Windows PowerShell
+   ```
+
+   ```bash
+   export SWISSGPT_API_KEY="…"      # macOS / Linux
+   ```
+
+   Der Schlüssel steht nie in einer Projektdatei, nie im Protokoll, nie in einer Fehlermeldung und nie in den Ergebnissen. Fehlt die Variable, bricht der Befehl **vor** dem ersten Versand mit E301 ab und nennt den Namen der Variable.
+4. Das Paket für den Anbieter installieren: `pip install "crapai[llm-openai]"`.
+5. **Erst klein testen:** `crapai screen mein-review --sample 20` zieht 20 zufällige Datensätze (mit `run.sample_seed` jedes Mal dieselben), kostet wenig und zeigt, ob Kriterien, Modell und Schlüssel stimmen. Ein Probelauf zählt **nicht** als Screening im PRISMA-Fluss.
+
+### Der Befehl
+
+```powershell
+crapai screen mein-review                    # fragt nach und startet einen neuen Lauf
+crapai screen mein-review --yes              # ohne Rückfrage (Skripte)
+crapai screen mein-review --sample 20        # Probelauf mit 20 zufälligen Datensätzen
+crapai screen mein-review --resume           # den neuesten unfertigen Lauf fortsetzen
+crapai screen mein-review --resume --run-id 2026-10-01T14-05_run-003
+crapai screen mein-review --resume --no-retry-failed   # fehlgeschlagene nicht erneut versuchen
+crapai screen mein-review --no-progress      # ohne Fortschrittsbalken
+crapai screen mein-review --json --yes       # Ergebnis als JSON auf stdout (Meldungen auf stderr)
+crapai runs   mein-review                    # alle Läufe mit Zustand und Zahlen
+crapai pause  mein-review                    # einen laufenden Lauf (anderes Terminal) pausieren
+crapai stop   mein-review                    # einen laufenden Lauf stoppen (fortsetzbar)
+```
+
+Optionen von `screen`: `--sample K`, `--resume`, `--run-id`, `--retry-failed/--no-retry-failed`, `--yes`, `--no-progress`, `--json`, `--lang`. Die Optionen `pause` und `stop` nehmen `--run-id` und `--lang`, `runs` nimmt `--json` und `--lang`.
+
+**Bestätigung:** Vor einem Lauf zeigt das Programm die geschätzten Kosten (Band und schlechtester Fall) und die geschätzte Dauer und fragt, ob es starten soll. Ohne Terminal und ohne `--yes` startet nichts (Rückgabecode 1). Liegt der schlechteste Fall über `limits.max_cost`, steht ein Hinweis da: der Lauf pausiert dann, sobald das Limit erreicht ist.
+
+**Fortschrittsanzeige:** Auf dem Terminal wird eine Zeile laufend überschrieben:
+
+```
+[##########..........]  50 %  40'000/80'000  ok 39'950  errors 50  batch 41/80  cost 12.3400  ETA 2 h 10 min  parallel 5
+```
+
+Ohne Terminal (Umleitung in eine Datei, Planer) schreibt das Programm alle 30 Sekunden, bei jedem neuen Päckchen und am Ende eine normale Zeile. `--no-progress` schaltet die Anzeige ganz ab.
+
+### Was ein Lauf tut
+
+1. **Planen:** Die Datensätze ohne Ausschlussgrund (und mit Abstract, ausser `screening.include_title_only`) werden in `runs/<lauf-id>/plan.json` festgehalten. Bei `--resume` wird dieser Plan wiederverwendet, nicht neu berechnet.
+2. **Sperre:** Das Projekt ist für andere Prozesse gesperrt (Abschnitt 6f); ein Herzschlag zeigt, dass der Lauf lebt.
+3. **Je Datensatz:** Prompt bauen, Anfrage senden (mit den Regeln für Wiederholung, Wartezeit und Begrenzung unten), Antwort prüfen, Ergebniszeile schreiben.
+4. **Je Päckchen:** auf der Platte prüfen, Fehlerquote bewerten, Zwischenstand (`manifest.json`) speichern.
+5. **Ende:** Zustand und Ursache speichern; bei einem vollständigen, abgeschlossenen Lauf (kein Probelauf) ein Ereignis für den PRISMA-Fluss schreiben.
+
+### Die Zustände eines Laufs
+
+| Zustand | Bedeutung | Fortsetzen? |
+|---|---|---|
+| `running` | der Lauf arbeitet (oder wurde hart beendet; siehe unten) | ja, nach Entfernen der Sperre |
+| `paused` | bewusst oder durch eine Schutzregel angehalten | ja |
+| `interrupted` | durch Strg+C, `crapai stop` oder einen Abbruch beendet | ja |
+| `failed` | ein Problem, das erst behoben werden muss (z. B. Schlüssel) | ja, nach der Behebung |
+| `completed` | alle Datensätze bearbeitet | nur um fehlgeschlagene Datensätze zu wiederholen |
+| `canceled` | verworfen | nein |
+
+### Wann hält ein Lauf an, und was tun?
+
+| Ursache | Zustand | Code | Was tun |
+|---|---|---|---|
+| Strg+C (einmal), `crapai stop` | `interrupted` | | laufende Anfragen werden beendet (`run.stop_grace_seconds`), dann Halt; `--resume` |
+| Strg+C ein zweites Mal | sofortiger Abbruch | | `--resume`; die Anfragen im Flug werden wiederholt |
+| `crapai pause` | `paused` | | `--resume` |
+| Schlüssel fehlt oder wird abgelehnt (401/403) | `failed` | E301 | Schlüssel und `llm.api_key_env` prüfen, dann `--resume` |
+| Guthaben oder Kontingent aufgebraucht | `paused` | E307 | aufladen, dann `--resume` |
+| Ergebnisse können nicht gespeichert werden (Platte voll, Datei gesperrt) | `failed` | E403 / E401 | Platz schaffen, Programme schliessen, `--resume` |
+| mehr als `run.max_batch_error_rate` der Datensätze eines Päckchens sind fehlgeschlagen | `paused` | E308 | Protokoll lesen, Ursache beheben, `--resume` |
+| `run.max_consecutive_errors` Fehler in Folge | `paused` | E308 | wie oben (meist Ausfall des Dienstes) |
+| `limits.max_cost` erreicht | `paused` | E308 | Limit erhöhen (`crapai config set … limits.max_cost=…`), `--resume` |
+| Projektsperre verloren | `failed` | E402 | anderen Prozess prüfen, `--resume` |
+| Rechner aus, Prozess beendet (kein Halt durch das Programm) | `running` | | `crapai unlock`, dann `--resume` |
+
+**Ein einzelner fehlgeschlagener Datensatz stoppt den Lauf nie.** Er erhält eine Ergebniszeile mit Status und Code und wird bei `--resume` erneut versucht.
+
+### Fortsetzen: das Beispiel mit 80'000 Datensätzen
+
+Der Lauf bricht bei 79'000 ab (Zustand `paused` oder `interrupted`). Sie sehen die Meldung mit Zustand, Ursache und Code, der Rückgabecode ist 3. Im Protokoll (`.crapai/app.log`) steht, was geschah. Dann:
+
+```powershell
+crapai runs mein-review                 # zeigt: paused, 79000/80000 erledigt
+crapai screen mein-review --resume      # bearbeitet nur die restlichen 1000 (+ fehlgeschlagene)
+```
+
+Die Ergebnisse der 79'000 bleiben unberührt; `screening.jsonl` bekommt nur neue Zeilen. **Gilt eine Ergebniszeile als letzte zu einem Datensatz, dann zählt sie** (frühere Fehlerzeilen bleiben als Verlauf erhalten). War der Prozess hart beendet (Stromausfall, Task-Manager), bleibt die Projektsperre stehen: `crapai unlock mein-review` entfernt sie, sobald der Prozess nicht mehr läuft (Abschnitt 6f); ein halb geschriebene letzte Zeile der Ergebnisdatei wird dabei erkannt und abgeschnitten.
+
+**Fortsetzen nur mit unveränderten Einstellungen:** Was die Antworten prägt (Anbieter, Modell, `base_url`, Temperatur, `top_p`, `seed`, `max_output_tokens`, Prompt-Variante und Wortlaut, Kriterien, Ziele, Antwortformat, Sprache der Begründung) wird beim Start als Fingerabdruck gespeichert. Hat sich etwas davon geändert, lehnt `--resume` mit **E204** ab und nennt die Unterschiede, denn sonst wären die Ergebnisse eines Laufs nicht vergleichbar. Stellen Sie die alten Werte wieder her oder starten Sie einen neuen Lauf. Einstellungen, die nur das Tempo und den Schutz betreffen (`run.*`, `limits.*`), dürfen Sie zwischen den Sitzungen ändern.
+
+### Die Dateien eines Laufs
+
+`runs/<lauf-id>/` (die Kennung hat die Form `2026-10-01T14-05_run-003`):
+
+| Datei | Inhalt |
+|---|---|
+| `manifest.json` | Zustand, Zahlen, Kosten, Päckchen-Tabelle, Fingerabdrücke (Kriterien, Einstellungen, Prompt), Sitzungen, Warnungen, letzter Fehler; wird atomar ersetzt und während des Laufs alle `run.checkpoint_seconds` gespeichert |
+| `screening.jsonl` | eine Zeile je Ergebnis, **nur anhängen**; die letzte Zeile je Datensatz gilt |
+| `plan.json` | die geplanten Datensätze (Reihenfolge und Auswahl) |
+| `control.json` | ein Auftrag von aussen (`pause` oder `stop`), wird vom Lauf jede Sekunde gelesen und danach gelöscht |
+
+Eine **beschädigte Zeile in der Mitte** von `screening.jsonl` ist ein Fehler (E404), den das Programm nicht stillschweigend überspringt; eine beschädigte **letzte** Zeile (Abbruch beim Schreiben) wird ignoriert und vor dem nächsten Anhängen abgeschnitten.
+
+### Das Ergebnis je Datensatz
+
+| Status | Bedeutung |
+|---|---|
+| `ok` | gültige Antwort; Felder `decision`, `reasoning`, Urteile je Kriterium, Zitate |
+| `parse_error` | die Antwort war nicht lesbar oder ungültig (auch nach `limits.max_parse_retries` Nachfragen); **nie** ein stillschweigender Einschluss |
+| `api_error` | der Dienst antwortete nicht (nach `limits.max_retries` Wiederholungen) oder verweigerte den Inhalt (E306) |
+| `truncated` | die Antwort wurde abgeschnitten, auch mit doppeltem Limit |
+| `too_long` | der Datensatz passt nicht in das Kontextfenster (`llm.context_tokens`), er wird nicht gesendet |
+
+Zusätzliche **Markierungen** (`flags`) zu einem `ok`-Ergebnis: `inconsistent` (die Entscheidung widerspricht den eigenen Urteilen des Modells: nicht korrigiert, sondern zur Prüfung markiert), `quote_unverified` (ein Zitat steht nicht im Datensatz), `model_changed` (der Anbieter meldete einen anderen Modellnamen), `length_retry`, `parse_retry`.
+
+**Das Antwortformat:** Das Modell antwortet mit einem JSON-Objekt: Urteile je Einschluss- und Ausschlusskriterium (`met`/`not_met`/`unclear` bzw. `triggered`/`not_triggered`/`unclear`), Unklarheiten, Begründung, und **zuletzt** die Entscheidung. Das Programm prüft die Antwort selbst (SwissGPT kennt kein festes Antwortschema) und leitet die Entscheidung zur Gegenprobe aus den Urteilen ab. Das alte Format (letzte Zeile `XXX` = ausschliessen, `YYY` = einschliessen) bleibt mit `screening.output_format: legacy_xxx_yyy` möglich.
+
+**Schutz vor eingeschleusten Anweisungen:** Der Datensatz steht zwischen `<record>`-Marken und der Systemtext weist an, alles darin als Daten zu behandeln. Antwortet das Modell trotzdem ungültig (etwa „Ich denke, einschliessen“), ist das ein `parse_error` und kein Einschluss.
+
+### Tempo und Schutz: die Einstellungen
+
+Alle Werte sind Einstellungen (Abschnitt 6j), im Formular der Oberfläche (Abschnitte *Screening-Lauf*, *Grenzen und Kosten*, *Sprachmodell*) oder mit `crapai config set`:
+
+| Einstellung | Standard | Bedeutung |
+|---|---|---|
+| `run.batch_size` | 1000 | Datensätze je Päckchen; nach jedem Päckchen wird geprüft |
+| `run.max_batch_error_rate` | 0,5 | Pause, wenn mehr als dieser Anteil eines Päckchens fehlschlug (Päckchen unter 5 Datensätzen werden nicht nach Quote beurteilt) |
+| `run.max_consecutive_errors` | 20 | Pause nach so vielen Fehlern in Folge (0 = aus) |
+| `run.retry_failed_on_resume` | ja | fehlgeschlagene Datensätze bei `--resume` erneut versuchen |
+| `run.checkpoint_seconds`, `run.heartbeat_seconds` | 2, 10 | Speichern des Zwischenstands, Lebenszeichen der Sperre |
+| `run.stop_grace_seconds` | 10 | Nachfrist für laufende Anfragen nach einem Stopp |
+| `run.sample_seed` | 42 | Zufallszahl für `--sample` |
+| `run.retry_base_delay_s`, `run.retry_max_delay_s`, `run.max_retry_time_s` | 1, 60, 600 | Wartezeiten bei Wiederholungen |
+| `limits.max_concurrency` | 5 | gleichzeitige Anfragen (sinkt bei Überlastmeldungen automatisch und steigt wieder) |
+| `limits.rpm`, `limits.tpm` | 500, 200'000 | Anfragen und Tokens je Minute, vom Programm eingehalten |
+| `limits.max_retries`, `limits.max_parse_retries` | 5, 2 | Wiederholungen bei Serverfehlern / Nachfragen bei ungültigen Antworten |
+| `limits.max_cost` | 10 | Pause vor Überschreiten dieser Summe (`null` = kein Limit) |
+| `llm.timeout_s`, `llm.max_output_tokens`, `llm.context_tokens` | 60, 800, leer | Frist je Anfrage, Antwortlimit, Kontextfenster |
+
+**Wiederholungen:** Serverfehler, Zeitüberschreitung und Verbindungsabbruch (E305) werden mit wachsender Wartezeit wiederholt. Bei „zu viele Anfragen“ (E302) wartet das Programm die vom Dienst genannte Zeit ab und halbiert die Parallelität. Schlüsselfehler (E301), aufgebrauchtes Guthaben (E307), zu langer Text (E303) und verweigerter Inhalt (E306) werden **nicht** wiederholt.
+
+### Testen ohne Kosten: der Mock-Anbieter
+
+Mit `llm.provider: mock` läuft alles ohne Netz und ohne Schlüssel; `llm.model` wählt das Szenario `S1` bis `S15` (S1: alles gelingt; S2: Überlastmeldungen; S3: jeder siebte Aufruf scheitert; S4: ein Viertel der Datensätze läuft in die Zeitüberschreitung; S5: kaputtes JSON; S7: Schlüssel abgelehnt; S14: Guthaben aufgebraucht; die übrigen siehe `docs/ENTWICKLERDOKUMENTATION.md`). So können Sie Abbrüche und das Fortsetzen gefahrlos üben.
+
+### Rückgabecodes von `crapai screen`
+
+| Code | Bedeutung |
+|---|---|
+| 0 | Lauf abgeschlossen, alle Datensätze `ok` |
+| 4 | abgeschlossen, aber einzelne Datensätze mit Fehlern (`--resume` wiederholt genau diese) |
+| 3 | pausiert oder unterbrochen; `--resume` setzt fort |
+| 1 | Fehlschlag, den Sie beheben können (Schlüssel, Einstellungen, keine Rückfrage möglich) |
+| 2 | Fehlschlag durch die Umgebung (Platte voll, Datei gesperrt, Projekt in Benutzung, unerwartet) |
+
 ## 6i. Protokoll und Fehlersuche
 
 Jedes Projekt hat ein Protokoll `.crapai/app.log` (rotierend, 1 MB, drei ältere Dateien). Jede Zeile hat Zeit, Stufe, eine **Sitzungskennung** (eine je Programmstart, damit sich die Zeilen einer Sitzung finden lassen), den Namen des Programmteils und die Meldung. Titel, Abstracts und Schlüssel stehen nie im Protokoll; Zeichenfolgen, die wie ein Schlüssel oder Token aussehen, werden zusätzlich durch `***` ersetzt.
@@ -460,9 +645,18 @@ Ein Fehler wird in vier Zeilen erklärt: **Fehler CODE: Was ist passiert · Waru
 | E403 | Speicherplatz voll | Platz schaffen |
 | E404 | kein Projektordner dieser Version oder Datei beschädigt | richtigen Ordner wählen, Sicherung aus `data/.backup` verwenden |
 | E405 | `init`: der Ordner ist schon ein Projekt oder nicht leer | Projekt öffnen oder neuen bzw. leeren Ordner wählen |
+| E204 | `--resume`: Einstellungen haben sich seit dem Start des Laufs geändert | alte Werte wiederherstellen oder neuen Lauf starten (Abschnitt 6k) |
+| E301 | Schlüssel fehlt oder wird vom Anbieter abgelehnt | Umgebungsvariable (`llm.api_key_env`) setzen bzw. Schlüssel prüfen; der Lauf wird `failed` |
+| E302 | Anbieter meldet „zu viele Anfragen“ | automatisch: Wartezeit, geringere Parallelität; ggf. `limits.rpm` senken |
+| E303 | Datensatz länger als das Kontextfenster | Status `too_long`; Datensatz von Hand prüfen oder `llm.context_tokens` korrigieren |
+| E304 | Antwort des Modells unlesbar, ungültig oder abgeschnitten | Status `parse_error`/`truncated`; `--resume` versucht es erneut |
+| E305 | Anbieter nicht erreichbar, Zeitüberschreitung, Serverfehler | automatische Wiederholung; danach Status `api_error` |
+| E306 | Anbieter verweigert den Inhalt (Sicherheitsfilter) | Datensatz von Hand prüfen |
+| E307 | Guthaben oder Kontingent aufgebraucht | aufladen, dann `--resume`; der Lauf ist `paused` |
+| E308 | Schutzregel hat den Lauf pausiert (Fehlerquote, Fehler in Folge, Kostenlimit) | Protokoll lesen, Ursache beheben oder Limit anheben, dann `--resume` |
 | E999 | unerwarteter Fehler | `.crapai/app.log` ansehen und den Fehler melden |
 
-Weitere Codes (E202, E301-E307 Anbieter, E501/E502 Statistik) betreffen Funktionen, die noch folgen.
+Weitere Codes (E202, E501/E502 Statistik) betreffen Funktionen, die noch folgen.
 
 ## 9. Häufige Fragen
 
@@ -475,13 +669,12 @@ kann die Software noch nicht; legen Sie in diesem Fall ein neues Projekt an. *(E
 
 **Warum sind Angaben in `extra_json`?** Damit nichts verloren geht, auch wenn es keine eigene Spalte gibt.
 
-**Muss ich online sein?** Für Import und Status nicht. Nur das spätere Screening ruft den Modellanbieter auf *(geplant)*.
+**Muss ich online sein?** Für Import, Prüfung und Export nicht. Nur `crapai screen` ruft den Modellanbieter auf (ausser mit dem Mock-Anbieter, Abschnitt 6k).
 
-**Werden meine Daten an Dritte gesendet?** Der Import sendet nichts. Beim späteren Screening gehen Titel und Abstracts an den von Ihnen gewählten Anbieter; das müssen Sie vorher
-bestätigen *(geplant)*. Es gibt keine Telemetrie.
+**Werden meine Daten an Dritte gesendet?** Der Import sendet nichts. Beim Screening gehen Titel und Abstracts an den von Ihnen gewählten Anbieter; das müssen Sie vorher
+bestätigen (Rückfrage oder `--yes`). Es gibt keine Telemetrie.
 
 ## 10. Was noch kommt
 
-Fehlende Abstracts markieren, Vorfilter (Sprache, Jahr, Publikationstyp), Kosten- und Zeitschätzung, das eigentliche Screening mit Wiederaufnahme nach Unterbrechung,
-Ergebnistabelle (Excel/CSV), PRISMA-Fluss, Test-Retest und Vergleich mit menschlichen Entscheidungen, und eine grafische Oberfläche. Den Stand finden Sie in
+Die Ergebnistabelle (Excel/CSV) aus den Screening-Ergebnissen, der PRISMA-Fluss als Grafik, Test-Retest und Vergleich mit menschlichen Entscheidungen, und die Bedienung des Screenings in der grafischen Oberfläche. Den Stand finden Sie in
 `docs/UMSETZUNGSPLAN_UND_FORTSCHRITT.md`; die Änderungen je Version in `CHANGELOG.md`.
