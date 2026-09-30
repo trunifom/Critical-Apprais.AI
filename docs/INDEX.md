@@ -9,6 +9,7 @@ Einstieg für Menschen und KI-Agenten. **Projekt: Critical Apprais.AI** (Nachfol
 | `KICKOFF_PROMPT.md` | Start-Prompt für Agenten: Lesereihenfolge, Git-Einrichtung und erster Commit, Arbeitsablauf, Stopp-Regeln | de | **Zum Starten einfügen** |
 | `NAMING_AND_HISTORY.md` | Produktname, Vorgeschichte (SARA, SARA-App), Namensregeln, vorläufige Arbeitsnamen | de | **Zuerst lesen** |
 | `PROJEKTPLAN.md` | Vollständige Spezifikation: Teil I (Kap. 1-24), Teil II Vertiefung (25-34), Teil III Starterpaket (35-40) | de | **Massgebend** für das neue Projekt |
+| `UMSETZUNGSPLAN_UND_FORTSCHRITT.md` | **Übergabeprotokoll:** Fortschrittsliste mit Datum, Uhrzeit und Commit-Hash, nächster Schritt | de | **Lebend, nach jedem Commit pflegen** |
 | `MIGRATION.md` | Alter Code -> neues Modul, Status der Portierung | de | lebend, bitte pflegen |
 | `adr/` | Architekturentscheide (0001-0015) | de | massgebend |
 | `coding/coding_guidelines.md` | Coding-Regeln, **angepasst** (Original daneben: `coding_guidelines.original.md`) | en | Massgebend |
