@@ -54,7 +54,7 @@ def test_paths_named_in_backticks_in_the_readme_table_exist() -> None:
         assert (ROOT / path).exists(), path
 
 
-COMMANDS = ("init", "import", "status", "dedup")
+COMMANDS = ("init", "import", "status", "dedup", "check")
 
 
 @pytest.mark.parametrize("command", COMMANDS)

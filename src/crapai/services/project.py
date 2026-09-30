@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
 
-from crapai.config.loader import load_project_config
+from crapai.config.loader import describe_config_problem, load_project_config
 from crapai.errors import ConfigError, SaraError
 from crapai.io.import_log import ImportLogEntry, read_entries
 from crapai.io.records_store import read_records
@@ -121,7 +121,7 @@ def project_status(root: Path) -> ProjectStatus:
         try:
             title = load_project_config(workspace.project_yaml).project.title
         except SaraError as exc:
-            config_ok, problem = False, str(exc)
+            config_ok, problem = False, describe_config_problem(exc)
     info = workspace.lock().inspect()
     return ProjectStatus(
         root=workspace.root,

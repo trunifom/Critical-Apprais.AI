@@ -22,7 +22,8 @@ und kennzeichnet Geplantes ausdrücklich. Bedienung: `docs/BENUTZERHANDBUCH.md`.
 ```
 Bedienung        cli.py (typer)                      [geplant: ui/ (Streamlit)]
                     │  ruft
-Dienste          services/importing.py   services/project.py   services/dedup.py   [geplant: screening, export, evaluation]
+Dienste          services/importing.py   services/project.py   services/dedup.py   services/validity.py   services/preflight.py
+                 [geplant: screening, export, evaluation]
                     │  ruft
 Fachkern         io/ (readers, normalize, records_store, import_log)
                  config/ (Modelle, Loader)   project/ (Workspace, Lock, atomares Schreiben)
@@ -54,6 +55,7 @@ So bleibt der Kern ohne Oberfläche testbar und später von Streamlit und CLI ge
 | `prisma.reasons` | Katalog der Ausschlussgründe und wer sie setzen darf | `VALIDITY_REASONS`, `REASON_*` (ADR 0018) |
 | `prisma.validity` | Gültigkeit: fehlende Abstracts, Front-Matter, zurückgezogene Studien, Abstract-Qualität | `mark_validity`, `ValidityConfig`, `classify_abstract`, `is_not_screenable` |
 | `services.validity` | Gültigkeit im Projekt anwenden | `validate_project` |
+| `services.preflight` | Vorprüfung: eine Datei vor dem Import, das Projekt vor dem Lauf | `check_file`, `check_project`, `PreflightFileResult`, `ProjectReport`, `ProjectIssue` |
 | `prisma.dedup` | Duplikate markieren (nicht löschend) | `mark_duplicates`, `DedupConfig`, `DedupResult`, `normalize_title`; Strategien `doi_or_title`, `strict_ids`, `title`, `title_authors` |
 | `services.dedup` | Duplikate im Projekt markieren | `dedup_project` (Sperre, Sicherung, atomares Schreiben) |
 | `io.readers.detect` | Formaterkennung | `detect_format` (Inhalt vor Endung), `SourceFormat` |
@@ -155,6 +157,7 @@ Umsetzungsentscheide, die im Code gefallen sind (auch in `docs/UMSETZUNGSPLAN_UN
 * BibTeX: eigener toleranter Scanner statt `pybtex` (Cochrane-Dateien sind kein gültiges BibTeX; ein Codepfad).
 * Duplikate: Union-Find über Schlüssel (DOI, PMID, normalisierter Titel), im Zweifel **nicht** markieren (Titeltreffer mit verschiedenen DOIs werden verworfen); der behaltene Datensatz ist der vollständigste.
 * Ausschlussgründe: ein Grund je Datensatz, Besitz je Schritt, Rangfolge `NOT_SCREENABLE` > `RETRACTED` > `NO_ABSTRACT`; Duplikate ersetzen Gültigkeitsgründe (ADR 0018).
+* Preflight: `check_project` führt Dedup und Gültigkeit in der Reihenfolge Import, Dedup, Gültigkeit aus (`update=True`) und urteilt danach nur über gespeicherte Markierungen; Status `ERROR` nur, wenn nichts ans Modell gehen kann, sonst `WARNING` bei Hinweisen. Die Meldungen sind i18n-Schlüssel, keine Texte.
 * Import-Protokoll als letzter Schritt (macht den Import atomar im Sinne der Buchführung).
 * `Exit-Code 4` bei Warnungen (fehlende Abstracts, `EMPTY_RECORD`).
 

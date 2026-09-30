@@ -201,11 +201,19 @@ def detect_format(path: Path) -> DetectionResult:
     """Detect the format of ``path`` (content first, extension second).
 
     Raises:
-        ImportFailed: (E102) for an empty file; (E101) if the format is unknown, the file is a
-            legacy ``.xls`` or a damaged ZIP.
+        ImportFailed: (E102) for an empty file; (E101) if the file cannot be opened, the format is
+            unknown, the file is a legacy ``.xls`` or a damaged ZIP.
     """
-    with open(path, "rb") as handle:
-        head = handle.read(SNIFF_BYTES + 1)
+    try:
+        with open(path, "rb") as handle:
+            head = handle.read(SNIFF_BYTES + 1)
+    except OSError as exc:
+        raise ImportFailed(
+            f"{path.name} cannot be read ({type(exc).__name__})",
+            code="E101",
+            hint="Check that the file exists and is not open in another program.",
+            details={"path": str(path)},
+        ) from exc
     if not head.strip():
         raise ImportFailed(
             f"{path.name} is empty",

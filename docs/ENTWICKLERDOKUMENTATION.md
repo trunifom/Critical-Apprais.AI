@@ -109,6 +109,8 @@ Einzelbausteine:
 | `prisma.dedup.mark_duplicates(records, DedupConfig(strategy, keep))` | markiert Duplikate; `DedupResult(records, marked, groups, by_method, within_source, across_sources)` |
 | `prisma.validity.mark_validity(records, ValidityConfig(include_title_only, exclude_retracted))` | setzt `exclusion_reason` (`NOT_SCREENABLE`/`RETRACTED`/`NO_ABSTRACT`), `has_abstract`, `abstract_quality`; `ValidityResult(records, by_reason, quality, valid_for_model)` |
 | `services.validity.validate_project(workspace, include_title_only=None, exclude_retracted=None)` | wie `dedup_project`: Sperre, Sicherung, Optionen aus Befehlszeile > `project.yaml` > aus |
+| `services.preflight.check_file(path, label, ...)` | trockenes Lesen einer Datei vor dem Import, nichts wird geschrieben; `PreflightFileResult(status, issues, message_key, error_code, ...)` mit `PreflightStatus`/`PreflightIssueCode` aus `enums.py` (nur Pfade, keine UI-Typen); wirft nie bei schlechten Dateien |
+| `services.preflight.check_project(workspace, update=True)` | optional Dedup + Gültigkeit ausführen, dann `ProjectReport(status, issues, by_reason, sources, ...)` mit `ProjectIssue` (`no_records`, `nothing_to_screen`, `low_abstract_ratio`, `suspect_abstracts`, `retracted_included`, `config_invalid`) |
 | `services.dedup.dedup_project(workspace, strategy=None, keep="best")` | liest `records.csv`, markiert, schreibt nach Sicherung; Strategie: Befehlszeile > `project.yaml` > Standard |
 
 `RawRecord.fields` benutzt die internen Spaltennamen; Felder ohne Spalte in `records.csv` (`notes`, `database_name`, `publisher`, `place`,
@@ -179,6 +181,12 @@ Zweige, die nur ein anderes Betriebssystem oder eine Unterbrechung in einem best
 2. `io/readers/<name>.py` mit `read_<name>(path, *, encoding=None) -> ReadResult`; interne Spaltennamen verwenden, alles Übrige in `extra`; nie Werte erfinden (kein Platzhalterjahr).
 3. In `io/readers/dispatch.py` einhängen und `SOURCE_FORMAT_NAMES` in `io/normalize.py` abbilden (falls neuer Dateiname in `records.csv`, das ist ein **Datenvertrag**, also Rückfrage).
 4. Tests mit einer kleinen Fixture (5-20 Datensätze) in `tests/data/`, Sollzahlen in `scripts/build_expected.py` aufnehmen, `EXPECTED.json` neu erzeugen lassen.
+
+## 5a. Statuswerte des Preflights
+
+`ERROR`: keine Datensätze oder nichts geht ans Modell (`no_records`, `nothing_to_screen`). `WARNING`: mindestens ein Hinweis (weniger als 60 % Abstracts in einer Quelle, verdächtige Abstracts,
+zurückgezogene Studien im Lauf, ungültige `project.yaml`). Rückgabecodes von `crapai check`: 0, 4, 1. Die Schwelle 60 % steht in `PreflightConfig`.
+Die Codes `ProjectIssue` sind eigene Werte; die persistierten Werte von `PreflightIssueCode` in `enums.py` wurden nicht verändert.
 
 ## 6. Einen Befehl hinzufügen
 

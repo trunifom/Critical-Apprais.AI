@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+from crapai.config import loader
 from crapai.config.loader import (
     deep_merge,
     env_overrides,
@@ -210,3 +211,22 @@ def test_api_key_cannot_be_injected_through_env_or_cli(tmp_path: Path) -> None:
             resolve_config(path, user_config_path=NO_USER, **kwargs)  # type: ignore[arg-type]
         assert "llm.api_key: unknown setting" in info.value.user_message
         assert "sk-secret-value" not in str(info.value)
+
+
+def test_describe_config_problem_names_path_reason_and_count() -> None:
+    problem = {"path": "criteria", "reason": "required field is missing"}
+    one = ConfigError("x", details={"problems": [problem]})
+    assert loader.describe_config_problem(one) == "criteria: required field is missing"
+    many = ConfigError(
+        "x",
+        details={
+            "problems": [
+                {"path": "limits.rpm", "reason": "must be greater than 0"},
+                {"path": "llm.top_p", "reason": "too big"},
+                {"path": "llm.model", "reason": "empty"},
+            ]
+        },
+    )
+    assert loader.describe_config_problem(many) == "limits.rpm: must be greater than 0 (+2 more)"
+    plain = ConfigError("Configuration file not found: p\nsecond line")
+    assert loader.describe_config_problem(plain) == "[E203] Configuration file not found: p"

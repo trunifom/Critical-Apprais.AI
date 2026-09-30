@@ -29,6 +29,7 @@ from crapai.i18n.messages import Messages, resolve_language
 from crapai.project.workspace import Workspace
 from crapai.services.dedup import dedup_project
 from crapai.services.importing import ImportRequest, ImportSummary, import_source
+from crapai.services.preflight import ProjectReport, check_project
 from crapai.services.project import DEFAULT_TEMPLATE, create_project, project_status
 
 logger = logging.getLogger("crapai.cli")
@@ -38,6 +39,8 @@ EXIT_USER_ERROR = 1
 EXIT_SYSTEM_ERROR = 2
 EXIT_WARNINGS = 4
 
+# Preflight findings that stop the run (shown in red); all others are warnings (yellow).
+BLOCKING = frozenset({"no_records", "nothing_to_screen"})
 STRATEGIES = ("doi_or_title", "strict_ids", "title", "title_authors")
 KEEP_RULES = ("best", "first", "last")
 
@@ -409,6 +412,118 @@ def dedup_command(
             across=summary.across_sources,
         )
     )
+
+
+@app.command("check")
+def check_command(
+    folder: Annotated[Path, typer.Argument(help="Project folder.")],
+    read_only: Annotated[
+        bool,
+        typer.Option("--read-only", help="Do not recalculate duplicates and validity first."),
+    ] = False,
+    as_json: JsonOption = False,
+    lang: LangOption = None,
+) -> None:
+    """Preflight: mark duplicates and unusable records, then report what would go to the model.
+
+    Exit code 0 = ready, 4 = warnings, 1 = nothing can be screened.
+    Example: crapai check my-review
+    """
+    messages = Messages(resolve_language(lang, folder / "project.yaml"))
+    _setup_file_log(folder)
+    try:
+        report = check_project(Workspace(folder), update=not read_only)
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        raise _fail(error, messages, json_mode=as_json) from error
+    if as_json:
+        typer.echo(json.dumps(_report_json(report), ensure_ascii=False, indent=2))
+    else:
+        _print_report(report, messages)
+    status = report.status.value
+    raise typer.Exit({"ok": EXIT_OK, "warning": EXIT_WARNINGS, "error": EXIT_USER_ERROR}[status])
+
+
+def _report_json(report: ProjectReport) -> dict[str, Any]:
+    return {
+        "status": report.status.value,
+        "issues": [issue.value for issue in report.issues],
+        "records": report.records,
+        "duplicates": report.duplicates,
+        "valid_for_model": report.valid_for_model,
+        "by_reason": report.by_reason,
+        "abstract_quality": report.quality,
+        "retracted_included": report.retracted_included,
+        "configuration_problem": report.config_problem,
+        "updated": report.updated,
+        "sources": [
+            {
+                "label": s.label,
+                "records": s.records,
+                "with_abstract": s.with_abstract,
+                "duplicates": s.duplicates,
+                "valid_for_model": s.valid_for_model,
+                "status": s.status.value,
+                "issues": [issue.value for issue in s.issues],
+            }
+            for s in report.sources
+        ],
+    }
+
+
+def _print_report(report: ProjectReport, messages: Messages) -> None:
+    colour = {"ok": "green", "warning": "yellow", "error": "red"}[report.status.value]
+    typer.secho(messages.text(f"cli.check.status.{report.status.value}"), fg=colour, bold=True)
+    typer.echo(
+        messages.text(
+            "cli.check.totals",
+            records=report.records,
+            duplicates=report.duplicates,
+            valid=report.valid_for_model,
+        )
+    )
+    if report.sources:
+        typer.echo(messages.text("cli.check.sources"))
+        for source in report.sources:
+            percent = round(100 * source.with_abstract / source.records)
+            typer.echo(
+                messages.text(
+                    "cli.check.source_line",
+                    label=source.label,
+                    records=source.records,
+                    abstracts=source.with_abstract,
+                    percent=percent,
+                    duplicates=source.duplicates,
+                    valid=source.valid_for_model,
+                )
+            )
+    if report.by_reason:
+        typer.echo(messages.text("cli.check.reasons"))
+        for reason, count in sorted(report.by_reason.items()):
+            meaning = messages.text(f"cli.check.reason.{reason}")
+            typer.echo(
+                messages.text("cli.check.reason_line", reason=reason, count=count, meaning=meaning)
+            )
+    if report.quality:
+        typer.echo(
+            messages.text(
+                "cli.check.quality",
+                ok=report.quality.get("ok", 0),
+                short=report.quality.get("short", 0),
+                suspect=report.quality.get("suspect_concat", 0),
+            )
+        )
+    for issue in report.issues:
+        typer.secho(
+            messages.text(
+                f"cli.check.issue.{issue.value}",
+                suspect=report.quality.get("suspect_concat", 0),
+                retracted=report.retracted_included,
+                problem=report.config_problem or "",
+            ),
+            fg="red" if report.status.value == "error" and issue.value in BLOCKING else "yellow",
+        )
+    typer.echo(messages.text("cli.check.updated" if report.updated else "cli.check.read_only"))
+
 
 
 def main() -> None:

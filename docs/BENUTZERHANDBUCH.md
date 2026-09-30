@@ -198,6 +198,33 @@ Datensatzes), `dedup_method` (Grund) und, falls noch keiner gesetzt ist, `exclus
 * Die Ausgabe nennt, wie viele Duplikate innerhalb derselben Quelle und wie viele zwischen verschiedenen Quellen gefunden wurden. Vor dem Schreiben wird eine Sicherung angelegt.
 * `--json` gibt das Ergebnis maschinenlesbar aus. Fehler: `E203` bei unbekannter Strategie, `E402` wenn das Projekt gerade benutzt wird, `E401` wenn `records.csv` in Excel geöffnet ist.
 
+## 6b. Vor dem Lauf prüfen: `crapai check`
+
+```powershell
+crapai check mein-review               # Duplikate und Gültigkeit neu berechnen, dann berichten
+crapai check mein-review --read-only   # nur berichten, nichts verändern
+crapai check mein-review --json        # maschinenlesbar
+```
+
+`check` ist die Vorprüfung ("Preflight") vor dem Screening. Sie führt in dieser Reihenfolge aus: Duplikate markieren (`crapai dedup`), dann die Gültigkeit prüfen (fehlende Abstracts,
+Vor-/Nachspann, optional zurückgezogene Studien, Abstract-Qualität) und berichtet danach:
+
+* **Kopfzeile mit Status:** *in Ordnung*, *WARNUNG* oder *FEHLER*.
+* **Zahlen:** Datensätze, Duplikate, wie viele ans Modell gehen; je Quelle die Zahl der Datensätze, der Anteil mit Abstract, Duplikate und Datensätze, die ans Modell gehen.
+* **Gründe**, warum Datensätze nicht ans Modell gehen (`DUPLICATE`, `NO_ABSTRACT`, ...) mit Erklärung. Die Datensätze bleiben in der Tabelle.
+* **Hinweise**, zum Beispiel: weniger als 60 % Abstracts in einer Quelle, verdächtig kaputte Abstracts, zurückgezogene Studien, die im Lauf bleiben, oder eine unvollständige `project.yaml`.
+
+| Status | Wann | Rückgabecode |
+|---|---|---|
+| in Ordnung | nichts zu beanstanden | 0 |
+| WARNUNG | Screening ist möglich, aber es gibt Hinweise (siehe oben) | 4 |
+| FEHLER | keine Datensätze, oder kein Datensatz kann ans Modell gehen (zum Beispiel keine Abstracts und `include_title_only` ausgeschaltet) | 1 |
+
+Ein Ergebnis "kein Datensatz kann ans Modell gehen" bedeutet nicht, dass etwas gelöscht wurde: Alle Datensätze sind noch da. Ändern Sie die Quellen oder erlauben Sie die Bewertung nur nach Titel
+(`screening.include_title_only: true` in der `project.yaml`) und prüfen Sie erneut. Mit `--read-only` wird nichts neu berechnet; das ist sinnvoll, wenn das Projekt gerade von einem anderen Prozess benutzt wird.
+
+Schon **vor** dem Import lässt sich eine einzelne Datei ohne Änderungen prüfen (Lesbarkeit, Anzahl Datensätze, Anteil mit Abstract); das nutzt die spätere grafische Oberfläche.
+
 ## 6. Stand ansehen: `crapai status`
 
 ```
@@ -246,7 +273,7 @@ Jeder Datensatz hat höchstens einen Grund; er wird **markiert, nie gelöscht**.
 | *(leer)* | geht ans Modell | |
 
 Ein Duplikat ohne Abstract zählt als `DUPLICATE`, nicht als `NO_ABSTRACT` (im PRISMA-Fluss werden Duplikate zuerst entfernt). Zurückgezogene Studien, die nicht ausgeschlossen werden, bleiben im Lauf und
-sind über `is_retracted = true` erkennbar. Die Gültigkeitsprüfung wird mit `crapai check` ausgeführt *(geplant, T-M2-04)*.
+sind über `is_retracted = true` erkennbar. Die Gültigkeitsprüfung wird mit `crapai check` ausgeführt (Abschnitt 6b).
 
 ## 8. Fehlermeldungen
 

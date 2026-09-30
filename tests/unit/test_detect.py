@@ -258,3 +258,12 @@ def test_legacy_run_csv_files_are_detected_as_tables() -> None:
     sample = next((ROOT / "legacy_runs").rglob("*.csv"))
     result = detect_format(sample)
     assert result.format is SourceFormat.CSV and result.delimiter == ";"
+
+
+def test_a_missing_or_unopenable_file_is_an_import_error_not_an_os_error(tmp_path: Path) -> None:
+    with pytest.raises(ImportFailed) as missing:
+        detect_format(tmp_path / "nope.ris")
+    assert missing.value.code == "E101" and "nope.ris" in missing.value.user_message
+    with pytest.raises(ImportFailed) as folder:
+        detect_format(tmp_path)  # a directory cannot be read as a file
+    assert folder.value.code == "E101"

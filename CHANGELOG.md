@@ -22,6 +22,7 @@ Jeder Eintrag verweist auf die Aufgabenkarte; die genauen Commits stehen in `doc
   verlustfreie Rundreise (Eigenschaftstest), Sicherungen in `data/.backup/`, Import-Protokoll mit SHA-256 und Erkennung erneuter Importe (`E106`) (T-M1-10).
 * **Befehle** `crapai init`, `crapai import`, `crapai status` mit Rückgabecodes 0/1/2/4, `--json`, `--lang` (T-M1-11); Import-Dienst und Projektdienst; Vorlagen `blank` und `demo`.
 * **Texte** Deutsch und Englisch für Befehlszeile, Oberfläche und alle Fehlercodes (Was ist passiert - Warum - Was tun), Paritätstest (T-M1-12).
+* **Preflight** (T-M2-04): `crapai check` (Dedup + Gültigkeit, dann Bericht mit Status, Zahlen je Quelle, Gründen und Hinweisen; Rückgabecode 0/4/1; `--read-only`, `--json`) und `check_file` zur Prüfung einer Datei vor dem Import. Ohne Streamlit-Typen, nur Pfade. Die Konfigurationsmeldung nennt jetzt Pfad und Grund des ersten Problems (`crapai status` ebenso).
 * **Gültigkeitsprüfung** (T-M2-03, Bausteine `prisma/validity.py`, `services/validity.py`): `NO_ABSTRACT`, `NOT_SCREENABLE` (Front-Matter), `RETRACTED` (optional), `abstract_quality`; gemeinsamer Katalog `prisma/reasons.py`, Duplikate ersetzen Gültigkeitsgründe (ADR 0018). Der Befehl `crapai check` folgt mit T-M2-04.
 * **Wiederholbarer Tabellenimport:** `import.mappings` in der `project.yaml` (je Dateiname), Vorrang von `--map`; die Ausgabe nennt die Herkunft der Zuordnung.
 * **Duplikate markieren** (`crapai dedup`, T-M2-01): vier Strategien, normalisierte Titel, nicht löschend, behält den vollständigsten Datensatz, im Zweifel keine Markierung, wiederholbar; Statistik innerhalb/zwischen Quellen. `dedup_method` erhält den Wert `pmid` (zu bestätigen).
@@ -36,6 +37,7 @@ Jeder Eintrag verweist auf die Aufgabenkarte; die genauen Commits stehen in `doc
 
 ### Behoben
 
+* Eine fehlende oder nicht lesbare Datei löste in der Formaterkennung eine rohe `FileNotFoundError` aus; jetzt `ImportFailed` `E101` mit klarer Meldung.
 * **CI auf GitHub war für alle Testjobs rot** (Lint grün), lokal alle Tests grün. Ursache: Typer erzwingt auf GitHub Actions farbige Ausgabe (`GITHUB_ACTIONS` gesetzt), die Farbcodes zerstückelten die Optionsnamen in `--help`, und vier Tests der Dokumentationsprüfung schlugen fehl. Behoben durch `tests/conftest.py` (kein erzwungenes Terminal), Entfernen der Farbcodes in `test_docs.py` und einen Regressionstest; verifiziert mit nachgestellter CI-Umgebung (611 Tests grün).
 * Eine in Excel geöffnete `records.csv` liess den Import zuvor scheinbar gelingen und legte eine Nebendatei an; jetzt bricht der Import mit `E401` ab, ohne etwas zu verändern.
 

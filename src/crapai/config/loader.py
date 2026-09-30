@@ -19,7 +19,7 @@ from pydantic import ValidationError
 
 from crapai.branding import ENV_PREFIX
 from crapai.config.models import ProjectConfig
-from crapai.errors import ConfigError
+from crapai.errors import ConfigError, SaraError
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +117,20 @@ def _reason(error_type: str, message: str) -> str:
         return "unknown setting (check the spelling)"
     # pydantic prefixes validator failures with "Value error, "; drop the noise.
     return message.removeprefix("Value error, ")
+
+
+def describe_config_problem(error: SaraError) -> str:
+    """One line that says what is wrong: the first problem as ``path: reason`` (+ how many more).
+
+    Falls back to the first line of the message for errors without a problem list (for example an
+    unreadable file).
+    """
+    problems = error.details.get("problems")
+    if isinstance(problems, list) and problems:
+        first = problems[0]
+        text = f"{first['path']}: {first['reason']}"
+        return text if len(problems) == 1 else f"{text} (+{len(problems) - 1} more)"
+    return str(error).splitlines()[0]
 
 
 def validate_config(data: dict[str, Any], source: str = "project.yaml") -> ProjectConfig:
