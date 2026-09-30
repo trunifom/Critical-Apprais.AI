@@ -65,6 +65,8 @@ So bleibt der Kern ohne Oberfläche testbar und später von Streamlit und CLI ge
 | `cost.pricing` | Preisquellen: editierbare `pricing.csv` (Preis je 1000 Token, Datum, Quelle) oder statisch; unbekanntes Modell = kein Preis | `CsvPriceSource`, `StaticPriceSource`, `Price` |
 | `cost.estimator` | Schätzung eines Laufs aus den **echten** Texten (Titel + Abstract je Datensatz, gemeinsamer Anteil einmal gezählt), Kostenband und Worst Case; ohne I/O | `estimate_run`, `RunEstimate`, `build_shared_payload` |
 | `cost.duration` | Dauerschätzung aus rpm, tpm und Parallelität; Bestätigungsregel vor einem Lauf (`--yes` oder Terminal) | `estimate_duration`, `decide_confirmation` |
+| `config.overrides` | Einstellungen ausserhalb von `project.yaml`: Überschreibdatei `project.overrides.yaml`, Quelle jedes Wertes, `set`/`reset` mit Prüfung vor dem Schreiben | `set_values`, `reset_values`, `effective_settings` |
+| `ui.settings_form` | die in der Oberfläche änderbaren Einstellungen als Daten; nur Unterschiede werden gespeichert | `SECTIONS`, `changes`, `parse_value` |
 | `logging_setup` | Protokoll für Befehlszeile und Oberfläche: ein Format mit Sitzungskennung, Schutz vor Schlüsseln, Stufe aus Option oder `CRAPAI_LOG_LEVEL`, rotierende Projektdatei, tolerant gegen nicht schreibbare Dateien | `attach_project_log`, `enable_console_log`, `redact`, `read_log_tail` |
 | `ui.viewmodels` | Was die Oberfläche zeigt, ohne Streamlit: Schrittleiste, Kennzahlen, zuletzt verwendete Projekte | `build_stepper`, `load_overview`, `RecentProjects` |
 | `ui.actions` | Was ein Klick tut: ruft die Dienste, macht jeden Fehler zu einem `ErrorReport` (kein `try` in den Seiten) | `guarded`, `open_project`, `prepare_uploads`, `import_prepared`, `run_check`, `run_export` |

@@ -22,7 +22,7 @@ from crapai.services.project import create_project
 
 DATA = Path(__file__).resolve().parents[2] / "tests" / "data"
 EXPECTED = json.loads((DATA / "EXPECTED.json").read_text(encoding="utf-8"))
-ABSTRACT = "The trial enrolled adults and measured outcomes over twelve months. " * 3
+ABSTRACT = "The trial enrolled adults and measured outcomes over twelve months. " * 5
 
 
 def ris(tmp_path: Path, name: str, records: list[tuple[str, str]], extra: str = "") -> Path:

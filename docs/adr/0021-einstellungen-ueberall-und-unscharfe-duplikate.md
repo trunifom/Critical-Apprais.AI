@@ -1,0 +1,17 @@
+# ADR 0021: Einstellungen statt fester Zahlen, Überschreibdatei, unscharfe Duplikate ohne Zusatzpaket
+
+Status: Angenommen (2026-10-01), auf Anweisung der Projektleitung
+
+## Ausgangslage
+Die Projektleitung verlangt, dass möglichst nichts fest im Code steht: Werte sollen in einer Einstellungsdatei oder in der Oberfläche änderbar sein. Zudem wurden mehrere offene Fragen entschieden.
+
+## Entscheidungen
+1. **Schwellen der Abstract-Qualität sind Einstellungen** (`quality:` in `project.yaml`): ein Wort über `long_word_letters` = 40 Buchstaben gilt als zusammengeklebt; ein Abstract mit weniger als `short_abstract_words` = **40** Wörtern (vorher 20) gilt als kurz; dazu `garbled_mean_word_letters`, `min_words_for_mean` und `short_abstract_chars_unspaced` (120 Zeichen für Schriften ohne Leerzeichen). Die Werte stammen von der Projektleitung. Der Hinweis schliesst weiterhin nie aus.
+2. **Weitere feste Annahmen wurden zu Einstellungen:** `preflight.min_abstract_ratio` (0,60), `limits.seconds_per_request` (3 s), `limits.cost_uncertainty` (0,15), `llm.expected_output_tokens` (120), `dedup.fuzzy.*`.
+3. **Überschreibdatei `project.overrides.yaml`.** Was in der Oberfläche oder mit `crapai config set` geändert wird, steht in dieser Datei neben `project.yaml`. Gründe: `project.yaml` ist von Hand geschrieben und kommentiert, ein Programm würde die Kommentare beim Umschreiben zerstören; die Überschreibdatei ist maschinell verwaltet, lässt sich löschen (`crapai config reset`) und wird vor dem Schreiben gegen das ganze Modell geprüft. Rangfolge: Befehlszeile > Umgebung (`CRAPAI_<ABSCHNITT>__<SCHLÜSSEL>`) > Überschreibdatei > `project.yaml` > Benutzerdatei > eingebaute Werte. `crapai config show` nennt zu jedem Wert die Quelle.
+4. **PMIDs:** `dedup_method = pmid` bleibt. Eine leere PMID ist "unbekannt" und gleicht nie mit einer anderen leeren; gleiche PMID bei verschiedenen DOIs wird nicht zusammengelegt. Die Standard-Strategie nutzt jetzt neben DOI und Titel auch die PMID.
+5. **Unscharfe Duplikate ohne neue Abhängigkeit.** Umgesetzt mit `difflib` der Standardbibliothek und Kandidatenbildung (Anfang, Ende und die drei längsten Wörter eines Titels), damit 80 000 Datensätze keine 3 Milliarden Vergleiche bedeuten. Vetos: verschiedene DOIs, Jahre weiter auseinander als `max_year_difference`, erste Autor:innen verschieden. **`rapidfuzz`** wird *nicht* vorausgesetzt. Ist es installiert, wird es für den Ähnlichkeitswert benutzt (schneller, gleiche Entscheide); fehlt es oder verschwände das Paket, arbeitet das Programm unverändert weiter. Damit entsteht weder ein Risiko noch ein Zwang zur Freigabe. Gross-/Kleinschreibung, Satzzeichen und Akzente werden bei Titeln immer ignoriert.
+6. **E405** ("Ordner ist schon ein Projekt oder nicht leer") ersetzt E404 bei `crapai init`.
+7. **Rechteinhaber** in `LICENSE`: Dominik Kunz, Dominique Truninger und ZHAW (Zürcher Hochschule für Angewandte Wissenschaften). Material des Vorgängers und Beispieldaten werden vor einer Veröffentlichung entfernt (`docs/FREIGABE_CHECKLISTE.md`).
+8. **`pytest-cov`** steht nur im Extra `dev` und misst nur auf Wunsch (`scripts/qa.py --cov`); eine normale Installation enthält es nicht, und weder Programmstart noch normale Testläufe messen.
+9. Zu Titeln unter vier Wörtern und zu mehreren Publikationstypen (Entscheide der Projektleitung: so lassen, aber kommentieren): siehe ADR 0019 und 0020; die Werte sind Einstellungen (`dedup.min_title_words`) bzw. im Quelltext kommentiert.

@@ -8,13 +8,12 @@ under the project lock. Nothing is deleted; see :mod:`crapai.prisma.dedup`.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from crapai.config.loader import load_project_config
 from crapai.errors import SaraError
 from crapai.io.records_store import read_records, write_records
 from crapai.prisma.dedup import (
-    MIN_TITLE_WORDS,
     DedupConfig,
     DedupResult,
     Keep,
@@ -43,8 +42,8 @@ class DedupSummary:
     events_written: bool = True  # False: the PRISMA event could not be written
 
 
-def _configured(workspace: Workspace) -> tuple[Strategy, int] | None:
-    """``(strategy, min_title_words)`` of ``project.yaml``, or None if missing or invalid."""
+def _configured(workspace: Workspace) -> DedupConfig | None:
+    """The ``dedup:`` settings of ``project.yaml`` as a config, or None if missing or invalid."""
     if not workspace.project_yaml.exists():
         return None
     try:
@@ -52,7 +51,14 @@ def _configured(workspace: Workspace) -> tuple[Strategy, int] | None:
     except SaraError as exc:
         logger.warning("project.yaml is not valid (%s); using the default dedup settings", exc.code)
         return None
-    return dedup.strategy, dedup.min_title_words
+    return DedupConfig(
+        strategy=dedup.strategy,
+        min_title_words=dedup.min_title_words,
+        fuzzy=dedup.fuzzy.enabled,
+        fuzzy_threshold=dedup.fuzzy.threshold,
+        fuzzy_max_year_difference=dedup.fuzzy.max_year_difference,
+        fuzzy_require_author_agreement=dedup.fuzzy.require_author_agreement,
+    )
 
 
 def dedup_project(
@@ -86,12 +92,12 @@ def apply_dedup(
     """Mark duplicates; the caller holds the project lock (see :func:`dedup_project`)."""
     records = read_records(workspace.records_csv)
     configured = _configured(workspace)
-    min_words = configured[1] if configured else MIN_TITLE_WORDS
+    base = configured or DedupConfig()
     if strategy is not None:
         chosen, source = strategy, "cli"
     else:
-        chosen, source = (configured[0], "project") if configured else ("doi_or_title", "default")
-    config = DedupConfig(strategy=chosen, keep=keep, min_title_words=min_words)
+        chosen, source = (base.strategy, "project") if configured else ("doi_or_title", "default")
+    config = replace(base, strategy=chosen, keep=keep)
     result: DedupResult = mark_duplicates(records, config)
     written = result.records != records
     if written:

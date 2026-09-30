@@ -55,13 +55,13 @@ QUALITY_OK = "ok"
 _UNSPACED_SCRIPTS = re.compile(
     r"[\u0e00-\u0e7f\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]"
 )
-SHORT_ABSTRACT_CHARS_UNSPACED = 60  # about 20 words of English, counted in characters
+SHORT_ABSTRACT_CHARS_UNSPACED = 120  # about 40 words of English, counted in characters
 QUALITY_SHORT = "short"
 QUALITY_SUSPECT = "suspect_concat"
 
 # The plan gives no threshold for "short"; 20 words is a working value, evidence in the tests:
 # the shortest real abstracts of the fixtures have 18 (a MEDLINE note) and 2 words (a broken field).
-SHORT_ABSTRACT_WORDS = 20
+SHORT_ABSTRACT_WORDS = 40
 LONG_WORD_LETTERS = 40  # the plan names 25; German compounds reach 28+, see the tests
 GARBLED_MEAN_WORD_LETTERS = 9.0  # natural text, incl. German compounds, stays below ~8
 MIN_WORDS_FOR_MEAN = 30
@@ -89,6 +89,25 @@ _LETTER_WORDS = re.compile(r"[^\W\d_]+", re.UNICODE)
 
 
 @dataclass(frozen=True)
+class QualityThresholds:
+    """The numbers behind the abstract-quality hint; ``quality:`` in ``project.yaml``.
+
+    Attributes:
+        long_word_letters: A single word longer than this looks glued together.
+        short_abstract_words: Fewer words than this counts as ``short``.
+        garbled_mean_word_letters: A higher mean word length (with enough words) looks garbled.
+        min_words_for_mean: Fewer words than this are too few to judge the mean word length.
+        short_abstract_chars_unspaced: ``short`` limit in characters for scripts without spaces.
+    """
+
+    long_word_letters: int = LONG_WORD_LETTERS
+    short_abstract_words: int = SHORT_ABSTRACT_WORDS
+    garbled_mean_word_letters: float = GARBLED_MEAN_WORD_LETTERS
+    min_words_for_mean: int = MIN_WORDS_FOR_MEAN
+    short_abstract_chars_unspaced: int = SHORT_ABSTRACT_CHARS_UNSPACED
+
+
+@dataclass(frozen=True)
 class ValidityConfig:
     """Options of the validity check.
 
@@ -96,11 +115,13 @@ class ValidityConfig:
         include_title_only: Do not flag records without abstract; they go to the model by title.
         exclude_retracted: Mark retracted publications as ``RETRACTED`` (else only flagged).
         not_screenable_titles: Normalised whole titles that are not studies.
+        quality: Thresholds of the abstract-quality hint.
     """
 
     include_title_only: bool = False
     exclude_retracted: bool = False
     not_screenable_titles: frozenset[str] = NOT_SCREENABLE_TITLES
+    quality: QualityThresholds = field(default_factory=lambda: QualityThresholds())
 
 
 @dataclass
@@ -136,21 +157,23 @@ def _is_unspaced_script(text: str) -> bool:
     return wide / len(letters) > 0.5
 
 
-def classify_abstract(abstract: str) -> str:
+def classify_abstract(abstract: str, thresholds: QualityThresholds | None = None) -> str:
     """Quality of an abstract: ``""`` (none), ``ok``, ``short`` or ``suspect_concat``."""
+    limits = thresholds or QualityThresholds()
     text = abstract.strip()
     if not text:
         return ""
     if _is_unspaced_script(text):
         # Chinese, Japanese, Korean and Thai are written without spaces: a "word" is a whole
         # sentence, so the word-based checks would call every abstract garbled or short.
-        return QUALITY_OK if len(text) >= SHORT_ABSTRACT_CHARS_UNSPACED else QUALITY_SHORT
+        return QUALITY_OK if len(text) >= limits.short_abstract_chars_unspaced else QUALITY_SHORT
     letters = [len(word) for word in _LETTER_WORDS.findall(text)]
-    if letters and max(letters) > LONG_WORD_LETTERS:
+    if letters and max(letters) > limits.long_word_letters:
         return QUALITY_SUSPECT
-    if len(letters) >= MIN_WORDS_FOR_MEAN and statistics.mean(letters) > GARBLED_MEAN_WORD_LETTERS:
+    garbled = statistics.mean(letters) > limits.garbled_mean_word_letters if letters else False
+    if len(letters) >= limits.min_words_for_mean and garbled:
         return QUALITY_SUSPECT
-    if len(text.split()) < SHORT_ABSTRACT_WORDS:
+    if len(text.split()) < limits.short_abstract_words:
         return QUALITY_SHORT
     return QUALITY_OK
 
@@ -181,7 +204,7 @@ def mark_validity(records: list[Record], config: ValidityConfig | None = None) -
         has_abstract = bool(record.abstract.strip())
         if record.has_abstract != has_abstract:
             update["has_abstract"] = has_abstract
-        grade = classify_abstract(record.abstract)
+        grade = classify_abstract(record.abstract, config.quality)
         if record.abstract_quality != grade:
             update["abstract_quality"] = grade
         if grade:

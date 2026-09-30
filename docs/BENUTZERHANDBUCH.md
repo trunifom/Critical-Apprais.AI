@@ -194,6 +194,8 @@ Datensatzes), `dedup_method` (Grund) und, falls noch keiner gesetzt ist, `exclus
 | `title_authors` | normalisierter Titel und normalisierte Autoren gleich sind |
 
 * **Welcher Datensatz bleibt?** Standard `best`: der vollständigste (mit Abstract, dann mit DOI, dann mit PMID), bei Gleichstand der zuerst importierte. Mit `--keep first` oder `--keep last` bestimmen Sie es selbst.
+* **PMID:** Dieselbe (nicht leere) PMID bedeutet dieselbe Studie; steht bei zwei Datensätzen je eine andere DOI, werden sie nicht zusammengelegt. Datensätze **ohne** PMID (aus Datenbanken, die keine haben) werden nie wegen der leeren PMID als Duplikate erkannt: ein leeres Feld heisst „unbekannt“. Grund in der Tabelle: `pmid`.
+* **Unscharfe Suche** (`dedup.fuzzy.enabled: true`): findet zusätzlich Titel, die sich durch einen Tippfehler, ein fehlendes Wort oder eine andere Endung unterscheiden (Grund `fuzzy`). Sie verlangt: Ähnlichkeit mindestens `threshold` (0,94), Erscheinungsjahre höchstens `max_year_difference` (1) auseinander, keine zwei verschiedenen DOIs, gleiche Nachnamen der ersten Autor:innen (wenn beide angegeben sind). Sie braucht kein Zusatzpaket; ist `rapidfuzz` installiert, wird es für mehr Tempo verwendet. **Kurz gesagt:** Sie kann im Zweifel zu viel markieren; prüfen Sie die Duplikate mit Grund `fuzzy`. Gross-/Kleinschreibung, Satzzeichen und Akzente werden bei Titeln immer ignoriert.
 * **Kurze Titel gleichen nie allein.** Ein Titel mit weniger als 4 Wörtern ("Editorial", "Erratum") ist zu allgemein, um eine Studie zu bezeichnen. Gleiche DOI oder PMID erkennt solche Datensätze trotzdem. Einstellung: `dedup.min_title_words` in der `project.yaml` (1 schaltet den Schutz ab). DOIs werden in normalisierter Form verglichen (Gross-/Kleinschreibung, `https://doi.org/` egal).
 * **Im Zweifel wird nicht markiert.** Datensätze ohne Titel und ohne DOI werden nie als Duplikate erkannt; ein zu Unrecht markierter Datensatz würde eine Studie verstecken.
 * **Wiederholen ist gefahrlos.** Jeder Lauf berechnet die Markierungen neu (frühere Duplikat-Markierungen werden zuerst entfernt); andere Gründe wie `EMPTY_RECORD` bleiben.
@@ -288,6 +290,40 @@ Die Oberfläche läuft **nur auf Ihrem Rechner** (Adresse `127.0.0.1`) und sende
 * Die Kopfzeile jeder Seite zeigt Projekt, Datensätze, Anteil mit Abstract, Duplikate und wie viele ans Modell gehen.
 * **Fehler** erscheinen mit Code, Erklärung und nächstem Schritt, nie als Programmfehler-Text; unter „Einzelheiten“ steht ein Text zum Kopieren für eine Fehlermeldung.
 * Die Oberfläche verwendet dieselben Funktionen wie die Befehlszeile; es gibt nichts, was nur in einer der beiden geht. Ein Projekt kann gleichzeitig nur von einem Prozess geändert werden (Sperre, Abschnitt 6f).
+
+## 6j. Einstellungen ändern: `project.yaml`, Oberfläche, `crapai config`
+
+Fast nichts ist im Programm fest verdrahtet: Schwellen, Grenzen und Annahmen sind Einstellungen. Es gibt drei Wege, sie zu ändern, die sich ergänzen:
+
+1. **`project.yaml`** von Hand bearbeiten (mit Kommentaren, alle Einstellungen, Vorlage `templates/project.example.yaml`).
+2. **Oberfläche, Seite Einstellungen:** ein Formular mit den wichtigsten Einstellungen (Duplikate, Vorfilter, Abstract-Qualität, Screening, Sprachmodell, Grenzen und Kosten). Die Änderungen werden geprüft und gespeichert; ungültige Werte werden abgelehnt und nichts wird geschrieben. „Alle Änderungen zurücksetzen“ macht sie rückgängig.
+3. **Befehlszeile:**
+
+```powershell
+crapai config show mein-review              # alle Einstellungen mit Wert und Quelle
+crapai config show mein-review --changed    # nur, was ausserhalb der project.yaml geändert wurde
+crapai config set mein-review quality.short_abstract_words=30 limits.rpm=200
+crapai config reset mein-review limits.rpm  # eine Einstellung zurück (ohne Namen: alle)
+```
+
+**Wohin werden Änderungen aus Oberfläche und `config set` geschrieben?** In die kleine Datei `project.overrides.yaml` neben der `project.yaml`. Ihre `project.yaml` mit allen Kommentaren bleibt unverändert. Die Datei ist maschinell verwaltet; löschen Sie sie (oder `crapai config reset`), sind wieder genau die Werte der `project.yaml` in Kraft.
+
+**Rangfolge** (oben gewinnt): Befehlszeile, Umgebungsvariable (`CRAPAI_LLM__MODEL=gpt-4o` setzt `llm.model`), `project.overrides.yaml`, `project.yaml`, Benutzerdatei (`~/.config/crapai/config.yaml`), eingebaute Werte. `crapai config show` nennt je Wert die Quelle: *hier geändert*, *Umgebung*, *project.yaml*, *Benutzereinstellung* oder *Standard*.
+
+**Wichtige Einstellungen**
+
+| Einstellung | Standard | Bedeutung |
+|---|---|---|
+| `quality.short_abstract_words` | 40 | weniger Wörter: Hinweis „kurz“ (zwei Sätze deuten auf einen Fehler oder ein abgeschnittenes Abstract) |
+| `quality.long_word_letters` | 40 | ein einzelnes Wort mit mehr Buchstaben sieht zusammengeklebt aus |
+| `quality.garbled_mean_word_letters`, `quality.min_words_for_mean` | 9,0 / 30 | mittlere Wortlänge, ab der ein Abstract kaputt aussieht, und die Mindestzahl Wörter dafür |
+| `quality.short_abstract_chars_unspaced` | 120 | wie „kurz“ für Chinesisch, Japanisch, Koreanisch, Thai (in Zeichen) |
+| `preflight.min_abstract_ratio` | 0,60 | Quellen mit kleinerem Anteil an Abstracts erhalten eine Warnung |
+| `dedup.min_title_words` | 4 | kürzere Titel gleichen nie allein über den Titel |
+| `dedup.fuzzy.enabled`, `.threshold`, `.max_year_difference`, `.require_author_agreement` | aus, 0,94, 1, ja | unscharfe Duplikatsuche (Abschnitt 6a) |
+| `limits.seconds_per_request`, `limits.cost_uncertainty`, `llm.expected_output_tokens` | 3 s, 0,15, 120 | Annahmen der Kosten- und Dauerschätzung |
+
+Die Hinweise zur Abstract-Qualität sind **nur Hinweise**: Sie schliessen nie einen Datensatz aus. Falsch gesetzte Werte kosten deshalb nichts ausser einer Warnung.
 
 ## 6i. Protokoll und Fehlersuche
 

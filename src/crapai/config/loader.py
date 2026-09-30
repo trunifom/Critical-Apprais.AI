@@ -25,6 +25,9 @@ from crapai.errors import ConfigError, SaraError
 
 logger = logging.getLogger(__name__)
 
+# Kept here (not imported from overrides.py) because overrides.py imports this module.
+OVERRIDES_NAME = "project.overrides.yaml"
+
 CODE_MISSING = "E201"
 CODE_INVALID = "E203"
 ENV_NESTING = "__"
@@ -158,16 +161,18 @@ def validate_config(data: dict[str, Any], source: str = "project.yaml") -> Proje
 
 
 def load_project_config(path: Path) -> ProjectConfig:
-    """Read and validate one ``project.yaml``.
+    """The effective configuration of a project: ``project.yaml`` with every layer applied.
 
-    Environment, command line and user config are layered on top by :func:`resolve_config`.
+    The layers are those of :func:`resolve_config`: user configuration, ``project.yaml``, the
+    overrides file (``project.overrides.yaml``, written by the interface and ``crapai config``)
+    and environment variables. The command line is applied by the caller through
+    ``resolve_config(cli=...)``.
 
     Raises:
         ConfigError: if the file cannot be read or fails validation.
     """
-    data = read_yaml_mapping(path)
-    config = validate_config(data, source=path.name)
-    logger.info("Loaded project configuration from %s", path)
+    config = resolve_config(path)
+    logger.debug("Loaded project configuration from %s", path)
     return config
 
 
@@ -266,12 +271,16 @@ def resolve_config(
     if user_path.is_file():
         merged = deep_merge(merged, read_yaml_mapping(user_path))
     merged = deep_merge(merged, read_yaml_mapping(project_path))
+    overrides = project_path.with_name(OVERRIDES_NAME)
+    if overrides.is_file():
+        merged = deep_merge(merged, read_yaml_mapping(overrides))
     merged = deep_merge(merged, env_overrides(environ))
     merged = deep_merge(merged, dict(cli or {}))
     layers = [
         name
         for name, present in (
             ("user configuration", bool(user_path.is_file())),
+            (OVERRIDES_NAME, overrides.is_file()),
             ("environment variables", bool(env_overrides(environ))),
             ("command line", bool(cli)),
         )

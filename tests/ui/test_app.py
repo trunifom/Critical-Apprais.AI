@@ -14,7 +14,7 @@ from crapai.services.project import create_project  # noqa: E402
 from crapai.ui.context import PROJECT_ENV  # noqa: E402
 
 APP = Path(__file__).resolve().parents[2] / "src" / "crapai" / "ui" / "streamlit_app.py"
-ABSTRACT = "The trial enrolled adults and measured outcomes over twelve months. " * 3
+ABSTRACT = "The trial enrolled adults and measured outcomes over twelve months. " * 5
 RIS = (
     "TY  - JOUR\nTI  - Effects of exercise on mood in adults\nDO  - 10.1000/a\nPY  - 2020\n"
     f"AB  - {ABSTRACT}\nER  - \n"
@@ -273,7 +273,7 @@ def test_the_settings_page_shows_paths_and_the_price_list(
         encoding="utf-8",
     )
     at.run()
-    assert not at.exception and len(at.dataframe) == 1
+    assert not at.exception and len(at.dataframe) == 2  # sources of the values, price list
 
 
 def test_closing_the_project_returns_to_the_start_page(
@@ -295,3 +295,23 @@ def test_a_project_that_disappears_is_reported_and_the_start_page_returns(
     (folder / ".crapai" / "version").unlink()
     at.run()
     assert not at.exception
+
+
+def test_the_settings_form_saves_a_change_and_can_reset_it(
+    monkeypatch: pytest.MonkeyPatch, empty_project: Path
+) -> None:
+    at = fresh(monkeypatch, empty_project).run()
+    goto(at, "settings")
+    assert not at.exception
+    field = at.number_input(key="set::quality.short_abstract_words::0")
+    assert field.value == 40
+    field.set_value(25)
+    at.run()
+    at.button[0].click()  # the submit button of the form
+    at.run()
+    assert not at.exception
+    overrides = (empty_project / "project.overrides.yaml").read_text(encoding="utf-8")
+    assert "short_abstract_words: 25" in overrides
+    at.button(key="reset_settings").click()
+    at.run()
+    assert not at.exception and not (empty_project / "project.overrides.yaml").exists()

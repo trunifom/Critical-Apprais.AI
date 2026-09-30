@@ -46,3 +46,17 @@ llm:
 limits:
   max_cost: 10.0              # in the currency below; null = no limit
   currency: USD
+  seconds_per_request: 3.0               # assumed time of one request (duration estimate only)
+  cost_uncertainty: 0.15                 # half width of the cost band (0.15 = plus/minus 15 %)
+
+# Thresholds of the abstract-quality hint (it never excludes a record).
+quality:
+  long_word_letters: 40            # a longer single word looks glued together
+  short_abstract_words: 40         # fewer words than this: 'short'
+  garbled_mean_word_letters: 9.0   # mean word length above this looks garbled
+  min_words_for_mean: 30
+  short_abstract_chars_unspaced: 120  # like short_abstract_words for Chinese, Japanese, Korean, Thai
+
+# Thresholds of 'crapai check'.
+preflight:
+  min_abstract_ratio: 0.60         # a source with a smaller share of abstracts gets a warning

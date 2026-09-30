@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from crapai.config.loader import load_project_config
 from crapai.errors import SaraError
 from crapai.io.records_store import read_records, write_records
-from crapai.prisma.validity import ValidityConfig, mark_validity
+from crapai.prisma.validity import QualityThresholds, ValidityConfig, mark_validity
 from crapai.project.workspace import Workspace
 from crapai.services.events import record_validity
 
@@ -38,8 +38,8 @@ class ValiditySummary:
     events_written: bool = True  # False: the PRISMA event could not be written
 
 
-def _options_from_project(workspace: Workspace) -> tuple[bool, bool] | None:
-    """``(include_title_only, exclude_retracted)`` from project.yaml, or None if unusable."""
+def _options_from_project(workspace: Workspace) -> tuple[bool, bool, QualityThresholds] | None:
+    """The validity options from project.yaml (with the settings overrides), or None."""
     if not workspace.project_yaml.exists():
         return None
     try:
@@ -47,7 +47,8 @@ def _options_from_project(workspace: Workspace) -> tuple[bool, bool] | None:
     except SaraError as exc:
         logger.warning("project.yaml is not valid (%s); using default validity options", exc.code)
         return None
-    return config.screening.include_title_only, config.prefilters.exclude_retracted
+    quality = QualityThresholds(**config.quality.model_dump())
+    return config.screening.include_title_only, config.prefilters.exclude_retracted, quality
 
 
 def validate_project(
@@ -85,10 +86,13 @@ def apply_validity(
     overridden = include_title_only is not None or exclude_retracted is not None
     stored = None if overridden else _options_from_project(workspace)
     source = "cli" if overridden else ("project" if stored is not None else "default")
-    base_title, base_retracted = stored if stored is not None else (False, False)
+    base_title, base_retracted, quality = (
+        stored if stored is not None else (False, False, QualityThresholds())
+    )
     config = ValidityConfig(
         include_title_only=base_title if include_title_only is None else include_title_only,
         exclude_retracted=base_retracted if exclude_retracted is None else exclude_retracted,
+        quality=quality,
     )
     result = mark_validity(records, config)
     written = result.records != records

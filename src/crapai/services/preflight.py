@@ -200,6 +200,15 @@ class ProjectReport:
     events_written: bool = True  # False: a PRISMA event could not be written
 
 
+def _configured_thresholds(workspace: Workspace) -> PreflightConfig:
+    """The thresholds of ``preflight:`` in project.yaml; the defaults if it cannot be read."""
+    try:
+        ratio = load_project_config(workspace.project_yaml).preflight.min_abstract_ratio
+    except (SaraError, FileNotFoundError):
+        return PreflightConfig()
+    return PreflightConfig(min_abstract_ratio_warn=ratio)
+
+
 def check_project(
     workspace: Workspace,
     *,
@@ -212,8 +221,8 @@ def check_project(
         StorageError: E404 for a folder that is no project or a damaged ``records.csv``; E402/E401
             from the update steps if the project is in use or ``records.csv`` is locked.
     """
-    config = config or PreflightConfig()
     workspace = Workspace.open(workspace.root)
+    config = config or _configured_thresholds(workspace)
     events_ok = True
     if update:
         # One lock for the three steps and the read that follows: an import cannot slip in

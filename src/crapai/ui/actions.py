@@ -19,11 +19,12 @@ import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 import yaml
 
 from crapai.config.loader import validate_config
+from crapai.config.overrides import Setting, effective_settings, reset_values, set_values
 from crapai.errors import ConfigError, SaraError
 from crapai.i18n.messages import ErrorReport, Messages
 from crapai.logging_setup import attach_project_log
@@ -36,6 +37,7 @@ from crapai.services.export import ExportSummary, export_flow, export_records
 from crapai.services.importing import ImportRequest, ImportSummary, import_source
 from crapai.services.preflight import PreflightFileResult, ProjectReport, check_file, check_project
 from crapai.services.project import DEFAULT_TEMPLATE, create_project
+from crapai.ui.settings_form import changes
 from crapai.ui.viewmodels import Overview, RecentProjects, load_overview
 
 logger = logging.getLogger(__name__)
@@ -150,6 +152,58 @@ def save_project_yaml(messages: Messages, folder: Path, text: str) -> Outcome[No
         logger.info("Saved project.yaml of %s", folder.name)
 
     return guarded(messages, work, name="save project.yaml")
+
+
+# --- settings --------------------------------------------------------------------------------
+
+
+def load_settings(folder: Path) -> dict[str, Setting]:
+    """Every setting in force with its value and source (empty if the project cannot be read)."""
+    try:
+        settings = effective_settings(Workspace(folder).project_yaml)
+    except SaraError as error:
+        logger.warning("Settings not readable: %s", error.code)
+        return {}
+    return {s.key: s for s in settings}
+
+
+def save_settings(
+    messages: Messages, folder: Path, edited: dict[str, Any]
+) -> Outcome[dict[str, Any]]:
+    """Store the settings that differ from the values in force; returns what was changed.
+
+    Raises nothing: an invalid value becomes an error report and nothing is written.
+    """
+
+    def work() -> dict[str, Any]:
+        workspace = Workspace.open(folder)
+        current = {key: s.value for key, s in load_settings(folder).items()}
+        try:
+            diff = changes(current, edited)
+        except ValueError as exc:
+            raise ConfigError(
+                f"The value of {exc} is not valid", code="E203", hint="Check the number or text."
+            ) from exc
+        if diff:
+            with workspace.lock():
+                set_values(workspace.project_yaml, diff)
+            logger.info("Settings changed in the interface: %s", ", ".join(sorted(diff)))
+        return diff
+
+    return guarded(messages, work, name="save settings")
+
+
+def reset_settings(messages: Messages, folder: Path) -> Outcome[list[str]]:
+    """Remove every change made outside ``project.yaml`` (the overrides file)."""
+
+    def work() -> list[str]:
+        workspace = Workspace.open(folder)
+        with workspace.lock():
+            removed = reset_values(workspace.project_yaml)
+        logger.info("Settings reset in the interface: %d", len(removed))
+        return removed
+
+    return guarded(messages, work, name="reset settings")
 
 
 # --- import ----------------------------------------------------------------------------------

@@ -17,7 +17,7 @@ from crapai.services.importing import ImportRequest, import_source
 from crapai.services.project import create_project
 
 DATA = Path(__file__).resolve().parents[2] / "tests" / "data"
-ABSTRACT = "The trial enrolled adults and measured outcomes over twelve months. " * 3
+ABSTRACT = "The trial enrolled adults and measured outcomes over twelve months. " * 5
 runner = CliRunner()
 
 

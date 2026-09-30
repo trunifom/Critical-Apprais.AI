@@ -131,7 +131,7 @@ def test_the_comparison_sets_are_computed_once() -> None:
 
 def test_a_chinese_abstract_is_not_called_garbled() -> None:
     text = (
-        "本研究调查了认知行为疗法对成年抑郁症患者的疗效，随机分配两百名参与者并随访十二个月。" * 2
+        "本研究调查了认知行为疗法对成年抑郁症患者的疗效，随机分配两百名参与者并随访十二个月。" * 4
     )
     assert classify_abstract(text) == "ok"  # used to be suspect_concat (one 90-character "word")
 

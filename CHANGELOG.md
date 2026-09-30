@@ -34,6 +34,13 @@ Jeder Eintrag verweist auf die Aufgabenkarte; die genauen Commits stehen in `doc
 * **Lizenz:** PolyForm Noncommercial 1.0.0 (`LICENSE`, ADR 0016, `license` in `pyproject.toml`): nicht kommerzielle Nutzung erlaubt, kommerzielle ausgeschlossen (T-M0-01).
 * **Dokumentation:** Benutzerhandbuch, Entwicklerdokumentation, Architektur, ausführliches README, dieses Änderungsprotokoll, Umsetzungsplan mit Fortschrittsliste.
 
+### Einstellungen statt fester Zahlen (ADR 0021)
+
+* **Neue Einstellungen:** `quality.*` (Schwellen der Abstract-Qualität, **`short_abstract_words` jetzt 40 statt 20**), `preflight.min_abstract_ratio`, `limits.seconds_per_request`, `limits.cost_uncertainty`, `llm.expected_output_tokens`, `dedup.fuzzy.max_year_difference`, `dedup.fuzzy.require_author_agreement`. Die Dienste lesen sie aus der Konfiguration.
+* **Überschreibdatei `project.overrides.yaml`** und Befehl **`crapai config show|set|reset`**; in der Oberfläche ein Einstellungsformular. `project.yaml` wird nie umgeschrieben. Die wirksame Konfiguration schichtet jetzt auch Umgebungsvariablen und Benutzerdatei (`load_project_config` ruft `resolve_config`).
+* **Unscharfe Duplikatsuche** (T-M2-02) ohne Zusatzpaket (`difflib`, optional `rapidfuzz`); die PMID gleicht jetzt auch in der Standard-Strategie, leere PMIDs nie.
+* **E405** für `crapai init` in einem belegten Ordner; Rechteinhaber in der LICENSE; `pytest-cov` im Extra `dev` (`scripts/qa.py --cov`); `docs/FREIGABE_CHECKLISTE.md`.
+
 ### Oberfläche, Protokoll und Arbeitsablauf
 
 * **Grafische Oberfläche** (`crapai ui`, Extra `ui`): neun Seiten (Start, Projekt, Daten, Prüfen, Lauf, PRISMA-Fluss, Export, Einstellungen, Hilfe) mit Schrittleiste, Statuszeile, Deutsch/Englisch, Fehlern mit Code und nächstem Schritt, Trockenlesung vor dem Import, Kosten und Dauer, Export zum Herunterladen. Lokal (`127.0.0.1`), ohne Nutzungsstatistik. Die Seite „Lauf“ sagt ehrlich, dass das Screening mit dem Sprachmodell noch fehlt.

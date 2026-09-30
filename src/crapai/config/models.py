@@ -73,10 +73,21 @@ class Criteria(_Strict):
 
 
 class Fuzzy(_Strict):
-    """Optional fuzzy duplicate detection."""
+    """Optional fuzzy duplicate detection (titles that differ by a typo or a dropped word).
+
+    Attributes:
+        enabled: Switch the fuzzy step on; off by default because it can mark wrongly.
+        threshold: Title similarity from 0 to 1 that counts as the same paper.
+        max_year_difference: Two records more than this many years apart are never fuzzy
+            duplicates (publication years differ by one between print and online date).
+        require_author_agreement: If both records have authors, the first author's family name
+            must agree.
+    """
 
     enabled: bool = False
     threshold: float = Field(default=0.94, ge=0.0, le=1.0)
+    max_year_difference: int = Field(default=1, ge=0)
+    require_author_agreement: bool = True
 
 
 class Dedup(_Strict):
@@ -160,6 +171,8 @@ class LlmSettings(_Strict):
     top_p: float = Field(default=1.0, gt=0.0, le=1.0)
     seed: int | None = None
     max_output_tokens: PositiveInt = 800
+    # Expected length of one answer, for the estimate; max_output_tokens is the hard limit.
+    expected_output_tokens: PositiveInt = 120
     timeout_s: float = Field(default=60.0, gt=0.0)
     api_key_env: str = "OPENAI_API_KEY"
 
@@ -183,7 +196,19 @@ class LlmSettings(_Strict):
 
 
 class Limits(_Strict):
-    """Concurrency, rate limits, retries and cost cap."""
+    """Concurrency, rate limits, retries, cost cap and the assumptions of the estimate.
+
+    Attributes:
+        max_concurrency: Requests in flight at the same time.
+        rpm: Requests per minute allowed by the provider.
+        tpm: Tokens per minute allowed by the provider.
+        max_retries: Retries after a server error, timeout or lost connection.
+        max_parse_retries: Extra questions when the answer is not valid.
+        max_cost: Stop the run before this amount is exceeded; ``null`` = no limit.
+        currency: Currency of the price list and the cost figures.
+        seconds_per_request: Assumed time of one request, for the duration estimate only.
+        cost_uncertainty: Half width of the cost band in the estimate (0.15 = plus/minus 15 %).
+    """
 
     max_concurrency: PositiveInt = 5
     rpm: PositiveInt = 500
@@ -192,6 +217,42 @@ class Limits(_Strict):
     max_parse_retries: int = Field(default=2, ge=0)
     max_cost: float | None = Field(default=10.0, ge=0.0)
     currency: str = Field(default="USD", min_length=3, max_length=3)
+    seconds_per_request: float = Field(default=3.0, gt=0.0)
+    cost_uncertainty: float = Field(default=0.15, ge=0.0, le=1.0)
+
+
+class QualitySettings(_Strict):
+    """Thresholds of the abstract-quality hint (``ok``, ``short``, ``suspect_concat``).
+
+    The hint never excludes a record; it only tells the preflight and the reader.
+
+    Attributes:
+        long_word_letters: A single word longer than this many letters looks glued together.
+        short_abstract_words: An abstract with fewer words than this counts as ``short``.
+        garbled_mean_word_letters: A mean word length above this (with enough words) looks
+            garbled.
+        min_words_for_mean: Fewer words than this are too few to judge the mean word length.
+        short_abstract_chars_unspaced: Like ``short_abstract_words`` for Chinese, Japanese,
+            Korean and Thai, which have no spaces: the abstract is short below this many
+            characters.
+    """
+
+    long_word_letters: PositiveInt = 40
+    short_abstract_words: PositiveInt = 40
+    garbled_mean_word_letters: float = Field(default=9.0, gt=0.0)
+    min_words_for_mean: PositiveInt = 30
+    short_abstract_chars_unspaced: PositiveInt = 120
+
+
+class PreflightSettings(_Strict):
+    """Thresholds of ``crapai check``.
+
+    Attributes:
+        min_abstract_ratio: A source with a smaller share of records with an abstract gets a
+            warning.
+    """
+
+    min_abstract_ratio: float = Field(default=0.60, ge=0.0, le=1.0)
 
 
 class OutputSettings(_Strict):
@@ -234,6 +295,8 @@ class ProjectConfig(_Strict):
     screening: ScreeningOptions = Field(default_factory=ScreeningOptions)
     llm: LlmSettings = Field(default_factory=LlmSettings)
     limits: Limits = Field(default_factory=Limits)
+    quality: QualitySettings = Field(default_factory=QualitySettings)
+    preflight: PreflightSettings = Field(default_factory=PreflightSettings)
     output: OutputSettings = Field(default_factory=OutputSettings)
     acknowledgements: Acknowledgements = Field(default_factory=Acknowledgements)
     # "import" is a Python keyword, hence the alias; the YAML key is `import:`.

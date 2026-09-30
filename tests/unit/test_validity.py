@@ -58,7 +58,7 @@ def test_quality_classes() -> None:
     assert classify_abstract("") == "" and classify_abstract("   \n ") == ""
     assert classify_abstract(LONG_TEXT) == "ok"
     assert classify_abstract("Not available.") == "short"
-    assert classify_abstract("word " * 19) == "short" and classify_abstract("word " * 20) == "ok"
+    assert classify_abstract("word " * 39) == "short" and classify_abstract("word " * 40) == "ok"
 
 
 def test_glued_or_garbled_text_is_suspect() -> None:
@@ -76,8 +76,11 @@ def test_german_compounds_and_long_technical_terms_are_not_suspect() -> None:
         "eine deutliche Verbesserung der Leistung nach dem Training. Die Ergebnisse werden im "
         "Hinblick auf die entwicklungspsychologische Forschung diskutiert und eingeordnet."
     )
-    assert classify_abstract(german) == "ok"
-    technical = "Electroencephalography and magnetoencephalographic recordings were compared. " * 4
+    assert classify_abstract(german + " " + german) == "ok"
+    technical = (
+        "Electroencephalography and magnetoencephalographic recordings were compared. " * 4
+        + "The results were discussed in relation to previous work on the topic. " * 2
+    )
     assert classify_abstract(technical) == "ok"
 
 

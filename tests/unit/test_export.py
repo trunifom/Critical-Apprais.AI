@@ -27,7 +27,7 @@ from crapai.services.project import create_project
 
 runner = CliRunner()
 NOW = dt.datetime(2026, 10, 1, 9, 30, 15)
-ABSTRACT = "The trial enrolled adults and measured outcomes over twelve months. " * 3
+ABSTRACT = "The trial enrolled adults and measured outcomes over twelve months. " * 5
 
 
 def record(**values: Any) -> Record:

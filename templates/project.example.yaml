@@ -28,7 +28,11 @@ criteria:
 dedup:
   strategy: doi_or_title  # doi_or_title | strict_ids | title | title_authors
   min_title_words: 4        # shorter titles ("Editorial", "Erratum") never match by title alone; 1 = off
-  fuzzy: { enabled: false, threshold: 0.94 }
+  fuzzy:                   # similar titles (typo, dropped word); off by default, it can mark wrongly
+    enabled: false
+    threshold: 0.94        # 0 to 1: how alike two titles must be
+    max_year_difference: 1 # records further apart in years are never fuzzy duplicates
+    require_author_agreement: true
   reporting_mode: all_before_screening   # or between_databases_only
 
 # Deterministic filters that run in code BEFORE the LLM (plan chapter 35.4, U3). Lesson from the usability tests:
@@ -58,6 +62,7 @@ llm:
   top_p: 1.0
   seed: null                             # SwissGPT spec has no seed parameter
   max_output_tokens: 800
+  expected_output_tokens: 120            # typical answer length, for the estimate only
   timeout_s: 60
   api_key_env: SWISSGPT_API_KEY          # NAME of the environment variable
 
@@ -69,6 +74,8 @@ limits:
   max_parse_retries: 2
   max_cost: 10.0                         # in `currency`; null = no limit
   currency: USD
+  seconds_per_request: 3.0               # assumed time of one request (duration estimate only)
+  cost_uncertainty: 0.15                 # half width of the cost band (0.15 = plus/minus 15 %)
 
 output:
   csv_separator: ","
@@ -78,3 +85,15 @@ output:
 
 acknowledgements:
   data_transfer: false                   # set to true after the user confirmed the provider notice
+
+# Thresholds of the abstract-quality hint (it never excludes a record).
+quality:
+  long_word_letters: 40            # a longer single word looks glued together
+  short_abstract_words: 40         # fewer words than this: 'short'
+  garbled_mean_word_letters: 9.0   # mean word length above this looks garbled
+  min_words_for_mean: 30
+  short_abstract_chars_unspaced: 120  # like short_abstract_words for Chinese, Japanese, Korean, Thai
+
+# Thresholds of 'crapai check'.
+preflight:
+  min_abstract_ratio: 0.60         # a source with a smaller share of abstracts gets a warning

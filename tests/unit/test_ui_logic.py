@@ -24,7 +24,7 @@ from crapai.ui.viewmodels import (
     status_icon,
 )
 
-ABSTRACT = "The trial enrolled adults and measured outcomes over twelve months. " * 3
+ABSTRACT = "The trial enrolled adults and measured outcomes over twelve months. " * 5
 RIS = "TY  - JOUR\nTI  - Effects of exercise on mood in adults\nAB  - " + ABSTRACT + "\nER  - \n"
 
 

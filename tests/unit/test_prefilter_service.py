@@ -23,7 +23,7 @@ from crapai.services.prefilter import config_from_settings, prefilter_project
 from crapai.services.project import create_project
 from crapai.services.validity import validate_project
 
-ABSTRACT = "The trial enrolled adults and measured outcomes over twelve months. " * 3
+ABSTRACT = "The trial enrolled adults and measured outcomes over twelve months. " * 5
 
 
 def ris(tmp_path: Path, rows: list[dict[str, str]], name: str = "p.ris") -> Path:

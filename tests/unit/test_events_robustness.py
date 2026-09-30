@@ -20,7 +20,7 @@ from crapai.services.preflight import ProjectIssue, check_project
 from crapai.services.project import create_project
 from crapai.services.validity import validate_project
 
-ABSTRACT = "The trial enrolled adults and measured outcomes over twelve months. " * 3
+ABSTRACT = "The trial enrolled adults and measured outcomes over twelve months. " * 5
 runner = CliRunner()
 
 

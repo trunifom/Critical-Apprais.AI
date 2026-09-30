@@ -24,9 +24,11 @@ from pathlib import Path
 from typing import Annotated, Any
 
 import typer
+import yaml
 
 from crapai import __version__
 from crapai.branding import CLI_NAME, PRODUCT_NAME
+from crapai.config.overrides import effective_settings, reset_values, set_values
 from crapai.cost.duration import format_duration
 from crapai.errors import UNEXPECTED_ERROR_CODE, ConfigError, SaraError
 from crapai.i18n.messages import Messages, resolve_language
@@ -652,6 +654,115 @@ def _print_report(report: ProjectReport, messages: Messages) -> None:
             fg="red" if report.status.value == "error" and issue.value in BLOCKING else "yellow",
         )
     typer.echo(messages.text("cli.check.updated" if report.updated else "cli.check.read_only"))
+
+
+config_app = typer.Typer(
+    help="Show or change the settings of a project without editing project.yaml.",
+    no_args_is_help=True,
+)
+app.add_typer(config_app, name="config")
+
+
+def _parse_assignments(pairs: list[str]) -> dict[str, Any]:
+    """Turn ``["llm.model=gpt-4o", ...]`` into ``{"llm.model": "gpt-4o", ...}``."""
+    parsed: dict[str, Any] = {}
+    for pair in pairs:
+        key, separator, raw = pair.partition("=")
+        if not separator or not key.strip():
+            raise ConfigError(
+                f"Invalid setting '{pair}': expected section.key=value",
+                code="E203",
+                hint="Example: crapai config set my-review llm.model=gpt-4o",
+            )
+        try:
+            parsed[key.strip()] = yaml.safe_load(raw)
+        except yaml.YAMLError:
+            parsed[key.strip()] = raw
+    return parsed
+
+
+@config_app.command("show")
+def config_show(
+    folder: Annotated[Path, typer.Argument(help="Project folder.")],
+    as_json: JsonOption = False,
+    only_changed: Annotated[
+        bool, typer.Option("--changed", help="Only settings changed outside project.yaml.")
+    ] = False,
+    lang: LangOption = None,
+) -> None:
+    """Show every setting with its value and where the value comes from.
+
+    Sources: overrides (this command or the interface), environment, project (project.yaml),
+    user (user configuration) or default.
+    Example: crapai config show my-review --changed
+    """
+    messages = Messages(resolve_language(lang, folder / "project.yaml"))
+    try:
+        settings = effective_settings(Workspace.open(folder).project_yaml)
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        raise _fail(error, messages, json_mode=as_json) from error
+    if only_changed:
+        settings = [s for s in settings if s.source in ("overrides", "environment", "user")]
+    if as_json:
+        rows = [{"key": s.key, "value": s.value, "source": s.source} for s in settings]
+        typer.echo(json.dumps(rows, ensure_ascii=False, indent=2))
+        return
+    width = max((len(s.key) for s in settings), default=0)
+    for setting in settings:
+        source = messages.text(f"cli.config.source.{setting.source}")
+        typer.echo(f"{setting.key.ljust(width)} = {setting.value!r}   [{source}]")
+
+
+@config_app.command("set")
+def config_set(
+    folder: Annotated[Path, typer.Argument(help="Project folder.")],
+    assignments: Annotated[list[str], typer.Argument(help="section.key=value, one or more.")],
+    lang: LangOption = None,
+) -> None:
+    """Change settings; they are checked first and kept in project.overrides.yaml.
+
+    project.yaml is not touched (its comments stay). Undo with: crapai config reset.
+    Example: crapai config set my-review quality.short_abstract_words=30 limits.rpm=200
+    """
+    messages = Messages(resolve_language(lang, folder / "project.yaml"))
+    _setup_file_log(folder)
+    try:
+        workspace = Workspace.open(folder)
+        values = _parse_assignments(assignments)
+        with workspace.lock():
+            set_values(workspace.project_yaml, values)
+        logger.info("Changed setting(s): %s", ", ".join(sorted(values)))
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        raise _fail(error, messages, json_mode=False) from error
+    for key in sorted(values):
+        typer.secho(messages.text("cli.config.set_done", name=key, value=values[key]), fg="green")
+
+
+@config_app.command("reset")
+def config_reset(
+    folder: Annotated[Path, typer.Argument(help="Project folder.")],
+    keys: Annotated[
+        list[str] | None, typer.Argument(help="Settings to reset (default: all).")
+    ] = None,
+    lang: LangOption = None,
+) -> None:
+    """Undo changes made with `config set` or in the interface (back to project.yaml).
+
+    Example: crapai config reset my-review limits.rpm
+    """
+    messages = Messages(resolve_language(lang, folder / "project.yaml"))
+    _setup_file_log(folder)
+    try:
+        workspace = Workspace.open(folder)
+        with workspace.lock():
+            removed = reset_values(workspace.project_yaml, keys or None)
+        logger.info("Reset %d setting(s)", len(removed))
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        raise _fail(error, messages, json_mode=False) from error
+    if not removed:
+        typer.echo(messages.text("cli.config.reset_none"))
+        return
+    typer.secho(messages.text("cli.config.reset_done", count=len(removed)), fg="green")
 
 
 @app.command("export")

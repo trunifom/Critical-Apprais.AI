@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 from crapai.config.loader import load_project_config
 from crapai.config.models import ProjectConfig
-from crapai.cost.duration import DurationEstimate, estimate_duration
+from crapai.cost.duration import DurationConfig, DurationEstimate, estimate_duration
 from crapai.cost.estimator import EstimatorConfig, RunEstimate, build_shared_payload, estimate_run
 from crapai.cost.pricing import CsvPriceSource, Price
 from crapai.cost.tokenizers import tokenizer_for
@@ -101,7 +101,11 @@ def estimate_project(workspace: Workspace, *, instructions: str = "") -> Project
         shared_text_of(config, instructions),
         tokenizer_for(provider, model),
         price=price,
-        config=EstimatorConfig(max_output_tokens=config.llm.max_output_tokens),
+        config=EstimatorConfig(
+            output_tokens_per_item=config.llm.expected_output_tokens,
+            max_output_tokens=config.llm.max_output_tokens,
+            cost_uncertainty=config.limits.cost_uncertainty,
+        ),
     )
     logger.info(
         "Estimate: %d record(s) for %s/%s, %d input tokens, tokenizer %s",
@@ -120,5 +124,6 @@ def estimate_project(workspace: Workspace, *, instructions: str = "") -> Project
         rpm=limits.rpm,
         tpm=limits.tpm,
         max_concurrency=limits.max_concurrency,
+        config=DurationConfig(seconds_per_request=limits.seconds_per_request),
     )
     return ProjectEstimate(estimate, provider, model, limit, over, found, duration)

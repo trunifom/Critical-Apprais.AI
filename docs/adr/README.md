@@ -22,3 +22,4 @@ Kurze Entscheidungsprotokolle. Neue Datei `NNNN-titel.md` mit *Entscheidung / Al
 - 0018 - Markieren statt Löschen: Ausschlussgründe, Reihenfolge, Vorsicht bei Duplikaten
 - 0019 - Deterministische Vorfilter: Reihenfolge, Gründe, fehlende Metadaten
 - 0020 - Ergebnisse der Gesamtprüfung: Sperre, Ereignisse, Dedup, Fehlerbehandlung
+- 0021 - Einstellungen statt fester Zahlen, Überschreibdatei, unscharfe Duplikate ohne Zusatzpaket
