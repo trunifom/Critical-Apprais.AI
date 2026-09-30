@@ -6,7 +6,7 @@ One file per task. Pick the first task whose dependencies are done. Update the `
 |---|---|---|---|---|---|
 | [T-M0-01](T-M0-01.md) | M0 | Decide remaining open questions and initialise the repository | 2 | - | todo |
 | [T-M0-03](T-M0-03.md) | M0 | Choose and apply the final technical names for Critical Apprais.AI | 3 | T-M0-01 | todo |
-| [T-M0-02](T-M0-02.md) | M0 | CI, lint and type-check pipeline | 4 | T-M0-01 | todo |
+| [T-M0-02](T-M0-02.md) | M0 | CI, lint and type-check pipeline | 4 | T-M0-01 | done (review) |
 | [T-M1-01](T-M1-01.md) | M1 | Package skeleton, dev setup, CI green | 4 | T-M0-02 | partially done (skeleton + 4 ported modules exist) |
 | [T-M1-02](T-M1-02.md) | M1 | Pydantic models for project.yaml + loader with precise errors | 6 | T-M1-01 | todo |
 | [T-M1-03](T-M1-03.md) | M1 | Workspace: folder layout, schema version, lock with heartbeat, atomic writes | 6 | T-M1-01 | todo |
