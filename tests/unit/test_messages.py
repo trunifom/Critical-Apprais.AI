@@ -69,22 +69,25 @@ def test_error_lines_have_what_happened_details_and_what_to_do() -> None:
     error = ImportFailed("File a.ris was already imported", code="E106", hint="english hint")
     lines = Messages("en").error_lines(error)
     assert lines[0] == "Error E106: This file has already been imported."
-    assert lines[1] == "Details: File a.ris was already imported"
-    assert lines[2].startswith("What to do: Use --force")
+    assert lines[1].startswith("Why: A file with identical content")
+    assert lines[2] == "Details: File a.ris was already imported"
+    assert lines[3].startswith("What to do: Use --force")
     german = Messages("de").error_lines(error)
     assert german[0].startswith("Fehler E106: Diese Datei wurde bereits importiert")
-    assert german[2].startswith("Was tun: Mit --force")
+    assert german[1].startswith("Warum: Eine Datei mit identischem Inhalt")
+    assert german[3].startswith("Was tun: Mit --force")
 
 
 def test_unknown_code_falls_back_to_the_generic_text_but_keeps_its_code() -> None:
     lines = Messages("en").error_lines(ProviderError("odd", code="E777"))
     assert lines[0].startswith("Error E777: An unexpected error occurred.")
-    assert lines[1] == "Details: odd"
+    assert "Details: odd" in lines
 
 
 def test_hint_is_used_when_no_action_text_exists() -> None:
     error = SaraError("x", code="E999", hint=None)
-    assert len(Messages("en").error_lines(error)) == 3  # title, details, action from the catalogue
+    # title, cause, details and action all come from the catalogue
+    assert len(Messages("en").error_lines(error)) == 4
 
 
 def test_text_lookup_placeholders_missing_keys_and_language_fallback() -> None:

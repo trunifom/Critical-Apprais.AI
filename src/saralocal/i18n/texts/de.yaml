@@ -1,5 +1,160 @@
-# Deutsche Oberflächentexte (Schweizer Schreibweise, "ss"). Neue Schlüssel zuerst in en.yaml anlegen.
-# Aufgabe T-M1-12 ergänzt die übrigen Bereiche; hier stehen die Texte der Befehlszeile (T-M1-11).
+# Deutsche Oberflächentexte (Schweizer Schreibweise, "ss"; Anrede "Sie").
+# Gegenstück zu en.yaml: gleiche Schlüssel, gleiche Platzhalter (geprüft in tests/unit/test_i18n_parity.py).
+# Neue Schlüssel zuerst in en.yaml anlegen, dann hier übersetzen.
+
+sections:
+  page:
+    title: "Automatisierte Literaturübersicht – Einrichtung"
+    subtitle: "Erfassen Sie Projektangaben, legen Sie die Screening-Kriterien fest, laden Sie Ihre Quellen hoch und starten Sie den Lauf."
+
+  project:
+    header: "1️⃣ Projektangaben"
+    fields:
+      title:
+        label: "Projekttitel"
+        placeholder: "z. B. Systematische Übersicht zu Neurofeedback bei Kindern mit ADHS"
+        help: |
+          **ℹ️ Projekttitel**
+          Geben Sie Ihrer Übersicht einen kurzen, eindeutigen Namen.
+          Er erscheint in Protokollen und exportierten Berichten.
+      description:
+        label: "Projektbeschreibung (optional)"
+        placeholder: "Beschreiben Sie kurz Ziel, Umfang und Hintergrund dieser Übersicht …"
+        help: |
+          **ℹ️ Projektbeschreibung**
+          Fügen Sie optional eine kurze Beschreibung von Studiendesign, Zielen und Umfang hinzu.
+          Diese Angaben werden mit dem Projekt gespeichert und in Protokolle und Exporte übernommen.
+
+  screening:
+    header: "2️⃣ Screening-Kriterien festlegen"
+
+    review_mode:
+      label: "Modus wählen"
+      options: ["Abstract"]
+      help: |
+        **ℹ️ Modus**
+        Version 1 bewertet **Titel und Abstracts**. Das Screening von Volltexten ist noch nicht verfügbar.
+
+    objectives:
+      count_label: "Anzahl Ziele"
+      count_help: |
+        **ℹ️ Forschungsziele**
+        Wie viele Ziele leiten das Screening?
+        Geben Sie einen Wert zwischen **1** und **10** ein.
+        Jedes Ziel kann ein kurzer Satz sein (durch Kommas getrennte Teilpunkte sind in Ordnung).
+      list_header: "Ziele"
+      item_label: "Ziel {index}"
+
+    framework:
+      label: "Rahmenwerk wählen"
+      options: ["PICOS", "SPIDER", "PECO", "PIRD", "CUSTOM"]
+      help: |
+        **ℹ️ Rahmenwerk**
+        Wählen Sie ein Standard-Rahmenwerk, um Ihre Ein- und Ausschlusskriterien zu gliedern, oder **CUSTOM** für eigene Felder.
+
+        **Verfügbare Rahmenwerke**
+        - **PICOS**: *Population*, *Intervention*, *Comparison*, *Outcome*, *Study Design*
+        - **SPIDER**: *Sample*, *Phenomenon of Interest*, *Design*, *Evaluation*, *Research Type*
+        - **PECO**: *Population*, *Exposure*, *Comparison*, *Outcome*
+        - **PIRD**: *Population*, *Index Test*, *Reference Standard*, *Diagnosis*
+        - **CUSTOM**: Eigene Felder für Ein- und Ausschluss festlegen
+
+    frameworks_info: |
+      **📚 Verfügbare Rahmenwerke**
+      - **PICOS**: Population, Intervention, Comparison, Outcome, Study Design
+      - **SPIDER**: Sample, Phenomenon of Interest, Design, Evaluation, Research Type
+      - **PECO**: Population, Exposure, Comparison, Outcome
+      - **PIRD**: Population, Index Test, Reference Standard, Diagnosis
+      - **CUSTOM**: Eigene Ein- und Ausschlussfelder festlegen
+
+    custom_criteria:
+      subheader: "🔧 Eigene Kriterien"
+      field_name_label: "Name des eigenen Felds"
+      add_button: "Feld hinzufügen"
+      remove_button: "Entfernen"
+
+    inclusion_exclusion:
+      subheader: "Ein- und Ausschlusskriterien"
+      inclusion_label: "Einschluss – {field}"
+      exclusion_label: "Ausschluss – {field}"
+
+  upload:
+    abstract:
+      header: "3️⃣ Quelldateien hochladen und benennen"
+      instructions: |
+        Laden Sie eine oder mehrere bibliografische Exportdateien hoch.
+        Unterstützte Formate: **.ris**, **.bib**, **.nbib** (PubMed/MEDLINE), **.csv** und **.xlsx**.
+
+        Geben Sie für jede Datei den **Namen der Datenbank oder Quelle** an (z. B. *PubMed*, *MEDLINE*, *Embase*, *CINAHL*).
+        Dieser Name erscheint in Ihren Protokollen und hilft Ihnen, die Datensätze später zuzuordnen.
+      file_type:
+        label: "Dateityp wählen"
+        options: [".ris", ".bib", ".nbib", ".csv", ".xlsx"]
+      file_uploader:
+        label: "Dateien auswählen"
+      database_names_header: "**Datenbank- oder Quellenname für jede hochgeladene Datei:**"
+      database_field:
+        label: "**Datenbank- oder Quellenname** für `{filename}` eingeben"
+        placeholder: "z. B. PubMed, MEDLINE, Embase, CINAHL"
+        help: |
+          **ℹ️ Datenbank- oder Quellenname**
+          Geben Sie den Namen der wissenschaftlichen Datenbank oder Exportquelle ein, aus der die Datei stammt.
+          Es ist ein freier Text; Beispiele:
+          - *PubMed*
+          - *MEDLINE*
+          - *Embase*
+          - *CINAHL*
+          - *Cochrane Library*
+          - *PsycINFO*
+          - *ERIC*
+          - *Scopus*
+          - *Web of Science*
+          - *Google Scholar*
+
+  start:
+    confirm_label: "Ich bestätige, dass Projektangaben, Kriterien und Dateien stimmen. Lauf starten."
+    button_label: "🚀 Lauf starten"
+    total_records_preview: "**Datensätze insgesamt: {count}. Vorschau:**"
+
+preflight:
+  header: "Vorprüfung"
+  table:
+    headers:
+      filename: "Dateiname"
+      label: "Quelle"
+      records: "Datensätze"
+      with_abstract: "Mit Abstract"
+      status: "Status"
+  status:
+    ok: "In Ordnung – Datei wurde gelesen"
+    warn_low_abstracts: "Warnung – wenige Abstracts: Datensätze ohne Abstract werden nicht bewertet, bleiben aber sichtbar"
+    error_unparseable: "Fehler – Datei konnte nicht gelesen werden"
+    error_no_records: "Fehler – Datei enthält keine Datensätze"
+    error_no_abstracts: "Fehler – keine Abstracts für den Abstract-Modus gefunden"
+  note: |
+    *Hinweis:* Diese Prüfungen informieren Sie vor einem Lauf.
+    Die offiziellen PRISMA-Zahlen werden im Lauf selbst festgehalten.
+
+estimate:
+  header: "Geschätzte Tokens und Kosten (Vorschau)"
+  input_tokens: "Eingabe-Tokens"
+  output_tokens: "Ausgabe-Tokens"
+  total_tokens: "Tokens insgesamt"
+  cost_range: "Geschätzter Kostenbereich"
+  note: |
+    *Wichtig:* Dies sind **Schätzungen** zur Planung und Transparenz.
+    Der tatsächliche Verbrauch und die Kosten hängen von Modell und endgültigen Prompts ab.
+    Der Lauf meldet den tatsächlichen Verbrauch.
+
+notifications:
+  parse_error: "Fehler beim Lesen von `{filename}`: {error}"
+  review_started: "✅ Lauf gestartet. Lauf-ID: {file_id}"
+  log_failed: "Der Lauf konnte nicht protokolliert werden: {error}"
+  background_info: |
+    Ihr Lauf ist gestartet und kann je nach Limits des Anbieters einige Zeit dauern.
+    Die Ergebnisse werden in den Projektordner geschrieben; es wird keine E-Mail versendet.
+    Übermittelte Datensätze: **{total}**.
+
 cli:
   init:
     done: "Projekt angelegt: {path}"
@@ -27,44 +182,366 @@ cli:
     in_use: "Das Projekt wird gerade von einem anderen Prozess benutzt."
   error:
     prefix: "Fehler {code}"
+    cause: "Warum"
     details: "Einzelheiten"
     action: "Was tun"
     unexpected: "Es ist ein unerwarteter Fehler aufgetreten. Einzelheiten stehen in der Protokolldatei .sara/app.log."
 
+nav:
+  start: "Start"
+  project: "Projekt"
+  criteria: "Kriterien"
+  data: "Daten"
+  run: "Lauf"
+  results: "Ergebnisse"
+  prisma: "PRISMA"
+  evaluation: "Auswertung"
+  settings: "Einstellungen"
+  help: "Hilfe"
+  step:
+    done: "erledigt"
+    current: "aktuell"
+    locked: "noch nicht möglich"
+    warning: "erledigt mit Warnungen"
+
+common:
+  save: "Speichern"
+  cancel: "Abbrechen"
+  back: "Zurück"
+  next: "Weiter"
+  open: "Öffnen"
+  close: "Schliessen"
+  yes: "Ja"
+  no: "Nein"
+  none: "keine"
+  loading: "Wird geladen …"
+  ai_notice: "KI-Ergebnisse sind Vorschläge. Die Prüfung durch Menschen bleibt erforderlich."
+  sensitivity_notice: "Eine übersehene relevante Studie wiegt schwerer als eine überflüssig eingeschlossene. Unklare Fälle bleiben deshalb für die menschliche Prüfung erhalten."
+  language: "Sprache"
+  records_count: "{count} Datensätze"
+
+start:
+  title: "Critical Apprais.AI"
+  tagline: "Screening-Assistent für systematische Übersichtsarbeiten – läuft lokal auf Ihrem Rechner"
+  purpose: |
+    Critical Apprais.AI unterstützt das **Screening von Titeln und Abstracts** einer systematischen Übersichtsarbeit.
+    Das Programm liest Ihre Literaturexporte, schickt jeden Datensatz mit Ihren Ein- und Ausschlusskriterien an ein
+    Sprachmodell und hält einen **Vorschlag** (Einschluss, Ausschluss oder unsicher) mit kurzer Begründung je Kriterium fest.
+  how_it_works:
+    header: "So funktioniert es"
+    step1: "Beschreiben Sie Ihre Übersicht und Ihre Kriterien."
+    step2: "Importieren Sie Ihre Suchergebnisse (RIS, NBIB, BibTeX, CSV, XLSX)."
+    step3: "Prüfen Sie die Schätzung, machen Sie einen kleinen Probelauf und starten Sie den Lauf."
+    step4: "Prüfen Sie die Vorschläge in der Ergebnistabelle und exportieren Sie sie."
+  limits:
+    header: "Grenzen"
+    text: |
+      Das Werkzeug **ersetzt keine Menschen**. Es schlägt vor, Sie entscheiden. Version 1 arbeitet nur mit Titeln und Abstracts.
+      Datensätze ohne Abstract werden vom Modell nicht bewertet, bleiben aber in der Tabelle sichtbar.
+      Nur die Aufrufe an den Modellanbieter verlassen Ihren Rechner; alle Dateien bleiben im Projektordner.
+  open_project: "Projekt öffnen"
+  recent: "Zuletzt verwendet"
+  browse: "Ordner durchsuchen …"
+  new_project: "Neues Projekt"
+  folder_label: "Projektordner"
+  template_label: "Vorlage"
+  create_button: "Projekt anlegen"
+  demo_hint: "Probieren Sie die Demo-Vorlage aus, um zu sehen, wie ein Projekt aussieht."
+
+criteria_assistant:
+  completeness: "{filled} von {total} Einschlussfeldern sind ausgefüllt."
+  missing_field: "{field} ist leer."
+  prompt_preview: "Vorschau des Kriterienblocks im Prompt (nur lesen)"
+  trial_button: "Probelauf mit {count} Datensätzen"
+  trial_help: "Bewertet zuerst eine kleine Stichprobe, damit unklare Kriterien vor dem ganzen Lauf auffallen."
+  lint:
+    empty: "Ergänzen Sie mindestens ein Einschlusskriterium."
+    too_long: "{field} ist sehr lang. Kurze, prüfbare Aussagen funktionieren besser."
+    contradictory: "{field} steht mit demselben Text bei Einschluss und Ausschluss."
+    not_checkable: "{field} lässt sich aus einem Abstract nicht beurteilen (zum Beispiel Sprache oder Jahr). Verwenden Sie stattdessen einen Filter."
+  changed_after_run: "Frühere Läufe verwendeten die alten Kriterien (anderer Hash)."
+
+data:
+  header: "Daten"
+  supported: "Unterstützt: .ris .bib .nbib .csv .xlsx"
+  drop: "Dateien hierher ziehen oder durchsuchen"
+  table:
+    file: "Datei"
+    source: "Quelle (Datenbank)"
+    records: "Datensätze"
+    with_abstract: "Mit Abstract"
+    status: "Status"
+  overview:
+    records: "Datensätze"
+    duplicates: "Duplikate"
+    without_abstract: "Ohne Abstract"
+    valid: "Gültig für das Modell"
+  dedup_strategy: "Duplikat-Strategie"
+  fuzzy: "Unscharfe Suche"
+  review_list: "Prüfliste öffnen"
+  format_note: "{file} ist ein Export im Format {format} und wird entsprechend gelesen."
+  source_missing: "Geben Sie dieser Datei einen Quellennamen."
+  low_abstracts: "Nur {percent} % der Datensätze haben einen Abstract. Datensätze ohne Abstract werden nicht bewertet, bleiben aber in der Tabelle."
+  already_imported: "Diese Datei wurde bereits als {file} importiert."
+  imported: "{records} Datensätze aus {file} importiert."
+
+run:
+  header: "Lauf"
+  settings: "Einstellungen"
+  provider: "Anbieter"
+  model: "Modell"
+  prompt_variant: "Prompt"
+  uncertain_policy:
+    label: "Unsicher zählt als"
+    include: "Einschluss"
+    exclude: "Ausschluss"
+    keep_separate: "getrennt führen"
+  repeats: "Wiederholungen"
+  concurrency: "Parallele Aufrufe"
+  cost_limit: "Kostenlimit"
+  estimate:
+    header: "Schätzung"
+    records: "Datensätze"
+    input_tokens: "Eingabe-Tokens"
+    output_tokens: "Ausgabe-Tokens"
+    cost: "Kosten"
+    duration: "Dauer"
+    approximate: "ca."
+  trial: "Probelauf ({count} Datensätze)"
+  confirm: "Ich habe Kriterien, Modell und Kosten geprüft. Die Ergebnisse sind Vorschläge."
+  start: "Lauf starten"
+  pause: "Pause"
+  stop: "Stopp"
+  resume: "Fortsetzen"
+  progress: "{done} / {total} Datensätze, Kosten {cost}, Fehler {errors}, Rest {remaining}"
+  interrupted: "Lauf bei {done} / {total} unterbrochen. Sie können ihn fortsetzen."
+  counters:
+    ok: "in Ordnung"
+    uncertain: "unsicher"
+    errors: "Fehler"
+    retries: "Wiederholungen"
+  status:
+    created: "angelegt"
+    running: "läuft"
+    paused: "pausiert"
+    interrupted: "unterbrochen"
+    completed: "abgeschlossen"
+    failed: "fehlgeschlagen"
+    canceled: "abgebrochen"
+  cost_limit_reached: "Das Kostenlimit von {limit} wurde erreicht. Der Lauf wurde pausiert."
+
+results:
+  header: "Ergebnisse"
+  run: "Lauf"
+  export:
+    xlsx: "Excel"
+    csv: "CSV"
+    ris: "RIS"
+  filter:
+    decision: "Entscheidung"
+    source: "Quelle"
+    inconsistent: "nur widersprüchliche"
+    search: "Suche in Titel, Abstract, Begründung"
+    review_list: "nur Prüfliste"
+  table:
+    title: "Titel"
+    year: "Jahr"
+    decision: "Entscheidung"
+    source: "Quelle"
+  decision:
+    include: "Einschluss"
+    exclude: "Ausschluss"
+    uncertain: "Unsicher"
+    none: "nicht bewertet"
+  status:
+    ok: "in Ordnung"
+    parse_error: "Antwort unbrauchbar"
+    api_error: "Fehler beim Anbieter"
+    truncated: "Antwort abgeschnitten"
+    skipped: "übersprungen"
+    too_long: "Eingabe zu lang"
+  verdict:
+    met: "erfüllt"
+    not_met: "nicht erfüllt"
+    unclear: "unklar"
+    triggered: "trifft zu"
+    not_triggered: "trifft nicht zu"
+  detail:
+    criteria: "Kriterien"
+    inclusion: "Einschluss"
+    exclusion: "Ausschluss"
+    justification: "Begründung"
+    abstract: "Abstract"
+    inconsistent: "Die Entscheidung des Modells widerspricht seinen eigenen Kriterienurteilen."
+    unusable: "Das Modell hat für diesen Datensatz keine brauchbare Antwort geliefert. Er zählt weder als Einschluss noch als Ausschluss."
+  human:
+    decision: "Ihre Entscheidung"
+    note: "Notiz"
+    save: "Entscheidung speichern"
+
+prisma:
+  header: "PRISMA-Flussdiagramm"
+  identified: "Identifizierte Datensätze"
+  per_source: "{label}: {count}"
+  duplicates_removed: "Entfernte Duplikate"
+  screened: "Bewertete Datensätze"
+  excluded: "Ausgeschlossene Datensätze"
+  without_abstract: "Datensätze ohne Abstract (nicht bewertet)"
+  removed_before: "Vor dem Screening entfernt (andere Gründe)"
+  included: "Zum Einschluss vorgeschlagen"
+  uncertain: "Unsicher, zur menschlichen Prüfung"
+  note: "Die Zahlen stammen aus den Ereignissen des Laufs. Nichts wird geschätzt."
+  download_png: "Diagramm herunterladen (PNG)"
+  download_json: "Zahlen herunterladen (JSON)"
+
+evaluation:
+  header: "Auswertung"
+  test_retest:
+    header: "Test-Retest (Stabilität)"
+    kappa: "Cohens Kappa"
+    agreement: "Übereinstimmung"
+    pairs: "{pairs} Laufpaare, {records} gemeinsame Datensätze"
+    caution: "Ein stabiles Ergebnis kann durchgehend falsch sein. Vergleichen Sie es mit menschlichen Entscheidungen."
+  human:
+    header: "Vergleich mit menschlichen Entscheidungen"
+    upload: "Menschliche Entscheidungen (CSV oder XLSX)"
+    key: "Zuordnen über"
+    unmatched: "{count} Datensätze konnten nicht zugeordnet werden und werden getrennt aufgeführt."
+  metrics:
+    sensitivity: "Sensitivität (Recall)"
+    specificity: "Spezifität"
+    precision: "Präzision"
+    f1: "F1"
+    accuracy: "Genauigkeit"
+    kappa: "Cohens Kappa"
+    true_positive: "Richtig positiv"
+    false_positive: "Falsch positiv"
+    false_negative: "Falsch negativ"
+    true_negative: "Richtig negativ"
+  sensitivity_hint: "Die Sensitivität ist die wichtigste Kennzahl: Sie zeigt, wie viele der relevanten Studien das Werkzeug zum Einschluss vorgeschlagen hat."
+  too_few: "Es gibt zu wenige gemeinsame Datensätze, um dies zu berechnen."
+
+settings:
+  header: "Einstellungen"
+  provider: "Anbieter"
+  key:
+    header: "API-Schlüssel"
+    ok: "In der Umgebungsvariable {name} wurde ein Schlüssel gefunden."
+    missing: "Kein Schlüssel gefunden. Setzen Sie die Umgebungsvariable {name}."
+    never_stored: "Der Schlüssel wird nie im Projektordner gespeichert."
+  language: "Sprache der Oberfläche"
+  pricing: "Preise"
+  folder: "Projektordner"
+  data_transfer:
+    header: "Datenübermittlung"
+    text: "Während eines Laufs werden Titel und Abstracts an {provider} gesendet. Bestätigen Sie, dass dies für Ihre Daten zulässig ist."
+    confirm: "Ich bestätige dies."
+
+help:
+  header: "Hilfe"
+  manual: "Benutzerhandbuch"
+  glossary:
+    header: "Glossar"
+    screening: "Screening: erste Beurteilung von Titeln und Abstracts anhand der Kriterien."
+    include: "Einschluss: Der Datensatz erfüllt möglicherweise alle Einschlusskriterien; eine Person entscheidet."
+    uncertain: "Unsicher: Der Abstract erlaubt keine Entscheidung; der Datensatz bleibt zur Prüfung erhalten."
+    prisma: "PRISMA: Berichtsstandard mit einem Flussdiagramm des Auswahlprozesses."
+    kappa: "Cohens Kappa: Übereinstimmung zweier Beurteilungen über den Zufall hinaus."
+    sensitivity: "Sensitivität: Anteil der relevanten Studien, die gefunden wurden."
+  error_codes: "Fehlercodes"
+  doctor: "Installation prüfen"
+
+# Fehlertexte: Was ist passiert – Warum – Was können Sie tun (Plan Kap. 26.4, ADR 0012).
 errors:
   E101:
     title: "Der Dateityp wird nicht unterstützt oder wurde nicht erkannt."
+    cause: "Der Inhalt ist weder RIS, NBIB, BibTeX noch eine Tabelle, oder der Dateityp gehört nicht zu Version 1."
     action: "Exportieren Sie die Suchergebnisse erneut als RIS, NBIB, BibTeX, CSV oder XLSX."
   E102:
     title: "In der Datei wurden keine Datensätze gefunden."
+    cause: "Die Datei ist leer oder nicht der Export, den Sie meinten."
     action: "Prüfen Sie, ob der Export leer ist, und exportieren Sie ihn erneut."
   E103:
     title: "Die Datei konnte mit dieser Zeichenkodierung nicht gelesen werden."
+    cause: "Die Datei verwendet eine Zeichenkodierung, die das Programm nicht erwartet hat."
     action: "Versuchen Sie eine andere Kodierung, zum Beispiel --encoding cp1252."
   E104:
     title: "Eine Spalte konnte nicht zugeordnet werden."
+    cause: "Die Spaltennamen der Tabelle weichen von den üblichen Namen ab."
     action: "Nennen Sie die Spalte selbst, zum Beispiel --map abstract=<spalte>."
+  E105:
+    title: "Die ZIP-Datei enthält keine lesbaren PDFs."
+    cause: "Der PDF-Import gehört nicht zu Version 1."
+    action: "Importieren Sie stattdessen einen bibliografischen Export."
   E106:
     title: "Diese Datei wurde bereits importiert."
+    cause: "Eine Datei mit identischem Inhalt steht im Import-Protokoll."
     action: "Mit --force importieren Sie sie erneut; die Datensätze sind dann doppelt vorhanden."
   E201:
     title: "In der project.yaml fehlt eine Pflichtangabe."
+    cause: "Die Projektdatei ist unvollständig, zum Beispiel ohne Einschlusskriterien."
     action: "Ergänzen Sie die fehlende Angabe in der project.yaml."
+  E202:
+    title: "Das Modell ist nicht bekannt."
+    cause: "Der Modellname steht nicht im Modellkatalog."
+    action: "Prüfen Sie den Modellnamen oder ergänzen Sie die models.yaml."
   E203:
-    title: "Eine Angabe in der project.yaml hat einen ungültigen Wert."
-    action: "Korrigieren Sie die aufgeführten Angaben in der project.yaml."
+    title: "Eine Angabe hat einen ungültigen Wert."
+    cause: "Ein Wert liegt ausserhalb des erlaubten Bereichs, oder ein Einstellungsname ist falsch geschrieben."
+    action: "Korrigieren Sie die aufgeführten Angaben."
+  E301:
+    title: "Der API-Schlüssel fehlt oder ist ungültig."
+    cause: "Die Umgebungsvariable mit dem Schlüssel ist nicht gesetzt, oder der Anbieter hat den Schlüssel abgelehnt."
+    action: "Setzen Sie die in der project.yaml genannte Umgebungsvariable und versuchen Sie es erneut."
+  E302:
+    title: "Das Aufruflimit des Anbieters wurde überschritten."
+    cause: "Zu viele Aufrufe pro Minute."
+    action: "Das Programm bremst automatisch. Senken Sie die Zahl paralleler Aufrufe, wenn das oft vorkommt."
+  E303:
+    title: "Die Eingabe ist für das Modell zu lang."
+    cause: "Titel und Abstract zusammen überschreiten das Kontextfenster des Modells."
+    action: "Wählen Sie ein Modell mit grösserem Kontextfenster."
+  E304:
+    title: "Die Antwort des Modells war unbrauchbar."
+    cause: "Die Antwort hielt das verlangte Format nicht ein."
+    action: "Der Aufruf wird wiederholt. Kommt das oft vor, wählen Sie ein anderes Modell. Unbrauchbare Antworten zählen nie als Entscheidung."
+  E305:
+    title: "Der Anbieter war nicht erreichbar."
+    cause: "Netzwerk- oder Proxyproblem oder ein vorübergehender Fehler beim Anbieter."
+    action: "Prüfen Sie die Verbindung und setzen Sie den Lauf fort."
+  E306:
+    title: "Der Anbieter hat den Inhalt abgelehnt."
+    cause: "Ein Sicherheitsfilter des Anbieters hat diesen Datensatz blockiert."
+    action: "Beurteilen Sie diesen Datensatz von Hand."
+  E307:
+    title: "Guthaben oder Kontingent beim Anbieter sind aufgebraucht."
+    cause: "Das Konto hat kein Guthaben mehr für Aufrufe."
+    action: "Prüfen Sie das Konto und setzen Sie den Lauf danach fort."
   E401:
     title: "Eine Datei konnte nicht geschrieben werden."
+    cause: "Die Datei ist in einem anderen Programm geöffnet, oder der Ordner ist nicht beschreibbar."
     action: "Schliessen Sie die Datei in anderen Programmen und prüfen Sie die Ordnerrechte."
   E402:
     title: "Das Projekt wird von einem anderen Prozess benutzt."
+    cause: "Es besteht eine Sperrdatei eines laufenden Prozesses."
     action: "Beenden Sie zuerst den anderen Lauf. Läuft keiner, ist die Sperre veraltet und kann übernommen werden."
   E403:
     title: "Es ist nicht genug Speicherplatz vorhanden."
-    action: "Schaffen Sie Speicherplatz und versuchen Sie es erneut."
+    cause: "Das Laufwerk ist voll."
+    action: "Schaffen Sie Speicherplatz und setzen Sie den Lauf fort."
   E404:
     title: "Der Ordner ist kein Projekt dieser Version, oder eine Projektdatei ist beschädigt."
+    cause: "Die Versionsmarke oder eine Projektdatei fehlt oder passt nicht."
     action: "Wählen Sie den richtigen Ordner, stellen Sie data/.backup wieder her oder führen Sie die Migration durch."
+  E501:
+    title: "Zu wenige gemeinsame Datensätze für die Statistik."
+    cause: "Die Läufe überschneiden sich zu wenig."
+    action: "Prüfen Sie, ob die Läufe zu denselben Daten gehören."
+  E502:
+    title: "Die menschlichen Entscheidungen konnten nicht zugeordnet werden."
+    cause: "Die Schlüsselspalte passt nicht zu den Datensätzen des Projekts."
+    action: "Versuchen Sie einen anderen Schlüssel, zum Beispiel --match doi."
   E999:
     title: "Es ist ein unerwarteter Fehler aufgetreten."
+    cause: "Dies ist ein Programmfehler."
     action: "Sehen Sie in die Protokolldatei .sara/app.log und melden Sie das Problem."

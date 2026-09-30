@@ -1,5 +1,7 @@
 # PORTED from SARA-App texts/en.yaml (email templates removed: the product sends no e-mail).
-# TODO(task T-M1-12): add de.yaml, new keys for run/results/prisma/evaluation/errors (plan chapter 27.7).
+# Adapted for Critical Apprais.AI (task T-M1-12): full text is not part of version 1, no background
+# worker and no e-mail. New sections at the end: nav, common, start, data, run, results, prisma,
+# evaluation, settings, help, errors. Keep de.yaml in sync (tests/unit/test_i18n_parity.py).
 # texts/en.yaml
 # Complete English i18n for review_setup page (project setup + criteria + upload + preflight + estimate + start)
 # All strings are UI-facing and may contain Markdown.
@@ -32,12 +34,10 @@ sections:
 
     review_mode:
       label: "Select Review Mode"
-      options: ["Abstract", "Fulltext"]
+      options: ["Abstract"]
       help: |
         **ℹ️ Review Mode**
-        Choose whether your automated screening will process **abstracts** or **full texts**.
-        - *Abstract* — quick, lighter and cheaper  
-        - *Fulltext* — more detailed, higher token usage
+        Version 1 screens **titles and abstracts**. Full-text screening is not available yet.
 
     objectives:
       count_label: "Number of objectives"
@@ -51,7 +51,7 @@ sections:
 
     framework:
       label: "Choose framework"
-      options: ["PICOS", "SPIDER", "PECO", "CUSTOM"]
+      options: ["PICOS", "SPIDER", "PECO", "PIRD", "CUSTOM"]
       help: |
         **ℹ️ Framework Selection**
         Pick a standard framework to structure your inclusion/exclusion criteria, or select **CUSTOM** to define your own fields.
@@ -60,6 +60,7 @@ sections:
         - **PICOS**: *Population*, *Intervention*, *Comparison*, *Outcome*, *Study Design*  
         - **SPIDER**: *Sample*, *Phenomenon of Interest*, *Design*, *Evaluation*, *Research Type*  
         - **PECO**: *Population*, *Exposure*, *Comparison*, *Outcome*  
+        - **PIRD**: *Population*, *Index Test*, *Reference Standard*, *Diagnosis*  
         - **CUSTOM**: Define your own fields for inclusion and exclusion
 
     frameworks_info: |
@@ -67,6 +68,7 @@ sections:
       - **PICOS**: Population, Intervention, Comparison, Outcome, Study Design  
       - **SPIDER**: Sample, Phenomenon of Interest, Design, Evaluation, Research Type  
       - **PECO**: Population, Exposure, Comparison, Outcome  
+      - **PIRD**: Population, Index Test, Reference Standard, Diagnosis  
       - **CUSTOM**: Define your own inclusion/exclusion fields  
 
     custom_criteria:
@@ -86,13 +88,13 @@ sections:
       header: "3️⃣ Upload & Label Source Files"
       instructions: |
         Upload one or more bibliographic export files.  
-        Supported formats: **.ris**, **.bib**, and **.nbib** (PubMed/MEDLINE).  
+        Supported formats: **.ris**, **.bib**, **.nbib** (PubMed/MEDLINE), **.csv** and **.xlsx**.  
 
         For each uploaded file, provide the **database/source name** (e.g., *PubMed*, *MEDLINE*, *Embase*, *CINAHL*).  
         This label will appear in your logs and help you recognize each dataset later.
       file_type:
         label: "Select file type"
-        options: [".ris", ".bib", ".nbib"]
+        options: [".ris", ".bib", ".nbib", ".csv", ".xlsx"]
       file_uploader:
         label: "Choose files"
       database_names_header: "**Database/source label for each uploaded file:**"
@@ -114,32 +116,13 @@ sections:
           - *Web of Science*
           - *Google Scholar*
 
-    fulltext:
-      header: "3️⃣ Upload Fulltext Files"
-      instructions: |
-        Upload a .zip file containing the full text articles as PDFs.  
-        Supported formats: **.zip** (max. 150 MB).  
-
-      file_type:
-        label: "Select file type"
-        options: [".zip"]
-      file_uploader:
-        label: "Choose files"
-      database_names_header: "**Database/source label for each uploaded file:**"
-      database_field:
-        label: "Enter the **database/source name** for `{filename}`"
-        placeholder: "e.g. PubMed exports, Embase fulltexts, CINAHL PDFs"
-        help: |
-          **ℹ️ Source Label (optional)**
-          Free-text label to identify where the PDFs came from (folder or database name). Used in logs/exports.
-
   start:
     confirm_label: "I confirm that the project data, criteria and uploads are correct. Start the background review."
     button_label: "🚀 Start Review"
     total_records_preview: "**Total records: {count}. Preview:**"
 
 preflight:
-  header: "Preflight Checks (UI-only)"
+  header: "Preflight Checks"
   table:
     headers:
       filename: "Filename"
@@ -149,13 +132,13 @@ preflight:
       status: "Status"
   status:
     ok: "OK — file parsed successfully"
-    warn_low_abstracts: "Warning — low abstract coverage for Abstract mode"
+    warn_low_abstracts: "Warning — low abstract coverage: records without an abstract are not screened but stay visible"
     error_unparseable: "Error — file could not be parsed"
     error_no_records: "Error — file contains no records"
     error_no_abstracts: "Error — no abstracts found for Abstract mode"
   note: |
-    *Note:* These checks are for **user feedback only**.  
-    Official PRISMA counts will be computed and logged by the background worker.
+    *Note:* These checks inform you before a run.  
+    The official PRISMA numbers are recorded in the run itself.
 
 estimate:
   header: "Estimated Tokens & Cost (Preview)"
@@ -166,17 +149,17 @@ estimate:
   note: |
     *Important:* These are **estimates** for planning and transparency.  
     Actual token usage and costs depend on the model and the final prompts.  
-    The background worker calculates authoritative usage.
+    The run reports the actual usage.
 
 # (Removed duplicate top-level 'sections' block; 'start' already lives under sections above)
 
 notifications:
   parse_error: "Error parsing `{filename}`: {error}"
-  review_started: "✅ Review job started. File ID: {file_id}"
-  log_failed: "Failed to log review task: {error}"
+  review_started: "✅ Run started. Run ID: {file_id}"
+  log_failed: "The run could not be recorded: {error}"
   background_info: |
-    Your review is now running in the background and may take some time depending on system load.  
-    Results and download links will be sent to **{email}**.  
+    Your review is running and may take some time depending on the provider's limits.  
+    Results are written to the project folder; no e-mail is sent.  
     Submitted items: **{total}**.
 
 # ---- Command line (task T-M1-11). Added for Critical Apprais.AI; keep in sync with de.yaml. ----
@@ -207,45 +190,367 @@ cli:
     in_use: "The project is in use by another process."
   error:
     prefix: "Error {code}"
+    cause: "Why"
     details: "Details"
     action: "What to do"
     unexpected: "An unexpected error occurred. Details are in the log file .sara/app.log."
 
-# Error texts: what happened - why - what to do (plan chapter 26.4, ADR 0012).
+# ---- Navigation, shared texts and pages of the local interface (plan chapter 27) ----------------
+nav:
+  start: "Start"
+  project: "Project"
+  criteria: "Criteria"
+  data: "Data"
+  run: "Run"
+  results: "Results"
+  prisma: "PRISMA"
+  evaluation: "Evaluation"
+  settings: "Settings"
+  help: "Help"
+  step:
+    done: "done"
+    current: "current"
+    locked: "not possible yet"
+    warning: "done with warnings"
+
+common:
+  save: "Save"
+  cancel: "Cancel"
+  back: "Back"
+  next: "Next"
+  open: "Open"
+  close: "Close"
+  yes: "Yes"
+  no: "No"
+  none: "none"
+  loading: "Loading …"
+  ai_notice: "AI results are proposals. Review by people remains necessary."
+  sensitivity_notice: "Missing a relevant study is worse than including an irrelevant one, so unclear cases are kept for human review."
+  language: "Language"
+  records_count: "{count} records"
+
+start:
+  title: "Critical Apprais.AI"
+  tagline: "Screening assistant for systematic reviews – runs locally on your computer"
+  purpose: |
+    Critical Apprais.AI helps with the **title and abstract screening** of a systematic review.
+    It reads your literature exports, sends each record with your inclusion and exclusion criteria to a
+    language model and records a **proposal** (include, exclude or uncertain) with a short justification per criterion.
+  how_it_works:
+    header: "How it works"
+    step1: "Describe your review and your criteria."
+    step2: "Import your search results (RIS, NBIB, BibTeX, CSV, XLSX)."
+    step3: "Check the estimate, run a small trial and start the run."
+    step4: "Review the proposals in the results table and export them."
+  limits:
+    header: "Limits"
+    text: |
+      The tool **does not replace people**. It proposes; you decide. Version 1 works on titles and abstracts only.
+      Records without an abstract are not screened by the model but stay visible in the table.
+      Only the calls to the model provider leave your computer; all files stay in the project folder.
+  open_project: "Open a project"
+  recent: "Recently used"
+  browse: "Browse for a folder …"
+  new_project: "New project"
+  folder_label: "Project folder"
+  template_label: "Template"
+  create_button: "Create project"
+  demo_hint: "Try the demo template to see how a project looks."
+
+criteria_assistant:
+  completeness: "{filled} of {total} inclusion fields are filled in."
+  missing_field: "{field} is empty."
+  prompt_preview: "Preview of the criteria block in the prompt (read only)"
+  trial_button: "Trial run on {count} records"
+  trial_help: "Screens a small sample first, so unclear criteria show up before the full run."
+  lint:
+    empty: "Add at least one inclusion criterion."
+    too_long: "{field} is very long. Short, testable statements work better."
+    contradictory: "{field} appears in both inclusion and exclusion with the same text."
+    not_checkable: "{field} cannot be judged from an abstract (for example language or year). Use a filter instead."
+  changed_after_run: "Earlier runs used the old criteria (different hash)."
+
+data:
+  header: "Data"
+  supported: "Supported: .ris .bib .nbib .csv .xlsx"
+  drop: "Drop files here or browse"
+  table:
+    file: "File"
+    source: "Source (database)"
+    records: "Records"
+    with_abstract: "With abstract"
+    status: "Status"
+  overview:
+    records: "Records"
+    duplicates: "Duplicates"
+    without_abstract: "Without abstract"
+    valid: "Valid for the model"
+  dedup_strategy: "Duplicate strategy"
+  fuzzy: "Fuzzy search"
+  review_list: "Open review list"
+  format_note: "{file} is a {format} export and is read as such."
+  source_missing: "Give this file a source name."
+  low_abstracts: "Only {percent} % of the records have an abstract. Records without an abstract are not screened but stay in the table."
+  already_imported: "This file was imported before as {file}."
+  imported: "{records} records imported from {file}."
+
+run:
+  header: "Run"
+  settings: "Settings"
+  provider: "Provider"
+  model: "Model"
+  prompt_variant: "Prompt"
+  uncertain_policy:
+    label: "Uncertain counts as"
+    include: "include"
+    exclude: "exclude"
+    keep_separate: "keep separate"
+  repeats: "Repetitions"
+  concurrency: "Parallel calls"
+  cost_limit: "Cost limit"
+  estimate:
+    header: "Estimate"
+    records: "Records"
+    input_tokens: "Input tokens"
+    output_tokens: "Output tokens"
+    cost: "Cost"
+    duration: "Duration"
+    approximate: "about"
+  trial: "Trial run ({count} records)"
+  confirm: "I have checked criteria, model and cost. The results are proposals."
+  start: "Start run"
+  pause: "Pause"
+  stop: "Stop"
+  resume: "Resume"
+  progress: "{done} / {total} records, cost {cost}, errors {errors}, remaining {remaining}"
+  interrupted: "Run interrupted at {done} / {total}. You can resume it."
+  counters:
+    ok: "ok"
+    uncertain: "uncertain"
+    errors: "errors"
+    retries: "retries"
+  status:
+    created: "created"
+    running: "running"
+    paused: "paused"
+    interrupted: "interrupted"
+    completed: "completed"
+    failed: "failed"
+    canceled: "canceled"
+  cost_limit_reached: "The cost limit of {limit} was reached. The run was paused."
+
+results:
+  header: "Results"
+  run: "Run"
+  export:
+    xlsx: "Excel"
+    csv: "CSV"
+    ris: "RIS"
+  filter:
+    decision: "Decision"
+    source: "Source"
+    inconsistent: "only inconsistent"
+    search: "Search title, abstract, justification"
+    review_list: "only review list"
+  table:
+    title: "Title"
+    year: "Year"
+    decision: "Decision"
+    source: "Source"
+  decision:
+    include: "Include"
+    exclude: "Exclude"
+    uncertain: "Uncertain"
+    none: "not screened"
+  status:
+    ok: "ok"
+    parse_error: "answer unusable"
+    api_error: "provider error"
+    truncated: "answer cut off"
+    skipped: "skipped"
+    too_long: "input too long"
+  verdict:
+    met: "met"
+    not_met: "not met"
+    unclear: "unclear"
+    triggered: "triggered"
+    not_triggered: "not triggered"
+  detail:
+    criteria: "Criteria"
+    inclusion: "Inclusion"
+    exclusion: "Exclusion"
+    justification: "Justification"
+    abstract: "Abstract"
+    inconsistent: "The model's decision contradicts its own criteria verdicts."
+    unusable: "The model gave no usable answer for this record. It is not counted as include or exclude."
+  human:
+    decision: "Your decision"
+    note: "Note"
+    save: "Save decision"
+
+prisma:
+  header: "PRISMA flow"
+  identified: "Records identified"
+  per_source: "{label}: {count}"
+  duplicates_removed: "Duplicates removed"
+  screened: "Records screened"
+  excluded: "Records excluded"
+  without_abstract: "Records without abstract (not screened)"
+  removed_before: "Removed before screening (other reasons)"
+  included: "Proposed for inclusion"
+  uncertain: "Uncertain, for human review"
+  note: "The numbers come from the events of the run. Nothing is estimated."
+  download_png: "Download diagram (PNG)"
+  download_json: "Download numbers (JSON)"
+
+evaluation:
+  header: "Evaluation"
+  test_retest:
+    header: "Test-retest (stability)"
+    kappa: "Cohen's kappa"
+    agreement: "Agreement"
+    pairs: "{pairs} pairs of runs, {records} records in common"
+    caution: "A stable result can still be consistently wrong. Compare with human decisions."
+  human:
+    header: "Comparison with human decisions"
+    upload: "Human decisions (CSV or XLSX)"
+    key: "Match by"
+    unmatched: "{count} records could not be matched and are listed separately."
+  metrics:
+    sensitivity: "Sensitivity (recall)"
+    specificity: "Specificity"
+    precision: "Precision"
+    f1: "F1"
+    accuracy: "Accuracy"
+    kappa: "Cohen's kappa"
+    true_positive: "True positive"
+    false_positive: "False positive"
+    false_negative: "False negative"
+    true_negative: "True negative"
+  sensitivity_hint: "Sensitivity is the key figure: it tells how many of the relevant studies the tool proposed to include."
+  too_few: "There are too few records in common to compute this."
+
+settings:
+  header: "Settings"
+  provider: "Provider"
+  key:
+    header: "API key"
+    ok: "A key was found in the environment variable {name}."
+    missing: "No key found. Set the environment variable {name}."
+    never_stored: "The key is never stored in the project folder."
+  language: "Interface language"
+  pricing: "Prices"
+  folder: "Project folder"
+  data_transfer:
+    header: "Data transfer"
+    text: "During a run, titles and abstracts are sent to {provider}. Confirm that this is allowed for your data."
+    confirm: "I confirm this."
+
+help:
+  header: "Help"
+  manual: "User manual"
+  glossary:
+    header: "Glossary"
+    screening: "Screening: first assessment of titles and abstracts against the criteria."
+    include: "Include: the record may meet all inclusion criteria; a person decides."
+    uncertain: "Uncertain: the abstract does not allow a decision; the record stays in for review."
+    prisma: "PRISMA: reporting standard with a flow diagram of the selection process."
+    kappa: "Cohen's kappa: agreement between two assessments beyond chance."
+    sensitivity: "Sensitivity: share of relevant studies that were found."
+  error_codes: "Error codes"
+  doctor: "Check the installation"
+
+# Error texts: what happened - why - what to do (plan chapter 26.4, ADR 0012). Codes follow the catalogue.
 errors:
   E101:
     title: "The file type is not supported or not recognised."
+    cause: "The content is neither RIS, NBIB, BibTeX nor a table, or the file type is not part of version 1."
     action: "Export the search results again as RIS, NBIB, BibTeX, CSV or XLSX."
   E102:
     title: "No records were found in the file."
+    cause: "The file is empty or is not the export you meant."
     action: "Check that the export is not empty and export it again."
   E103:
     title: "The file could not be read with this text encoding."
+    cause: "The file uses a text encoding the program did not expect."
     action: "Try another encoding, for example --encoding cp1252."
   E104:
     title: "A column could not be assigned."
+    cause: "The column names of the table differ from the usual names."
     action: "Name the column yourself, for example --map abstract=<column>."
+  E105:
+    title: "The ZIP file contains no readable PDFs."
+    cause: "PDF import is not part of version 1."
+    action: "Import a bibliographic export instead."
   E106:
     title: "This file has already been imported."
+    cause: "A file with identical content is listed in the import log."
     action: "Use --force to import it again; the records will then exist twice."
   E201:
     title: "A required setting is missing in project.yaml."
+    cause: "The project file is incomplete, for example without inclusion criteria."
     action: "Add the missing setting to project.yaml."
+  E202:
+    title: "The model is not known."
+    cause: "The model name is not in the model catalogue."
+    action: "Check the model name or extend models.yaml."
   E203:
-    title: "A setting in project.yaml has an invalid value."
-    action: "Correct the listed settings in project.yaml."
+    title: "A setting has an invalid value."
+    cause: "A value is outside the allowed range or a setting name is misspelled."
+    action: "Correct the listed settings."
+  E301:
+    title: "The API key is missing or invalid."
+    cause: "The environment variable with the key is not set, or the provider rejected the key."
+    action: "Set the environment variable named in project.yaml and try again."
+  E302:
+    title: "The provider's rate limit was exceeded."
+    cause: "Too many calls per minute."
+    action: "The program slows down automatically. Lower the number of parallel calls if it happens often."
+  E303:
+    title: "The input is too long for the model."
+    cause: "Title and abstract together exceed the model's context window."
+    action: "Choose a model with a larger context window."
+  E304:
+    title: "The model's answer was unusable."
+    cause: "The answer did not follow the required format."
+    action: "The call is repeated. If it happens often, choose another model. Unusable answers are never counted as a decision."
+  E305:
+    title: "The provider could not be reached."
+    cause: "Network or proxy problem, or a temporary error at the provider."
+    action: "Check the connection and resume the run."
+  E306:
+    title: "The provider refused the content."
+    cause: "A safety filter of the provider blocked this record."
+    action: "Assess this record by hand."
+  E307:
+    title: "The provider's credit or quota is used up."
+    cause: "The account has no more balance for calls."
+    action: "Check the account and resume the run afterwards."
   E401:
     title: "A file could not be written."
+    cause: "The file is open in another program, or the folder is not writable."
     action: "Close the file in other programs and check the folder permissions."
   E402:
     title: "The project is in use by another process."
+    cause: "A lock file of a running process exists."
     action: "Finish the other run first. If none is running, the lock is stale and can be taken over."
   E403:
     title: "There is not enough disk space."
-    action: "Free some disk space and try again."
+    cause: "The drive is full."
+    action: "Free some disk space and resume."
   E404:
     title: "The folder is not a project of this version, or a project file is damaged."
-    action: "Select the correct folder, or restore data/.backup or run the migration."
+    cause: "The version marker or a project file is missing or does not match."
+    action: "Select the correct folder, restore data/.backup or run the migration."
+  E501:
+    title: "Too few common records for the statistics."
+    cause: "The runs do not overlap enough."
+    action: "Check that the runs belong to the same data."
+  E502:
+    title: "The human decisions could not be matched."
+    cause: "The key column does not match the project's records."
+    action: "Try another key, for example --match doi."
   E999:
     title: "An unexpected error occurred."
+    cause: "This is a program error."
     action: "See the log file .sara/app.log and report the problem."

@@ -72,6 +72,9 @@ class Messages:
         else:
             code_for_text = code
         lines = [f"{self.text('cli.error.prefix', code=code)}: {self.text(f'errors.{code_for_text}.title')}"]
+        cause = self._i18n.t(f"errors.{code_for_text}.cause")
+        if cause:
+            lines.append(f"{self.text('cli.error.cause')}: {cause}")
         if error.user_message:
             lines.append(f"{self.text('cli.error.details')}: {error.user_message}")
         action = self._i18n.t(f"errors.{code_for_text}.action") or error.hint
