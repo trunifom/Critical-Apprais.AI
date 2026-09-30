@@ -76,7 +76,7 @@ Reihenfolge = empfohlene Arbeitsreihenfolge. Aufwand in Stunden (Schätzung der 
 | [x] | T-M1-02 | `config/loader.py`: Rangfolge CLI > env (`SARA_ABSCHNITT__SCHLUESSEL`) > project.yaml > user > Standard | | 2026-09-30 15:14 | `e5403cc` |
 | [x] | T-M1-03 | `project/atomic.py`: atomares Schreiben (`os.replace`, Wiederholung, Ausweichname) | 6 | 2026-09-30 15:15 | `4cacadf` |
 | [x] | T-M1-03 | `project/lock.py`: Lock mit Heartbeat, Übernahme veralteter Locks | 2026-09-30 15:17 | `17d426d` | |
-| [ ] | T-M1-03 | `project/workspace.py`: Ordnerstruktur Kap. 6, Schema-Version | | | |
+| [x] | T-M1-03 | `project/workspace.py`: Ordnerstruktur Kap. 6, Schema-Version | | 2026-09-30 15:17 | `54d3144` |
 | [ ] | T-M1-04 | `io/readers/detect.py`: Formaterkennung (Inhalt vor Endung; Typ, Konfidenz, Grund) | 4 | | |
 | [ ] | T-M1-05 | `io/readers/ris.py`: RIS-Reader (Fortsetzungszeilen, L15 beheben; 706/156, 6, 46 laut EXPECTED.json) | 5 | | |
 | [ ] | T-M1-06 | `io/readers/nbib.py`: NBIB/MEDLINE (100 und 62 Datensätze) | 4 | | |
@@ -100,7 +100,7 @@ M2: T-M2-01 Dedup, -02 Fuzzy (optional), -03 fehlende Abstracts/Flags, -04 Prefl
 
 ## 5. Nächster Schritt (bitte aktuell halten)
 
-**T-M1-03 (Workspace, Lock, atomares Schreiben)**; T-M1-01 und T-M1-02 stehen. Danach T-M1-04 (Formaterkennung), dann die Reader.
+**T-M1-04 (Formaterkennung `io/readers/detect.py`)**; T-M1-01 bis T-M1-03 stehen. Danach die Reader T-M1-05 (RIS zuerst), -06, -07, -08.
 
 ## 6. Abweichungen und offene Punkte
 
@@ -111,3 +111,4 @@ M2: T-M2-01 Dedup, -02 Fuzzy (optional), -03 fehlende Abstracts/Flags, -04 Prefl
 | 2026-09-30 | Remote-Besitzer heisst `trunifom`, GitHub-Benutzer des Projektleiters `trunidom`; Push macht der Projektleiter |
 | offen | CI-Matrix (Python 3.13, macOS) ist ungeprüft, bis der erste GitHub-Lauf vorliegt |
 | offen | Lizenz des Codes (T-M0-01) und endgültige technische Namen (T-M0-03) |
+| offen | Fehlerkatalog (Kap. 26.4) hat keinen Code für "Ordner schon initialisiert / nicht leer"; `Workspace.create` nutzt E404 mit eigener Meldung. Projektleiter soll entscheiden, ob ein neuer Code aufgenommen wird |
