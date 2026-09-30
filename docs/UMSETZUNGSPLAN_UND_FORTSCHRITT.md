@@ -70,8 +70,8 @@ Reihenfolge = empfohlene Arbeitsreihenfolge. Aufwand in Stunden (Schätzung der 
 | Status | Karte | Inhalt (Datei, Kernfunktion) | h | Datum / Uhrzeit | Commit |
 |---|---|---|---|---|---|
 | [x] | T-M1-01 | Paketskelett: `__init__.py` in `project, io, io.readers, prisma, screening, llm, prompts, stats, services`; README-Schnellstart | 4 | 2026-09-30 15:05 | `a4a1756` |
-| [x] | T-M1-02 | `errors.py`: Ausnahmehierarchie `SaraError` mit Fehlercodes (Kap. 28.7, 26.4) | | 2026-09-30 15:31 | `5c22ef8` |
-| [ ] | T-M1-02 | `config/models.py`: Pydantic-Modelle für `project.yaml` (kein API-Schlüssel speicherbar) | 6 | | |
+| [x] | T-M1-02 | `errors.py`: Ausnahmehierarchie `SaraError` mit Fehlercodes (Kap. 28.7, 26.4) | | 2026-09-30 15:09 | `5c22ef8` |
+| [x] | T-M1-02 | `config/models.py`: Pydantic-Modelle für `project.yaml` (kein API-Schlüssel speicherbar) | 6 | 2026-09-30 15:11 | `fcfb8f7` |
 | [ ] | T-M1-02 | `config/loader.py`: Laden mit präzisen Fehlern (Code E2xx), Rangfolge CLI > env > project.yaml > user > Standard | | | |
 | [ ] | T-M1-03 | `project/atomic.py`: atomares Schreiben (`os.replace`, Wiederholung, Ausweichname) | 6 | | |
 | [ ] | T-M1-03 | `project/lock.py`: Lock mit Heartbeat, Übernahme veralteter Locks | | | |
