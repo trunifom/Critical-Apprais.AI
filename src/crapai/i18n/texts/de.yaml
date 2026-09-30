@@ -606,6 +606,10 @@ errors:
     title: "Der Ordner ist kein Projekt dieser Version, oder eine Projektdatei ist beschädigt."
     cause: "Die Versionsmarke oder eine Projektdatei fehlt oder passt nicht."
     action: "Wählen Sie den richtigen Ordner, stellen Sie data/.backup wieder her oder führen Sie die Migration durch."
+  E405:
+    title: "Der Ordner ist schon ein Projekt, oder er ist nicht leer."
+    cause: "Ein neues Projekt braucht einen neuen oder leeren Ordner; dieser enthält schon ein Projekt oder andere Dateien."
+    action: "Öffnen Sie das bestehende Projekt oder wählen Sie einen neuen oder leeren Ordner."
   E501:
     title: "Zu wenige gemeinsame Datensätze für die Statistik."
     cause: "Die Läufe überschneiden sich zu wenig."

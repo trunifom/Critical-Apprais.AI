@@ -42,7 +42,7 @@ def test_create_refuses_existing_project_and_non_empty_folder(tmp_path: Path) ->
     Workspace.create(tmp_path / "a")
     with pytest.raises(StorageError) as info:
         Workspace.create(tmp_path / "a")
-    assert info.value.code == "E404" and "already a project" in info.value.user_message
+    assert info.value.code == "E405" and "already a project" in info.value.user_message
 
     other = tmp_path / "b"
     other.mkdir()

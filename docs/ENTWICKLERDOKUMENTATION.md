@@ -182,7 +182,7 @@ Ein JSON-Objekt je Ereignis, nur anhängen: `schema, event_id, timestamp (UTC), 
 | Texte | `tests/unit/test_i18n_parity.py` | Deutsch und Englisch haben dieselben Schlüssel und Platzhalter |
 | Schichten, Lizenz | `test_layering.py`, `test_license.py` | Architekturregel, unveränderter Lizenztext |
 
-**Abdeckung messen** (Zweigabdeckung; `pytest-cov` ist bisher nur lokal installiert und noch nicht in den Extras, siehe Umsetzungsplan):
+**Abdeckung messen** (Zweigabdeckung). `pytest-cov` steht nur im Extra `dev` (`pip install "crapai[dev]"`); wer das Programm normal installiert (`pip install crapai`), bekommt es nicht und braucht es nicht. Gemessen wird nur auf Wunsch: ein normaler Testlauf und der Programmstart messen nichts, `python scripts/qa.py --cov` schaltet es für einen Lauf ein.
 
 ```powershell
 python -m pip install pytest-cov

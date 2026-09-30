@@ -615,6 +615,10 @@ errors:
     title: "The folder is not a project of this version, or a project file is damaged."
     cause: "The version marker or a project file is missing or does not match."
     action: "Select the correct folder, restore data/.backup or run the migration."
+  E405:
+    title: "The folder is already a project, or it is not empty."
+    cause: "A new project needs a new or empty folder; this one already holds a project or other files."
+    action: "Open the existing project, or choose a new or empty folder."
   E501:
     title: "Too few common records for the statistics."
     cause: "The runs do not overlap enough."

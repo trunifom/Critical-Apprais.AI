@@ -423,6 +423,7 @@ Ein Fehler wird in vier Zeilen erklärt: **Fehler CODE: Was ist passiert · Waru
 | E402 | Projekt in Benutzung | anderen Lauf beenden; ist keiner aktiv, ist die Sperre veraltet: `crapai unlock mein-review` (Abschnitt 6f) |
 | E403 | Speicherplatz voll | Platz schaffen |
 | E404 | kein Projektordner dieser Version oder Datei beschädigt | richtigen Ordner wählen, Sicherung aus `data/.backup` verwenden |
+| E405 | `init`: der Ordner ist schon ein Projekt oder nicht leer | Projekt öffnen oder neuen bzw. leeren Ordner wählen |
 | E999 | unerwarteter Fehler | `.crapai/app.log` ansehen und den Fehler melden |
 
 Weitere Codes (E202, E301-E307 Anbieter, E501/E502 Statistik) betreffen Funktionen, die noch folgen.

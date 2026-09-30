@@ -60,7 +60,7 @@ def test_init_blank_and_errors(tmp_path: Path) -> None:
     assert result.exit_code == 0 and "Projekt angelegt" in result.output
     again = invoke("init", folder, "--lang", "en")
     assert again.exit_code == 1  # user error, not a crash
-    assert "Error E404" in again.output and "already a project folder" in again.output
+    assert "Error E405" in again.output and "already a project folder" in again.output
     unknown = invoke("init", tmp_path / "x", "--from-template", "nope", "--lang", "en")
     assert unknown.exit_code == 1 and "Error E203" in unknown.output
     assert "(available: blank, demo)" in unknown.output

@@ -222,7 +222,7 @@ def test_create_new_project(messages: Messages, tmp_path: Path) -> None:
     )
     assert outcome.ok and (tmp_path / "new" / "project.yaml").exists()
     again = actions.create_new_project(messages, tmp_path / "new")
-    assert not again.ok and again.error and again.error.code == "E404"
+    assert not again.ok and again.error and again.error.code == "E405"
     unknown = actions.create_new_project(messages, tmp_path / "x", template="nope")
     assert unknown.error and unknown.error.code == "E203"
 

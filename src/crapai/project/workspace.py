@@ -163,20 +163,20 @@ class Workspace:
         """Create a new project folder (the folder itself may exist if it is empty).
 
         Raises:
-            StorageError: (E404) if ``root`` already is a project or contains other files.
+            StorageError: (E405) if ``root`` already is a project or contains other files.
         """
         workspace = cls(root)
         if workspace.version_file.exists():
             raise StorageError(
                 f"{root} is already a project folder",
-                code="E404",
+                code="E405",
                 hint="Open the existing project or choose another folder.",
                 details={"path": str(root)},
             )
         if root.exists() and any(root.iterdir()):
             raise StorageError(
                 f"{root} exists and is not empty",
-                code="E404",
+                code="E405",
                 hint="Choose a new or empty folder for the project.",
                 details={"path": str(root)},
             )

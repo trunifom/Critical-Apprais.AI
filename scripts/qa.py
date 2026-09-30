@@ -5,6 +5,7 @@ Usage (from the project folder, with the virtual environment active or via its p
     python scripts/qa.py            # lint, format check, types, all tests
     python scripts/qa.py --fast     # same, with a fixed hypothesis seed; stops at the first failure
     python scripts/qa.py --fix      # first let ruff repair and format what it can, then the gates
+    python scripts/qa.py --cov      # also measure the test coverage (needs the dev extra)
     python scripts/qa.py --ci       # same environment switches as GitHub Actions (plain output)
 
 Each step prints its command; the exit code is that of the first step that failed, so the script
@@ -25,7 +26,7 @@ PYTHON = sys.executable
 FORMAT_PATHS = ["src", "tests", "scripts"]  # docs/*.md are not formatted by ruff
 
 
-def steps(*, fast: bool, fix: bool) -> list[tuple[str, list[str]]]:
+def steps(*, fast: bool, fix: bool, cov: bool = False) -> list[tuple[str, list[str]]]:
     """The commands to run, in order."""
     plan: list[tuple[str, list[str]]] = []
     if fix:
@@ -39,6 +40,8 @@ def steps(*, fast: bool, fix: bool) -> list[tuple[str, list[str]]]:
     pytest = [PYTHON, "-m", "pytest", "-q", "-p", "no:cacheprovider", "-m", "not live"]
     if fast:
         pytest += ["--hypothesis-seed=0", "-x"]
+    if cov:  # coverage is a development tool: only measured when asked for
+        pytest += ["--cov=crapai", "--cov-branch", "--cov-report=term-missing:skip-covered"]
     plan.append(("tests", pytest))
     return plan
 
@@ -53,12 +56,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--fix", action="store_true", help="let ruff fix and format before the gates"
     )
+    parser.add_argument("--cov", action="store_true", help="also measure the test coverage")
     parser.add_argument("--ci", action="store_true", help="use the environment of GitHub Actions")
     args = parser.parse_args(argv)
     env = dict(os.environ)
     if args.ci:
         env.update({"GITHUB_ACTIONS": "true", "CI": "true", "FORCE_COLOR": "1"})
-    for name, command in steps(fast=args.fast, fix=args.fix):
+    for name, command in steps(fast=args.fast, fix=args.fix, cov=args.cov):
         print(f"\n== {name}: {' '.join(command[1:])}", flush=True)
         started = time.monotonic()
         code = subprocess.run(command, cwd=ROOT, env=env, check=False).returncode  # noqa: S603
