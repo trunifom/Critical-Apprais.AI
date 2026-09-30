@@ -22,7 +22,7 @@ und kennzeichnet Geplantes ausdrücklich. Bedienung: `docs/BENUTZERHANDBUCH.md`.
 ```
 Bedienung        cli.py (typer)                      [geplant: ui/ (Streamlit)]
                     │  ruft
-Dienste          services/importing.py   services/project.py   services/dedup.py   services/validity.py   services/preflight.py   services/cost.py   services/events.py   services/prefilter.py
+Dienste          services/importing.py   services/project.py   services/dedup.py   services/validity.py   services/preflight.py   services/cost.py   services/events.py   services/prefilter.py   services/export.py
                  [geplant: screening, export, evaluation]
                     │  ruft
 Fachkern         io/ (readers, normalize, records_store, import_log)
@@ -64,6 +64,8 @@ So bleibt der Kern ohne Oberfläche testbar und später von Streamlit und CLI ge
 | `cost.pricing` | Preisquellen: editierbare `pricing.csv` (Preis je 1000 Token, Datum, Quelle) oder statisch; unbekanntes Modell = kein Preis | `CsvPriceSource`, `StaticPriceSource`, `Price` |
 | `cost.estimator` | Schätzung eines Laufs aus den **echten** Texten (Titel + Abstract je Datensatz, gemeinsamer Anteil einmal gezählt), Kostenband und Worst Case; ohne I/O | `estimate_run`, `RunEstimate`, `build_shared_payload` |
 | `cost.duration` | Dauerschätzung aus rpm, tpm und Parallelität; Bestätigungsregel vor einem Lauf (`--yes` oder Terminal) | `estimate_duration`, `decide_confirmation` |
+| `io.writers.tables`, `io.writers.ris` | Export-Dateien: CSV (UTF-8 mit BOM, Formelschutz), XLSX (fixierte Kopfzeile, Steuerzeichen entfernt), RIS (für Literaturverwaltung); alle atomar geschrieben | `write_csv`, `write_xlsx`, `write_ris` |
+| `services.export` | Datensätze (Umfang alle/screenable/excluded) und PRISMA-Fluss exportieren, ohne das Projekt zu ändern; gesperrte Zieldatei ergibt eine Ersatzdatei | `export_records`, `export_flow`, `ExportSummary` |
 | `services.cost` | Schätzung für ein Projekt: zählt die Datensätze ohne Ausschlussgrund, liest `pricing.csv` des Projekts, vergleicht den Worst Case mit `limits.max_cost`; schreibt nichts | `estimate_project`, `ProjectEstimate` |
 | `services.preflight` | Vorprüfung: eine Datei vor dem Import, das Projekt vor dem Lauf | `check_file`, `check_project`, `PreflightFileResult`, `ProjectReport`, `ProjectIssue` |
 | `prisma.dedup` | Duplikate markieren (nicht löschend) | `mark_duplicates`, `DedupConfig`, `DedupResult`, `normalize_title`; Strategien `doi_or_title`, `strict_ids`, `title`, `title_authors` |

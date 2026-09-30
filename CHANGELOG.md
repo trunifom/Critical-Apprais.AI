@@ -34,6 +34,19 @@ Jeder Eintrag verweist auf die Aufgabenkarte; die genauen Commits stehen in `doc
 * **Lizenz:** PolyForm Noncommercial 1.0.0 (`LICENSE`, ADR 0016, `license` in `pyproject.toml`): nicht kommerzielle Nutzung erlaubt, kommerzielle ausgeschlossen (T-M0-01).
 * **Dokumentation:** Benutzerhandbuch, Entwicklerdokumentation, Architektur, ausführliches README, dieses Änderungsprotokoll, Umsetzungsplan mit Fortschrittsliste.
 
+### Überarbeitung nach der Gesamtprüfung (ADR 0020)
+
+Drei unabhängige Prüfer lasen den gesamten Code; alle bestätigten Fehler sind behoben und getestet.
+
+* **Neu:** `crapai export` (CSV, XLSX, RIS und PRISMA-Fluss als JSON; Formelschutz, BOM, Ersatzdatei bei gesperrtem Ziel), `crapai unlock` (entfernt eine veraltete Sperre), `dedup.min_title_words`.
+* **Datenverlust behoben:** abgerissene letzte Zeile in Import-Protokoll und `events.jsonl` (das nächste Anhängen klebte an, danach war die Datei unlesbar); RIS `DA`, zweite Seitenangaben; BibTeX `date`, `booktitle`, `isbn` und wiederholte Felder; NBIB-Blöcke ohne PMID; BOM bei `--encoding utf-8`; UTF-16-Dateien.
+* **Sperre:** unlesbare Sperrdatei galt als veraltet (zwei Schreiber möglich); nicht atomare Übernahme; rohe Fehler; Windows-Handle-Kürzung.
+* **PRISMA-Fluss:** Duplikate aus Importsumme abgeleitet (Importe nach dem letzten Dedup wurden als Duplikate gezählt), doppelte Abzüge nach erneutem Dedup, verdoppelte Screening-Läufe, wirkungslose Rechenprobe; neue Warnungen `STALE_*`.
+* **Fehlerbehandlung:** `UnicodeDecodeError` in `project.yaml`, Import-Protokoll, `records.csv`, Ereignisdatei und Preisliste; Schreibfehler beim Kopieren nach `sources/`; Protokolldatei nicht schreibbar; `stderr` im JSON-Modus; JSON-Fehlerdokument; Fehler werden mit Code und Meldung (nie Inhalt) protokolliert.
+* **Protokoll:** Erfolgszeilen mit Zahlen in Dedup, Vorfilter, Gültigkeit, Schätzung; wiederholtes `check` lässt `events.jsonl` nicht mehr wachsen.
+* **Fachlich:** Dedup-Schutz gegen allgemeine Titel, `und`/`mul` als fehlende Sprache, `en-US`, CJK-Abstracts, Preisliste mit Semikolon und jüngstem Datum, Kostenband höchstens 100 %, Kriterienvorlage mit eigenen Elementen, Projekttitel mit Sonderzeichen.
+* **Werkzeuge:** `ruff format` auf Paket, Tests und Skripten (CI prüft es), `hatchling>=1.27`, CI bricht überholte Läufe ab.
+
 ### Geändert
 
 * **Umbenennung (T-M0-03, ADR 0017):** Kurzform des Produkts ist **CrAp-AI**. Python-Paket `saralocal` → `crapai`, Befehl `sara` → `crapai`, Zustandsordner `.sara/` → `.crapai/`, Umgebungsvariablen `SARA_...` → `CRAPAI_...`, Benutzerkonfiguration `~/.config/sara/` → `~/.config/crapai/`, Distributionsname `sara-local` → `crapai`. **Datenvertrag:** In bereits angelegten Testprojekten muss `.sara` von Hand in `.crapai` umbenannt werden (es gibt noch keine produktiven Projekte); `crapai status` weist darauf hin.

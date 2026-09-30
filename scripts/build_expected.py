@@ -9,6 +9,7 @@ independent oracle for the future readers:
 
 Usage: python scripts/build_expected.py
 """
+
 from __future__ import annotations
 
 import json
@@ -26,8 +27,13 @@ def count_file(path: Path) -> dict:
     if suffix == ".zip":
         with zipfile.ZipFile(path) as zf:
             names = zf.namelist()
-        pdfs = [n for n in names if n.lower().endswith(".pdf") and not n.startswith("__MACOSX/")
-                and not Path(n).name.startswith("._")]
+        pdfs = [
+            n
+            for n in names
+            if n.lower().endswith(".pdf")
+            and not n.startswith("__MACOSX/")
+            and not Path(n).name.startswith("._")
+        ]
         info.update(kind="zip_pdf", zip_members=len(names), pdf_count=len(pdfs))
         return info
     text = path.read_bytes().decode("utf-8", errors="replace")
@@ -39,9 +45,13 @@ def count_file(path: Path) -> dict:
         info.update(kind="nbib", records=len(re.findall(r"^PMID-", text, flags=re.M)))
     elif re.search(r"^TY  - ", text, flags=re.M):
         dois = [d.strip().lower() for d in re.findall(r"^DO  - (.*)$", text, flags=re.M)]
-        info.update(kind="ris", records=len(re.findall(r"^ER  - ?", text, flags=re.M)),
-                    abstracts=len(re.findall(r"^(?:AB|N2)  - ", text, flags=re.M)),
-                    doi_count=len(dois), unique_doi=len(set(dois)))
+        info.update(
+            kind="ris",
+            records=len(re.findall(r"^ER  - ?", text, flags=re.M)),
+            abstracts=len(re.findall(r"^(?:AB|N2)  - ", text, flags=re.M)),
+            doi_count=len(dois),
+            unique_doi=len(set(dois)),
+        )
     else:
         info.update(kind="unknown")
     return info

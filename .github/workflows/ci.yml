@@ -8,6 +8,11 @@ on:
 permissions:
   contents: read
 
+# A newer push cancels the run of the superseded commit on the same branch.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -19,6 +24,7 @@ jobs:
           cache: pip
       - run: python -m pip install -e ".[dev,import,cli]"
       - run: python -m ruff check .
+      - run: python -m ruff format --check src tests scripts
       - run: python -m mypy src
 
   test:

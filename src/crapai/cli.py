@@ -32,6 +32,11 @@ from crapai.project.lock import pid_alive
 from crapai.project.workspace import Workspace, cloud_sync_marker
 from crapai.services.cost import ProjectEstimate, estimate_project
 from crapai.services.dedup import dedup_project
+from crapai.services.export import (
+    ExportSummary,
+    export_flow,
+    export_records,
+)
 from crapai.services.importing import ImportRequest, ImportSummary, import_source
 from crapai.services.preflight import ProjectReport, check_project
 from crapai.services.project import DEFAULT_TEMPLATE, create_project, project_status
@@ -651,6 +656,89 @@ def _print_report(report: ProjectReport, messages: Messages) -> None:
             fg="red" if report.status.value == "error" and issue.value in BLOCKING else "yellow",
         )
     typer.echo(messages.text("cli.check.updated" if report.updated else "cli.check.read_only"))
+
+
+@app.command("export")
+def export_command(
+    folder: Annotated[Path, typer.Argument(help="Project folder.")],
+    what: Annotated[
+        str, typer.Option("--what", help="records or flow (PRISMA numbers).")
+    ] = "records",
+    fmt: Annotated[str, typer.Option("--format", help="csv, xlsx or ris (records only).")] = "csv",
+    scope: Annotated[
+        str, typer.Option(help="all, screenable (go to the model) or excluded (have a reason).")
+    ] = "all",
+    output: Annotated[
+        Path | None,
+        typer.Option("--output", help="Target file (default: exports/ in the project)."),
+    ] = None,
+    delimiter: Annotated[
+        str, typer.Option(help="CSV separator, for example ; for German Excel.")
+    ] = ",",
+    raw: Annotated[
+        bool,
+        typer.Option("--raw", help="Do not protect cells that start like a spreadsheet formula."),
+    ] = False,
+    mode: Annotated[
+        str | None, typer.Option(help="Flow only: all_before_screening or between_databases_only.")
+    ] = None,
+    as_json: JsonOption = False,
+    lang: LangOption = None,
+) -> None:
+    """Export the records (CSV, XLSX, RIS) or the PRISMA flow numbers (JSON).
+
+    The project is not changed. A target that is open in Excel is not overwritten: the export is
+    saved under a timestamped name and the exit code is 4.
+    Example: crapai export my-review --format xlsx --scope screenable
+    """
+    messages = Messages(resolve_language(lang, folder / "project.yaml"))
+    _setup_file_log(folder)
+    try:
+        if what not in ("records", "flow"):
+            raise ConfigError(f"Unknown --what '{what}' (valid: records, flow)", code="E203")
+        separator = {"tab": "\t", "semicolon": ";", "comma": ","}.get(delimiter.lower(), delimiter)
+        if what == "flow":
+            summary = export_flow(Workspace(folder), output=output, mode=mode)
+        else:
+            summary = export_records(
+                Workspace(folder),
+                fmt,
+                scope=scope,
+                output=output,
+                delimiter=separator,
+                guard_formulas=not raw,
+            )
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        raise _fail(error, messages, json_mode=as_json) from error
+    if as_json:
+        data = {**dataclasses.asdict(summary), "path": str(summary.path)}
+        data["requested_path"] = str(summary.requested_path)
+        typer.echo(json.dumps(data, ensure_ascii=False, indent=2))
+    else:
+        _print_export(summary, messages)
+    raise typer.Exit(EXIT_WARNINGS if summary.used_alternative else EXIT_OK)
+
+
+def _print_export(summary: ExportSummary, messages: Messages) -> None:
+    if summary.what == "flow":
+        typer.secho(messages.text("cli.export.done_flow", path=summary.path), fg="green")
+    else:
+        typer.secho(
+            messages.text(
+                "cli.export.done",
+                records=summary.records,
+                scope=summary.scope,
+                format=summary.format,
+                path=summary.path,
+            ),
+            fg="green",
+        )
+    if summary.used_alternative:
+        typer.secho(
+            messages.text("cli.export.alternative", wanted=summary.requested_path.name),
+            fg="yellow",
+            err=True,
+        )
 
 
 @app.command("unlock")

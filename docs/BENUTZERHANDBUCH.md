@@ -128,8 +128,8 @@ Das Programm erkennt das Format am **Inhalt**, nicht an der Endung. Beispiel: Ei
 |---|---|
 | `--label NAME` | Name der Quelle. Einmal angeben (gilt für alle Dateien) oder einmal pro Datei in der Reihenfolge der Dateien. Ohne Angabe: Dateiname |
 | `--map ziel=Spalte` | Tabellen: Spalte selbst zuordnen, z. B. `--map abstract=Zusammenfassung --map title=Name`. Mehrfach möglich. Hat Vorrang vor der gespeicherten Zuordnung |
-| `--encoding cp1252` | Zeichenkodierung erzwingen, falls Umlaute falsch erscheinen |
-| `--delimiter ";"` | Trennzeichen einer CSV-Datei erzwingen |
+| `--encoding cp1252` | Zeichenkodierung erzwingen, falls Umlaute falsch erscheinen. Ohne Angabe liest das Programm UTF-8 (auch mit BOM) und UTF-16; ist die Datei kein gültiges UTF-8, nimmt es cp1252 und **sagt es** in einem Hinweis |
+| `--delimiter ";"` | Trennzeichen einer CSV-Datei erzwingen: ein Zeichen oder ein Name (`tab`, `semicolon`, `comma`, `pipe`); `E104`, wenn es nicht genau ein Zeichen ist |
 | `--sheet Name` | Blatt einer Excel-Datei wählen (Standard: erstes sichtbares) |
 | `--force` | Eine bereits importierte Datei nochmals importieren (die Datensätze sind dann doppelt vorhanden) |
 | `--json` | Ergebnis maschinenlesbar auf dem Bildschirm (für Skripte) |
@@ -194,6 +194,7 @@ Datensatzes), `dedup_method` (Grund) und, falls noch keiner gesetzt ist, `exclus
 | `title_authors` | normalisierter Titel und normalisierte Autoren gleich sind |
 
 * **Welcher Datensatz bleibt?** Standard `best`: der vollständigste (mit Abstract, dann mit DOI, dann mit PMID), bei Gleichstand der zuerst importierte. Mit `--keep first` oder `--keep last` bestimmen Sie es selbst.
+* **Kurze Titel gleichen nie allein.** Ein Titel mit weniger als 4 Wörtern ("Editorial", "Erratum") ist zu allgemein, um eine Studie zu bezeichnen. Gleiche DOI oder PMID erkennt solche Datensätze trotzdem. Einstellung: `dedup.min_title_words` in der `project.yaml` (1 schaltet den Schutz ab). DOIs werden in normalisierter Form verglichen (Gross-/Kleinschreibung, `https://doi.org/` egal).
 * **Im Zweifel wird nicht markiert.** Datensätze ohne Titel und ohne DOI werden nie als Duplikate erkannt; ein zu Unrecht markierter Datensatz würde eine Studie verstecken.
 * **Wiederholen ist gefahrlos.** Jeder Lauf berechnet die Markierungen neu (frühere Duplikat-Markierungen werden zuerst entfernt); andere Gründe wie `EMPTY_RECORD` bleiben.
 * Die Ausgabe nennt, wie viele Duplikate innerhalb derselben Quelle und wie viele zwischen verschiedenen Quellen gefunden wurden. Vor dem Schreiben wird eine Sicherung angelegt.
@@ -235,7 +236,8 @@ provider,model,price_input_per_1k,price_output_per_1k,currency,valid_from,source
 anthropic,claude-sonnet-5-5,0.003,0.015,USD,2026-09-30,Preisseite des Anbieters
 ```
 
-* Preise gelten je 1000 Token. Komma oder Punkt als Dezimalzeichen sind erlaubt; Gross-/Kleinschreibung spielt keine Rolle.
+* Preise gelten je 1000 Token. Komma oder Punkt als Dezimalzeichen sind erlaubt; Gross-/Kleinschreibung spielt keine Rolle. Die Datei darf mit Komma **oder Semikolon** getrennt sein (Excel mit deutscher Einstellung speichert mit Semikolon).
+* Steht ein Modell in mehreren Zeilen, gilt die Zeile mit dem **jüngsten `valid_from`, das schon erreicht ist**; ein neuer Preis kann also unter den alten geschrieben werden. Zeilen ohne Datum gelten als die ältesten.
 * `provider` und `model` müssen mit `llm.provider` und `llm.model` der `project.yaml` übereinstimmen. Ist das Modell nicht eingetragen oder fehlt die Datei, zeigt die Schätzung nur Tokens und keine Kosten.
 * Zeilen mit fehlendem oder ungültigem Preis werden übersprungen (Hinweis im Protokoll `.crapai/app.log`). Fehlt eine Pflichtspalte, meldet das Programm `E203`.
 * **So wird gezählt:** Jeder Datensatz, der ans Modell geht, wird mit seinem echten Titel und Abstract gezählt, dazu der gemeinsame Anteil (Kriterien, Ziele) einmal je Datensatz. Für OpenAI-Modelle zählt das Programm genau (Paket `tiktoken`, Extra `llm-openai`); für alle anderen Anbieter näherungsweise mit einem Zuschlag von 10 %, damit die Kosten eher zu hoch als zu tief geschätzt werden. Die Ausgabelänge ist unbekannt: Erwartet wird ein Wert pro Antwort, als Obergrenze gilt `llm.max_output_tokens` (Worst Case), der mit `limits.max_cost` verglichen wird.
@@ -258,6 +260,34 @@ Konfiguration: in Ordnung
 Bei einem leeren oder unvollständigen Projekt erscheint „Die Konfiguration braucht Aufmerksamkeit: …“ mit dem ersten Problem, z. B. fehlende Einschlusskriterien.
 `crapai status mein-review --json` liefert dieselben Angaben maschinenlesbar.
 Läuft gerade ein anderer Prozess im Projekt, wird das gemeldet.
+
+## 6g. Daten weitergeben: `crapai export`
+
+```powershell
+crapai export mein-review                              # alle Datensätze als CSV (Excel-tauglich)
+crapai export mein-review --format xlsx --scope screenable
+crapai export mein-review --format ris --output fuer-covidence.ris
+crapai export mein-review --what flow                  # PRISMA-Flusszahlen als prisma_flow.json
+crapai export mein-review --delimiter semicolon        # Semikolon für Excel mit deutscher Einstellung
+```
+
+Der Export **verändert das Projekt nicht**. Die Dateien landen im Ordner `exports/` des Projekts, sofern Sie mit `--output` keinen Pfad nennen.
+
+| Option | Bedeutung |
+|---|---|
+| `--what records` (Standard) / `flow` | Datensätze, oder die PRISMA-Flusszahlen mit Warnungen, Modus und Zahl der zugrunde liegenden Ereignisse |
+| `--format csv` (Standard) / `xlsx` / `ris` | Tabellen für Excel; RIS für Literaturverwaltung und Screening-Werkzeuge (Zotero, EndNote, Covidence, Rayyan) |
+| `--scope all` (Standard) / `screenable` / `excluded` | alle Datensätze, nur die, die ans Modell gehen, oder nur die mit Ausschlussgrund |
+| `--output DATEI` | Zieldatei; der Ordner muss existieren |
+| `--delimiter` | CSV-Trennzeichen: `,` `;` `tab` `semicolon`; Standard `,` |
+| `--raw` | Zellen, die wie eine Formel beginnen, nicht schützen (siehe unten) |
+| `--mode` | nur für `flow`: `all_before_screening` oder `between_databases_only` |
+
+* **CSV** wird mit UTF-8-Kennung (BOM) geschrieben, damit Excel Umlaute richtig zeigt; alle 40 Spalten der `records.csv`. **XLSX** hat eine fixierte, fett gesetzte Kopfzeile mit Filter; dafür braucht es das Paket `openpyxl` (Extra `import`), sonst Fehler `E203`.
+* **RIS:** Jeder Datensatz ist ein Eintrag. `ID` trägt die `study_uid` (damit Entscheidungen später den Datensätzen zugeordnet werden können); `N1` nennt Ausschlussgrund, Duplikatsverweis und zurückgezogene Publikation.
+* **Schutz vor Formeln (CSV-Injektion):** Ein Titel wie `=HYPERLINK(...)` würde in Excel als Formel laufen. Zellen, die mit `=`, `+`, `-`, `@`, Tabulator oder Zeilenumbruch beginnen, erhalten darum ein vorangestelltes `'` und bleiben Text. Mit `--raw` entfällt der Schutz; öffnen Sie solche Dateien dann nicht in Excel.
+* **Datei in Excel geöffnet?** Die Zieldatei wird nicht überschrieben: Der Export wird unter einem Namen mit Zeitstempel gespeichert, das Programm sagt es, und der Rückgabecode ist 4.
+* Fehler: `E203` bei unbekanntem Format, Umfang oder Modus oder ungültigem Zielpfad; `E404` für einen Ordner ohne Projekt; `E401`/`E403`, wenn nicht geschrieben werden kann.
 
 ## 6f. Veraltete Sperre entfernen: `crapai unlock`
 
@@ -285,7 +315,7 @@ prefilters:
 
 * Die Filter laufen automatisch bei `crapai check` (nach den Duplikaten, vor der Gültigkeitsprüfung). Datensätze, die durchfallen, werden **markiert, nicht gelöscht**: `PREFILTER_LANGUAGE`, `PREFILTER_YEAR`, `PREFILTER_TYPE` (Tabelle in 7a); `exclusion_details` sagt genau warum, zum Beispiel `language: fre (allowed: eng, ger)`.
 * **Fehlende Angaben:** Fehlt Sprache, Jahr oder Typ, gilt `on_missing`. Mit `pass` (Standard) geht der Datensatz ans Modell, damit nichts wegen fehlender Daten verloren geht; mit `exclude` wird er markiert. Ein Sprachtext wie "n/a" zählt als fehlend.
-* **Sprache:** `de`, `deu`, `ger` und `German` sind dasselbe. Hat ein Datensatz mehrere Sprachen ("eng; fre"), genügt eine erlaubte.
+* **Sprache:** `de`, `deu`, `ger` und `German` sind dasselbe, ebenso `en-US` und `en_GB` für Englisch. Hat ein Datensatz mehrere Sprachen ("eng; fre"), genügt eine erlaubte. Die Marken `und` (unbestimmt), `mul` (mehrere), `zxx`, `unk`, `nan` sagen nichts über die Sprache und zählen als fehlend.
 * **Jahr:** Grenzen gelten einschliesslich; `null` heisst offen.
 * **Publikationstyp:** Ein Datensatz wird ausgeschlossen, wenn irgendeiner seiner Typen in der Liste steht (Gross-/Kleinschreibung egal). Steht `Editorial` in der Liste, verfällt auch "Journal Article; Editorial".
 * Ändern Sie eine Einstellung, berechnet der nächste `crapai check` alles neu; alte Markierungen verschwinden, wenn sie nicht mehr zutreffen.
@@ -297,7 +327,9 @@ Jeder Import, jede Duplikat-Markierung und jede Gültigkeitsprüfung schreibt ei
 
 * **Wiederholtes `crapai dedup` zählt nichts doppelt**: pro Quelle gilt der letzte Stand.
 * **Zwei Arten, Duplikate zu berichten** (`dedup.reporting_mode` in der `project.yaml`): `all_before_screening` zählt alle Duplikate als "Duplikate entfernt"; `between_databases_only` zählt nur die zwischen verschiedenen Quellen, Duplikate innerhalb einer Quelle erscheinen unter "vor dem Screening aus anderen Gründen entfernt". Die Summe stimmt in beiden Fällen.
-* Fehlt ein Ereignis (zum Beispiel weil die Platte voll war), bleibt die Arbeit gültig; führen Sie `crapai dedup` und `crapai check` erneut aus.
+* Fehlt ein Ereignis (zum Beispiel weil die Platte voll war), bleibt die Arbeit gültig; `crapai import`, `dedup` und `check` melden das mit einer Warnung (Rückgabecode 4). Führen Sie `crapai check` später erneut aus.
+* **Veraltete Zahlen werden gemeldet, nicht verschwiegen.** Importieren Sie nach dem letzten `dedup`, erscheint `STALE_DEDUP`: Die neuen Datensätze zählen dann als "zum Screening" und nicht als Duplikate, bis Sie `crapai check` ausführen. Läuft `dedup` allein nach Vorfilter oder Gültigkeitsprüfung, werden deren ältere Zahlen nicht abgezogen (`STALE_PREFILTER`, `STALE_VALIDITY`), damit nichts doppelt gezählt wird.
+* Wiederholtes `crapai check` schreibt nichts Neues, wenn sich nichts geändert hat; die Datei wächst nicht.
 * Die Ausgabe als Datei und Grafik (`prisma_flow.json`, `.png`) folgt mit dem Export (M8); die Berechnung selbst steht bereits zur Verfügung.
 
 ## 7. Die Tabelle `records.csv` lesen

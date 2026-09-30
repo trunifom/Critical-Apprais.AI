@@ -161,6 +161,10 @@ cli:
     next: "Als Nächstes: project.yaml bearbeiten (mindestens ein Einschlusskriterium) und danach Dateien importieren."
     example: "Beispiel: {command} import {path} <datei> --label <name>"
     sync_warning: "Warnung: Der Ordner liegt in einem synchronisierten Bereich ({marker}). Sync-Programme greifen auf Dateien zu, während sie geschrieben werden. Führen Sie das Screening in einem nicht synchronisierten Ordner aus und archivieren Sie es danach."
+  export:
+    done: "{records} Datensatz/Datensätze exportiert (Umfang: {scope}) als {format}: {path}"
+    done_flow: "PRISMA-Flusszahlen geschrieben: {path}"
+    alternative: "Die Datei {wanted} ist in einem anderen Programm geöffnet, darum wurde nichts überschrieben. Der Export liegt unter dem oben genannten Namen; schliessen Sie das Programm und exportieren Sie erneut, wenn Sie den ursprünglichen Namen brauchen."
   unlock:
     none: "Es gibt keine Sperre: Das Projekt wird nicht benutzt."
     in_use: "Das Projekt wird von einem laufenden Prozess benutzt (PID {pid}). Es wurde nichts geändert."

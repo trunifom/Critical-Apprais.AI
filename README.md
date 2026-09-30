@@ -21,6 +21,8 @@ bereitet sie auf und wird sie zusammen mit Ihren Ein- und Ausschlusskriterien ei
 | Gültigkeitsprüfung (fehlende Abstracts, Front-Matter, zurückgezogene Studien) | **umgesetzt** (läuft in `crapai check`) |
 | Vorprüfung, Kosten- und Dauerschätzung (`crapai check`) | **umgesetzt** |
 | Deterministische Vorfilter (Sprache, Jahr, Publikationstyp) | **umgesetzt** |
+| Export (`crapai export`: CSV, XLSX, RIS, PRISMA-Fluss als JSON) und `crapai unlock` | **umgesetzt** |
+| Gesamtprüfung des Codes (Fehlerbehandlung, Protokolle, Datenverlust), ADR 0020 | **umgesetzt** |
 | PRISMA-Ereignisse und Flusszahlen (`data/events.jsonl`) | **umgesetzt** (Export als Datei und Grafik folgt mit M8) |
 | Unscharfe Duplikatsuche (T-M2-02) | **zurückgestellt** (braucht `rapidfuzz`, Freigabe offen) |
 | Screening mit Sprachmodell, Wiederaufnahme, Ergebnisse, PRISMA (M3-M4) | in Planung |

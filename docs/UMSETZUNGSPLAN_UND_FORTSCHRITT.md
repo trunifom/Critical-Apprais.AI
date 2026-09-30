@@ -37,7 +37,7 @@ Commit-Schema: `type(scope): Zusammenfassung (Karten-ID)`; Ende der Nachricht: d
 | Punkt | Stand |
 |---|---|
 | Branch | Nur `main`. Die frühen Task-Branches wurden fast-forward nach `main` gemergt und gelöscht. Push: `git push origin main` durch den Projektleiter |
-| Tests | 907 passed (`python -m pytest -q`) |
+| Tests | 1118 passed (`python -m pytest -q`) |
 | Lint / Typen | `ruff` sauber (ohne `reference/`), `mypy src` sauber |
 | CI | `.github/workflows/ci.yml` geschrieben (Linux/Windows/macOS x Python 3.11-3.13), noch nie auf GitHub gelaufen |
 | Extras in `pyproject.toml` | `import` (rispy, pybtex, openpyxl, pymupdf, pdfplumber, pylatexenc), `cli` (typer, rich), `dev`, u. a. Neue Abhängigkeiten ausserhalb der Extras: vorher fragen |
@@ -158,3 +158,17 @@ M3: T-M3-01 Provider-Protokoll + MockProvider, -02 OpenAI-kompatibel (SwissGPT z
 | erledigt | `import.mappings` (Kap. 25.5) ist im Modell und wird beim Import gelesen; das Programm schreibt die `project.yaml` nicht selbst (Kommentare bleiben). Siehe Abschnitt "Nachträge" |
 | **zurückgestellt, nicht vergessen** | **Unscharfe Duplikatsuche (T-M2-02):** braucht `rapidfuzz` (neue Abhängigkeit, Freigabe der Projektleitung nötig) und die Prüfliste `reports/possible_duplicates.csv` (Treffer als `POSSIBLE_DUPLICATE`, nie automatisch ausgeschlossen); `dedup_method` = `fuzzy`; Schwelle einstellbar (`dedup.fuzzy.threshold`, im Modell schon vorhanden). Die Strategien-Schnittstelle in `prisma/dedup.py` ist dafür vorbereitet |
 | offen | Rechteinhaber in der Zeile `Required Notice` (LICENSE) mit der Hochschule klären; Fremdmaterial (Literatur, Berichte, ZIP) vor einer öffentlichen Veröffentlichung prüfen oder ausschliessen (ADR 0016) |
+
+## Gesamtprüfung und Überarbeitung (2026-10-01)
+
+Auf Wunsch der Projektleitung wurde der gesamte Code von drei unabhängigen Prüfern gelesen (Import und Reader; Projektordner, Fehlerbehandlung, Protokolle; PRISMA, Kosten, Werkzeuge).
+Alle bestätigten Fehler sind behoben und mit Tests abgesichert; die Entscheide stehen in `docs/adr/0020-ergebnisse-der-gesamtpruefung.md`, die Einzelheiten im CHANGELOG.
+
+| Erledigt | Was | Commit |
+|---|---|---|
+| [x] | Sperre, anhängende Dateien, atomares Schreiben | `3f87d80` |
+| [x] | Befehlszeile, Ereignisse, PRISMA-Fluss, Kosten, Konfiguration, `crapai unlock` | `62822ae` |
+| [x] | Import, Reader, Dedup, Vorfilter, Validität, Kriterien | `f8ea645` |
+| [x] | `crapai export` (CSV, XLSX, RIS, PRISMA-Fluss), Formatierung, CI, Dokumentation | siehe `git log` |
+
+Offen aus der Prüfung (bewusst nicht geändert, siehe ADR 0020): ungenutzte Aufzählungen in `enums.py`; `tiktoken` wird in der CI nicht installiert.

@@ -95,6 +95,11 @@ class Workspace:
         return self.state_dir / "app.log"
 
     @property
+    def exports_dir(self) -> Path:
+        """``exports/``: files written by ``crapai export`` (created when first needed)."""
+        return self.root / "exports"
+
+    @property
     def pricing_csv(self) -> Path:
         """``pricing.csv``: the user's price list (optional; example in templates/)."""
         return self.root / "pricing.csv"

@@ -113,6 +113,9 @@ Einzelbausteine:
 | `cost.pricing.CsvPriceSource(path).get_price(provider, model)` | `Price(input_per_1k, output_per_1k, currency, valid_from, source)` oder `None`; Gross-/Kleinschreibung egal, Komma oder Punkt als Dezimalzeichen, erste Zeile gewinnt, ungültige Zeilen werden übersprungen (Warnung im Protokoll); fehlende Pflichtspalte oder unlesbare Datei = `E203` |
 | `cost.estimator.estimate_run(items, shared_text, tokenizer, price=None, config=None)` | `RunEstimate`: `n_items`, `shared_tokens`, `item_tokens`, `input_tokens`, `output_tokens`, `total_tokens`, `cost`, `cost_low`, `cost_high`, `cost_max` (Worst Case: jede Antwort an der Grenze `llm.max_output_tokens`), `tokenizer`, `exact`. Ohne Preis sind alle Kosten `None`. Kein fester Wert für Volltext: ein längerer Text wird einfach gezählt |
 | `cost.duration.estimate_duration(n_items, total_tokens, rpm=, tpm=, max_concurrency=, config=)` | `DurationEstimate(seconds, limited_by)`; `limited_by` ist `rpm`, `tpm`, `latency` oder `none`; Annahme `DurationConfig.seconds_per_request = 3.0`. `format_duration(seconds)` gibt `45 s`, `12 min`, `2 h 05 min`. `decide_confirmation(yes=, interactive=)` gibt `PROCEED`, `ASK` oder `REFUSE` (Regel für `crapai screen`, M3) |
+| `services.export.export_records(workspace, fmt, scope=, output=, delimiter=, guard_formulas=)` | schreibt CSV/XLSX/RIS nach `exports/` oder `output`; `ExportSummary(what, format, path, requested_path, records, scope, used_alternative)`; `E203` bei unbekanntem Format/Umfang/Ziel |
+| `services.export.export_flow(workspace, output=, mode=)` | schreibt `prisma_flow.json` (`schema`, `generated_at`, `reporting_mode`, `events`, `flow`, `warnings`) |
+| `io.writers.tables.write_csv / write_xlsx`, `io.writers.ris.write_ris / record_to_ris` | Formatschreiber; `neutralise_formula(value)` schützt Zellen, die wie Formeln beginnen |
 | `services.cost.estimate_project(workspace)` | `ProjectEstimate(estimate, provider, model, max_cost, over_limit, price_file_found, duration)`; zählt die Datensätze ohne `exclusion_reason`; gemeinsamer Anteil aus `project.yaml` (bis der Prompt-Bauer in M3 den genauen Text liefert) |
 | `prisma.prefilters.mark_prefilters(records, PrefilterConfig(...))` | `PrefilterResult(records, removed, by_reason, passed_on_missing, skipped)`; setzt `PREFILTER_LANGUAGE`/`_YEAR`/`_TYPE`, berechnet eigene frühere Markierungen neu, ersetzt Gültigkeitsgründe, nie Gründe von Import oder Dedup; `normalize_language`, `languages_of`, `normalize_type` |
 | `services.prefilter.prefilter_project(workspace, config=None)` | liest `prefilters` aus `project.yaml` (`config_from_settings`), schreibt `records.csv` unter Sperre mit Sicherung und das Ereignis; `PrefilterSummary` |
@@ -202,6 +205,18 @@ Zweige, die nur ein anderes Betriebssystem oder eine Unterbrechung in einem best
 `ERROR`: keine Datensätze oder nichts geht ans Modell (`no_records`, `nothing_to_screen`). `WARNING`: mindestens ein Hinweis (weniger als 60 % Abstracts in einer Quelle, verdächtige Abstracts,
 zurückgezogene Studien im Lauf, ungültige `project.yaml`). Rückgabecodes von `crapai check`: 0, 4, 1. Die Schwelle 60 % steht in `PreflightConfig`.
 Die Codes `ProjectIssue` sind eigene Werte; die persistierten Werte von `PreflightIssueCode` in `enums.py` wurden nicht verändert.
+
+## 5b. Regeln für Fehlerbehandlung, Protokoll und Dateien (nach ADR 0020)
+
+Wer Code ergänzt, hält diese Regeln ein; `tests/unit/test_*review_fixes.py` und `test_*robustness.py` sichern sie ab.
+
+* **Kein roher Python-Fehler an der Oberfläche.** Dateizugriffe fangen `OSError`, `UnicodeDecodeError` und `csv.Error` und machen daraus einen `SaraError` mit Code und Hinweis (`E101` Datei lesen, `E103` Kodierung, `E401`/`E403` Schreiben, `E404` Projektdatei unbrauchbar). Die Befehle fangen den Rest an der Grenze (`_fail`) und geben Rückgabecode 2 (`E999`).
+* **Protokoll:** Fehlerpfade schreiben eine `logger.error`- oder `logger.warning`-Zeile mit **Code und Art** des Fehlers (`type(exc).__name__`), nie Titel, Abstracts oder Schlüssel. Erfolgspfade schreiben eine `logger.info`-Zeile mit Zahlen. Das Protokoll liegt in `.crapai/app.log` (1 MB × 3); kann es nicht geöffnet werden, läuft der Befehl trotzdem.
+* **Dateien, die wachsen** (`records.import.jsonl`, `events.jsonl`) schreibt nur `project.atomic.append_lines`: abgerissener Schluss wird abgeschnitten, dann angehängt und mit `fsync` gesichert. Ganze Dateien schreibt nur `atomic_write*` (eindeutiger Temp-Name je Aufruf und Thread; bei gesperrtem Ziel eine Ersatzdatei mit freiem Namen).
+* **Sperre:** Wer mehrere Schritte zusammen ausführt, hält **eine** Sperre (`with workspace.lock():`) und ruft die `apply_*`-Funktionen, die selbst keine Sperre nehmen (`apply_dedup`, `apply_prefilters`, `apply_validity`). Unlesbare Sperre = in Benutzung, nie veraltet; Entfernen nur über `ProjectLock.remove_stale`.
+* **Ereignisse** (`services/events.py`): `record_*` liefern `True`, wenn das Ereignis in der Datei steht (auch unverändert übersprungen), sonst `False`; der Aufrufer meldet die Lücke als Warnung. Schreibt ein Schritt eine Momentaufnahme, steht die Regel "veraltet" in `prisma/flow.py` (Modulkopf).
+* **JSON-Modus:** stdout enthält genau ein JSON-Dokument, alle Meldungen gehen nach stderr; Fehler erscheinen zusätzlich als `{"error": {"code", "message", "hint"}}`.
+* **Code, Kommentare, Docstrings und Protokolltexte sind Englisch**; Benutzertexte stehen in `i18n/texts/{en,de}.yaml`, Dokumente in `docs/` sind Deutsch. `ruff format` (Zeilenlänge 100) ist Pflicht und wird in der CI geprüft.
 
 ## 6. Einen Befehl hinzufügen
 
