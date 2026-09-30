@@ -1,0 +1,39 @@
+# Critical Apprais.AI project file (schema version 1). Edit it before screening.
+# Reference: docs/PROJEKTPLAN.md chapter 16. NEVER put an API key in this file;
+# only the NAME of the environment variable (llm.api_key_env) belongs here.
+schema: 1
+
+project:
+  title: "__TITLE__"
+  description: ""
+  language: en            # de | en (interface and report language)
+  mode: abstract          # title/abstract screening (version 1)
+
+objectives: []            # the review questions, one per line
+
+criteria:
+  framework: PICOS        # PICOS | SPIDER | PECO | PIRD | CUSTOM
+  custom_fields: []       # only for CUSTOM
+  inclusion:              # REQUIRED before screening: at least one inclusion criterion
+    Population: ""
+    Intervention: ""
+    Comparison: ""
+    Outcome: ""
+    Study Design: ""
+  exclusion: {}
+
+dedup:
+  strategy: doi_or_title
+  reporting_mode: all_before_screening
+
+screening:
+  uncertain_policy: include   # sensitivity first: unclear records are kept for human review
+
+llm:
+  provider: openai
+  model: "gpt-4o-mini"        # check the model name against your provider's list
+  api_key_env: OPENAI_API_KEY # NAME of the environment variable that holds the key
+
+limits:
+  max_cost: 10.0              # in the currency below; null = no limit
+  currency: USD

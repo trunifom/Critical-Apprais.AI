@@ -1,0 +1,79 @@
+# Example project configuration for Critical Apprais.AI (schema version 1).
+# Spec: docs/PROJEKTPLAN.md chapter 16. Validated by pydantic models (task T-M1-02).
+# NEVER put an API key in this file. Only the NAME of the environment variable goes here.
+schema: 1
+
+project:
+  title: "Demo review (example, replace with your own)"
+  description: "Short description of aim and scope."
+  language: de            # UI/report language: de | en
+  mode: abstract          # abstract (v1). `fulltext` is NOT supported in v1 (ADR 0015)
+
+objectives:
+  - "Which instruments measure digital health literacy in adults?"
+
+criteria:
+  framework: PICOS        # PICOS | SPIDER | PECO | PIRD | CUSTOM
+  custom_fields: []       # only for CUSTOM
+  inclusion:
+    Population: "Adults (>= 18 years)"
+    Intervention: "Instrument that measures digital health literacy"
+    Comparison: ""
+    Outcome: "Validity, reliability"
+    Study Design: "Validation studies"
+  exclusion:
+    Population: "Children and adolescents"
+    Study Design: "Case reports, editorials"
+
+dedup:
+  strategy: doi_or_title  # doi_or_title | strict_ids | title | title_authors
+  fuzzy: { enabled: false, threshold: 0.94 }
+  reporting_mode: all_before_screening   # or between_databases_only
+
+# Deterministic filters that run in code BEFORE the LLM (plan chapter 35.4, U3). Lesson from the usability tests:
+# a language criterion written into the prompt was not applied by the model.
+prefilters:
+  language: { allow: [eng, ger], on_missing: pass }     # uses the record field `language` (RIS LA / NBIB LA)
+  year: { min: 2015, max: null, on_missing: pass }
+  publication_types: { exclude: [Editorial, Letter, Comment], on_missing: pass }
+  exclude_retracted: true
+
+screening:
+  prompt_variant: gpt_improved_abstract  # file in templates/prompts/ or project prompts/
+  output_format: structured              # structured | legacy_xxx_yyy
+  uncertain_policy: include              # include | exclude | keep_separate
+  decision_source: model                 # model | rule
+  reasoning_language: en
+  include_title_only: false
+  fulltext:
+    strategy: truncate                   # truncate | sections | map_reduce
+    repeat_criteria_after_text: false
+
+llm:
+  provider: openai_compatible          # SwissGPT is the expected main provider (ADR 0014); also: openai | anthropic
+  model: "<pick via GET /v1/models>"    # see templates/models.yaml; SwissGPT model list is dynamic
+  base_url: "https://api.prod.alpineai.ch/v1"
+  temperature: 0.0
+  top_p: 1.0
+  seed: null                             # SwissGPT spec has no seed parameter
+  max_output_tokens: 800
+  timeout_s: 60
+  api_key_env: SWISSGPT_API_KEY          # NAME of the environment variable
+
+limits:
+  max_concurrency: 5
+  rpm: 500
+  tpm: 200000
+  max_retries: 5
+  max_parse_retries: 2
+  max_cost: 10.0                         # in `currency`; null = no limit
+  currency: USD
+
+output:
+  csv_separator: ","
+  csv_bom: true
+  keep_raw_responses: false
+  timezone: Europe/Zurich
+
+acknowledgements:
+  data_transfer: false                   # set to true after the user confirmed the provider notice
