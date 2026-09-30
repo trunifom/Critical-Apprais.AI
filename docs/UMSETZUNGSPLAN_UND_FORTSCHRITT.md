@@ -62,7 +62,7 @@ Reihenfolge = empfohlene Arbeitsreihenfolge. Aufwand in Stunden (Schätzung der 
 | [x] | T-M0-02 | ruff sauber (ohne `reference/`) | 4 | 2026-09-30 14:59 | `ab687e1` |
 | [x] | T-M0-02 | Layer-Test (`tests/unit/test_layering.py`, ohne import-linter) | | 2026-09-30 15:00 | `38d230a` |
 | [x] | T-M0-02 | CI-Workflow `.github/workflows/ci.yml`, Kartenstatus | | 2026-09-30 15:01 | `58472eb` |
-| [x] | T-M0-01 | Lizenz des Codes: PolyForm Noncommercial 1.0.0 (`LICENSE`, ADR 0016). **Offen bleiben:** Rechteinhaber klären, Fremdmaterial vor Veröffentlichung prüfen | 2 | %Y->- (HEAD -> main) c04f8c04032780044d9a130ecf8d09c1566d8d1b:%M | `c04f8c0` |
+| [x] | T-M0-01 | Lizenz des Codes: PolyForm Noncommercial 1.0.0 (`LICENSE`, ADR 0016). **Offen bleiben:** Rechteinhaber klären, Fremdmaterial vor Veröffentlichung prüfen | 2 | 2026-09-30 16:52 | `c04f8c0` |
 | [ ] | T-M0-03 | Umbenennung technischer Namen (nur nach Entscheid des Projektleiters) | 3 | | |
 
 ### M1 - Import steht (Meilenstein A)
@@ -128,8 +128,8 @@ M2: T-M2-01 Dedup, -02 Fuzzy (optional), -03 fehlende Abstracts/Flags, -04 Prefl
 | 2026-09-30 | `ruff` schliesst `reference/` aus; portierte Dateien behalten begrenzte Ignore-Regeln (`pyproject.toml`) |
 | 2026-09-30 | Remote-Besitzer heisst `trunifom`, GitHub-Benutzer des Projektleiters `trunidom`; Push macht der Projektleiter |
 | offen | CI-Matrix (Python 3.13, macOS) ist ungeprüft, bis der erste GitHub-Lauf vorliegt |
-| offen | Lizenz des Codes (T-M0-01) und endgültige technische Namen (T-M0-03) |
 | offen | Fehlerkatalog (Kap. 26.4) hat keinen Code für "Ordner schon initialisiert / nicht leer"; `Workspace.create` nutzt E404 mit eigener Meldung. Projektleiter soll entscheiden, ob ein neuer Code aufgenommen wird |
 | 2026-09-30 | BibTeX-Reader ohne `pybtex` (eigener toleranter Scanner, ein Codepfad für gültige und ungültige Dateien); `pybtex` bleibt im Extra `import`. CI installiert jetzt `.[dev,import]` (pylatexenc) |
 | 2026-09-30 | Exit-Code 4 (Warnungen) bei `sara import`, wenn keine oder wenig (< 60 %) Abstracts vorhanden sind oder `EMPTY_RECORD` entstehen. Die Fixtures `example_db_nr1-3` haben keine Abstracts, deshalb liefert der Abnahmefall der Karte T-M1-11 Exit-Code 4 |
 | offen | `import.mappings` in `project.yaml` (Kap. 25.5) ist noch nicht im Modell; die verwendete Spaltenzuordnung steht vorerst nur im Import-Log (`records.import.jsonl`, Feld `column_map`) |
+| offen | Rechteinhaber in der Zeile `Required Notice` (LICENSE) mit der Hochschule klären; Fremdmaterial (Literatur, Berichte, ZIP) vor einer öffentlichen Veröffentlichung prüfen oder ausschliessen (ADR 0016) |
