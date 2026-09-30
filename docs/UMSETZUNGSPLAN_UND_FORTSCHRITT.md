@@ -37,7 +37,7 @@ Commit-Schema: `type(scope): Zusammenfassung (Karten-ID)`; Ende der Nachricht: d
 | Punkt | Stand |
 |---|---|
 | Branch | Nur `main`. Die frühen Task-Branches wurden fast-forward nach `main` gemergt und gelöscht. Push: `git push origin main` durch den Projektleiter |
-| Tests | 509 passed (`python -m pytest -q`) |
+| Tests | 675 passed (`python -m pytest -q`) |
 | Lint / Typen | `ruff` sauber (ohne `reference/`), `mypy src` sauber |
 | CI | `.github/workflows/ci.yml` geschrieben (Linux/Windows/macOS x Python 3.11-3.13), noch nie auf GitHub gelaufen |
 | Extras in `pyproject.toml` | `import` (rispy, pybtex, openpyxl, pymupdf, pdfplumber, pylatexenc), `cli` (typer, rich), `dev`, u. a. Neue Abhängigkeiten ausserhalb der Extras: vorher fragen |
@@ -115,13 +115,24 @@ neue Module in die Architektur, Änderungen ins `CHANGELOG.md`, Stand ins `READM
 |---|---|---|---|---|---|
 | [x] | T-M2-01 | `prisma/dedup.py`: Duplikate nicht löschend markieren (4 Strategien, normalisierte Titel, vollständigster Datensatz behalten) | 6 | 2026-09-30 17:10 | `edc0d2f` |
 | [x] | T-M2-01 | `services/dedup.py`, `crapai dedup`, Texte, Dokumentation (Folge-Commit; `edc0d2f` liess den Doku-Wächtertest kurz rot) | | 2026-09-30 17:16 | `97bf716` |
-| [ ] | T-M2-03 | fehlende Abstracts (`NO_ABSTRACT`), `NOT_SCREENABLE`, zurückgezogene Studien, Qualitätsmerkmale | 3 | | |
+| [x] | T-M2-03 | `prisma/validity.py`, `prisma/reasons.py`, `services/validity.py`: `NO_ABSTRACT`, `NOT_SCREENABLE`, `RETRACTED`, `abstract_quality`; ADR 0018. Ein Abnahmekriterium (Cochrane-Beispiel als `suspect_concat`) ist ohne Wörterbuch nicht erfüllbar | 3 | 2026-09-30 18:05 | `5034089` |
 | [ ] | T-M2-04 | Preflight-Dienst (Codes) und Ausgabe | 4 | | |
 | [ ] | T-M2-05 | Tokenizer je Anbieter, Preisquelle, genaue Schätzung mit echten Texten | 6 | | |
 | [ ] | T-M2-07 | PRISMA-Ereignisse für Import und Dedup (`events.jsonl`) | 5 | | |
 | [ ] | T-M2-08 | deterministische Vorfilter (Sprache, Jahr, Publikationstyp, zurückgezogen) | 5 | | |
 | [ ] | T-M2-06 | Dauerschätzung, Kostenbestätigung, `crapai check` | 4 | | |
 | [ ] | T-M2-02 | optionale unscharfe Duplikatsuche mit Prüfliste (`rapidfuzz` ist im Extra noch nicht enthalten: vorher fragen) | 4 | | |
+
+### Prüfung "alles dokumentiert, committet, getestet?" (Sitzung vom 2026-09-30)
+
+| Status | Schritt | Datum / Uhrzeit | Commit |
+|---|---|---|---|
+| [x] | Abdeckungsmessung (93 % → 96 %), 37 Randfall-Tests, Wächtertest für Docstrings/Rückgabetypen (`test_edge_cases.py`, `test_docstrings.py`) | 2026-09-30 17:30 | `523de8b` |
+| [x] | Tests für die übernommenen Module `criteria/template` und `legacy` (`test_ported_modules.py`) | 2026-09-30 17:31 | `71a314d` |
+| [x] | **CI-Fehler gefunden und behoben:** alle 9 Testjobs auf GitHub rot; Ursache Typer-Farbcodes bei gesetztem `GITHUB_ACTIONS`; `tests/conftest.py`, Regressionstest, `-ra --tb=short` | 2026-09-30 17:48 | `7559f08` |
+| [x] | `import.mappings` in der `project.yaml` (wiederholbarer Tabellenimport) | 2026-09-30 17:55 | `300d6fa` |
+
+**Grenzen der Prüfung (ehrlich):** Vier frühere Commits (Fortschrittsmarken, zwischen 5 und 34 Wörter Nachricht) sind kürzer, als du es willst; sie sind bereits veröffentlicht und werden nicht umgeschrieben. `cost/estimator.py` (63 % Abdeckung) wird mit T-M2-05 neu geschrieben und dann getestet. `pytest-cov` ist nur lokal installiert (Freigabe für das Extra `dev` offen).
 
 ### M3 (Karten in `tasks/`)
 
@@ -131,7 +142,7 @@ M3: T-M3-01 Provider-Protokoll + MockProvider, -02 OpenAI-kompatibel (SwissGPT z
 
 ## 5. Nächster Schritt (bitte aktuell halten)
 
-**Meilenstein A ist erreicht und M1 ist vollständig** (T-M1-09 bleibt zurückgestellt). **Nächster Schritt: `T-M2-03`** (fehlende Abstracts `NO_ABSTRACT`, `NOT_SCREENABLE`, zurückgezogene Studien, Qualitätsmerkmale), danach `T-M2-04` (Preflight), `T-M2-05` (Kosten, Tokenizer), `T-M2-07`, `T-M2-08`. `T-M2-01` (Duplikate) ist fertig. Pflege der Dokumentation: `docs/BENUTZERHANDBUCH.md`, `docs/ENTWICKLERDOKUMENTATION.md`, `docs/ARCHITEKTUR.md`, `README.md`, `CHANGELOG.md` nach jeder Aufgabe mitführen.
+**Meilenstein A ist erreicht und M1 ist vollständig** (T-M1-09 bleibt zurückgestellt). M2: `T-M2-01` (Duplikate) und `T-M2-03` (Gültigkeit) sind fertig. **Nächster Schritt: `T-M2-04`** (Preflight-Dienst und `crapai check`, das Dedup und Gültigkeit in der Reihenfolge Import, Dedup, Gültigkeit aufruft), danach `T-M2-05` (Tokenizer, Kosten; schreibt `cost/estimator.py` neu und testet ihn), `T-M2-07` (PRISMA-Ereignisse), `T-M2-08` (Vorfilter), `T-M2-06`. **Zurückgestellt, nicht vergessen:** `T-M2-02` unscharfe Duplikatsuche (braucht `rapidfuzz`). Pflege der Dokumentation: Benutzerhandbuch, Entwicklerdokumentation, Architektur, README, CHANGELOG nach jeder Aufgabe mitführen.
 
 ## 6. Abweichungen und offene Punkte
 
@@ -140,7 +151,7 @@ M3: T-M3-01 Provider-Protokoll + MockProvider, -02 OpenAI-kompatibel (SwissGPT z
 | 2026-09-30 | Layer-Vertrag als `ast`-Test statt `import-linter` (neue Abhängigkeit, hätte Rückfrage gebraucht). Bei Bedarf später ersetzen |
 | 2026-09-30 | `ruff` schliesst `reference/` aus; portierte Dateien behalten begrenzte Ignore-Regeln (`pyproject.toml`) |
 | 2026-09-30 | Remote-Besitzer heisst `trunifom`, GitHub-Benutzer des Projektleiters `trunidom`; Push macht der Projektleiter |
-| offen | CI-Matrix (Python 3.13, macOS) ist ungeprüft, bis der erste GitHub-Lauf vorliegt |
+| offen | **CI:** alle Testjobs waren rot (Ursache: von Typer erzwungene Farbcodes in `--help`), behoben in `7559f08`. Ergebnis nach dem nächsten Push prüfen (GitHub-Seite oder `curl https://api.github.com/repos/trunifom/Critical-Apprais.AI/actions/runs`); macOS und Python 3.13 sind lokal nie gelaufen |
 | offen | Fehlerkatalog (Kap. 26.4) hat keinen Code für "Ordner schon initialisiert / nicht leer"; `Workspace.create` nutzt E404 mit eigener Meldung. Projektleiter soll entscheiden, ob ein neuer Code aufgenommen wird |
 | 2026-09-30 | BibTeX-Reader ohne `pybtex` (eigener toleranter Scanner, ein Codepfad für gültige und ungültige Dateien); `pybtex` bleibt im Extra `import`. CI installiert jetzt `.[dev,import]` (pylatexenc) |
 | 2026-09-30 | Exit-Code 4 (Warnungen) bei `crapai import`, wenn keine oder wenig (< 60 %) Abstracts vorhanden sind oder `EMPTY_RECORD` entstehen. Die Fixtures `example_db_nr1-3` haben keine Abstracts, deshalb liefert der Abnahmefall der Karte T-M1-11 Exit-Code 4 |
