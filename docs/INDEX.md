@@ -10,6 +10,10 @@ Einstieg für Menschen und KI-Agenten. **Projekt: Critical Apprais.AI** (Nachfol
 | `NAMING_AND_HISTORY.md` | Produktname, Vorgeschichte (SARA, SARA-App), Namensregeln, vorläufige Arbeitsnamen | de | **Zuerst lesen** |
 | `PROJEKTPLAN.md` | Vollständige Spezifikation: Teil I (Kap. 1-24), Teil II Vertiefung (25-34), Teil III Starterpaket (35-40) | de | **Massgebend** für das neue Projekt |
 | `UMSETZUNGSPLAN_UND_FORTSCHRITT.md` | **Übergabeprotokoll:** Fortschrittsliste mit Datum, Uhrzeit und Commit-Hash, nächster Schritt | de | **Lebend, nach jedem Commit pflegen** |
+| `BENUTZERHANDBUCH.md` | Bedienung für Forschende (Installation, Befehle, Formate, Fehlermeldungen, FAQ) | de | **aktuell**, wird mit jeder Aufgabe nachgeführt |
+| `ENTWICKLERDOKUMENTATION.md` | Software-Dokumentation: Umgebung, Schnittstellen, Datenformate, Erweiterungen, Qualitätsregeln | de | **aktuell** |
+| `ARCHITEKTUR.md` | Aufbau: Schichten, Module, Datenfluss, Entscheide, Sicherheit, Tests | de | **aktuell** |
+| `../CHANGELOG.md` | Änderungen je Version | de | **aktuell** |
 | `MIGRATION.md` | Alter Code -> neues Modul, Status der Portierung | de | lebend, bitte pflegen |
 | `adr/` | Architekturentscheide (0001-0015) | de | massgebend |
 | `coding/coding_guidelines.md` | Coding-Regeln, **angepasst** (Original daneben: `coding_guidelines.original.md`) | en | Massgebend |
@@ -50,10 +54,9 @@ Kapitel des Plans lesen mit `python scripts/plan_chapter.py <Nr>` (z. B. `25.2`)
 
 ## 3. Aktueller Stand (Übergabe 2026-09-30)
 
-- Portiert und getestet: Enums, Kriterien-Frameworks, Kostenschätzung, i18n; neu: `legacy.py` (Golden-Test gegen die 3 archivierten
-  Test-Retest-Berichte).
-- 47 Tests grün (`python -m pytest -q`).
-- Offen: 33 Aufgabenkarten in `tasks/` (M0-M3, ca. 170 h). Danach M4-M8 gemäss Plan Kap. 21.
+- Übergabe 2026-09-30: vier portierte Module, 47 Tests. **Seither:** Meilenstein A (Import) ist erreicht; aktueller Stand und Testzahl stehen in
+  `docs/UMSETZUNGSPLAN_UND_FORTSCHRITT.md`.
+- Offen: die Aufgabenkarten ab M2 in `tasks/`. Danach M4-M8 gemäss Plan Kap. 21.
 - Entschieden am 2026-09-30 (Kap. 39): **Streamlit**, **kein Volltext in v1**, **SwissGPT** als voraussichtlicher Hauptanbieter, Lizenzfragen unkritisch (nur Open-Access-PDFs). Offen: Git-Ablage, Lizenz des Codes.
 
 ## 4. Achtung: Herkunft und Aktualität der Dokumente

@@ -6,8 +6,8 @@ Ausführen (Projektwurzel): `python -m pytest -q` (ca. 25 s). Schnell ohne Legac
 
 | Ordner | Inhalt | Verwendung |
 |---|---|---|
-| `unit/` | Tests der portierten Module (47 Tests) | Vorlage für neue Tests |
-| `integration/` | (leer) - ab T-M3-07: Ende-zu-Ende mit `MockProvider` | |
+| `unit/` | Tests aller Module (Anzahl: `docs/UMSETZUNGSPLAN_UND_FORTSCHRITT.md`) | Vorlage für neue Tests |
+| `integration/` | Meilenstein A: alle Fixtures über die echte CLI importieren; ab T-M3-07 auch Ende-zu-Ende mit `MockProvider` | |
 | `data/` | Kleine Fixtures aus öffentlichen Datenbank-Exporten + `EXPECTED.json` | Reader-, Dedup-, Preflight-Tests |
 | `data_large/` | Grosse Fixtures (nicht versioniert, siehe dortige README) | Leistungs-/PDF-Tests, Marker `large` |
 | `legacy_runs/` | 16 Ergebnis-CSV aus 3 SARA-App-Projekten (`;`-getrennt, gemischte Kodierung) | Golden-Test Test-Retest, Legacy-Import |

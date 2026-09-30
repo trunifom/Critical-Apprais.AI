@@ -118,7 +118,8 @@ python -m pytest -q
 
 ## 9. Known state at handover
 
-- Ported and tested: `saralocal.enums`, `saralocal.criteria.template`, `saralocal.cost.estimator`, `saralocal.i18n`
-  (+ `en.yaml`), plus the new `saralocal.legacy` (reads old runs, reproduces the 3 archived test-retest reports).
-- 47 tests pass (`python -m pytest -q`, about 25 s).
-- Everything else is open: see `tasks/README.md` (33 cards, M0-M3, about 170 h).
+- The handover state (47 tests, four ported modules) is history. Milestone A is reached: config, project folder, format detection,
+  readers (RIS, NBIB, BibTeX, tables), normalisation, `records.csv`, import log, `sara init/import/status`, German + English texts.
+- Current state, test count and the next step: `docs/UMSETZUNGSPLAN_UND_FORTSCHRITT.md` (keep it current, it is the hand-over log).
+- Documentation set to maintain with every task: `docs/BENUTZERHANDBUCH.md`, `docs/ENTWICKLERDOKUMENTATION.md`, `docs/ARCHITEKTUR.md`,
+  `README.md`, `CHANGELOG.md` (tests/unit/test_docs.py checks that they stay consistent with the code).
