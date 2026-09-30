@@ -18,6 +18,14 @@ ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
 
 
+ANSI = re.compile(r"\[[0-9;?]*[A-Za-z]")
+
+
+def plain(text: str) -> str:
+    """Remove ANSI colour codes (rich adds them when a terminal is forced, as on CI runners)."""
+    return ANSI.sub("", text)
+
+
 def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
@@ -53,7 +61,7 @@ COMMANDS = ("init", "import", "status", "dedup")
 def test_every_cli_option_is_documented_in_the_manual(command: str) -> None:
     result = CliRunner().invoke(app, [command, "--help"], terminal_width=200)
     assert result.exit_code == 0
-    options = set(re.findall(r"--[a-z][a-z-]*", result.output)) - {"--help"}
+    options = set(re.findall(r"--[a-z][a-z-]*", plain(result.output))) - {"--help"}
     assert options, command
     for option in options:
         assert option in MANUAL, f"{option} of 'crapai {command}' is missing in BENUTZERHANDBUCH.md"
@@ -63,7 +71,7 @@ def test_manual_does_not_document_options_the_cli_lacks() -> None:
     known: set[str] = {"--version"}
     for command in COMMANDS:
         output = CliRunner().invoke(app, [command, "--help"], terminal_width=200).output
-        known |= set(re.findall(r"--[a-z][a-z-]*", output))
+        known |= set(re.findall(r"--[a-z][a-z-]*", plain(output)))
     mentioned = set(re.findall(r"`(--[a-z][a-z-]*)", MANUAL))
     assert mentioned <= known | {"--force"}, sorted(mentioned - known)
 
@@ -120,3 +128,20 @@ def test_changelog_mentions_the_milestone_and_known_limits() -> None:
     changelog = read(ROOT / "CHANGELOG.md")
     for needle in ("T-M1-05", "T-M1-11", "T-M1-12", "Bekannte Einschränkungen", "E401"):
         assert needle in changelog, needle
+
+
+def test_help_parsing_survives_forced_terminal_colours(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Regression test for the CI failure: GitHub runners force ANSI colours into --help output.
+
+    The autouse fixture in conftest.py normally prevents it; here the colours are forced on
+    purpose to prove that the option check itself is robust as well.
+    """
+    import typer.rich_utils
+
+    monkeypatch.setattr(typer.rich_utils, "FORCE_TERMINAL", True)
+    result = CliRunner().invoke(app, ["import", "--help"], terminal_width=200)
+    assert result.exit_code == 0
+    assert "\x1b[" in result.output, "colours were expected to be forced for this test"
+    options = set(re.findall(r"--[a-z][a-z-]*", plain(result.output)))
+    assert {"--label", "--map", "--force", "--json"} <= options
+    assert "--label" not in result.output  # the raw text is broken up by colour codes

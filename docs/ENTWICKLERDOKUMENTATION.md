@@ -204,4 +204,5 @@ Arbeit gehört in `services/`; `cli.py` parst nur Argumente, wählt die Sprache,
 | Windows-Konsole zeigt Sonderzeichen falsch | Die CLI stellt stdout auf UTF-8 um; sonst `chcp 65001` |
 | `E402` obwohl nichts läuft | veraltete Sperre; nach Bestätigung übernehmbar (`ProjectLock.acquire(take_over_stale=True)`), Datei `.crapai/lock` |
 | `E404` bei `status` | Ordner ist kein Projekt (`.crapai/version` fehlt) oder `records.csv` wurde von Hand verändert (`data/.backup/` nutzen) |
+| CI rot, lokal grün | Die CI-Umgebung unterscheidet sich (Umgebungsvariablen, Farben, Betriebssystem). So nachstellen: `$env:GITHUB_ACTIONS="true"; $env:CI="true"; python -m pytest -q`, zusätzlich in einem frischen Klon mit frischem `venv`. Bekannter Fall: Typer erzwingt auf GitHub farbige Hilfetexte; `tests/conftest.py` neutralisiert das, `test_docs.py` entfernt Farbcodes vor dem Auswerten |
 | Tests langsam | `pytest -q tests/unit -k "not golden"`; grosse Dateien nur mit `data_large/` |
