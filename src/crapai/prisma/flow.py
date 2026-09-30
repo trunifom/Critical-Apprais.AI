@@ -21,7 +21,8 @@ Two ways to report duplicates (``DuplicatesReportingMode``):
     Duplicates = only those across sources; duplicates within a source are booked under
     "removed before screening (other)" so the arithmetic still balances.
 
-Records removed by the pre-filters are always "other". No I/O, no network.
+Records removed by the pre-filters (and retracted studies, when they are excluded) are always
+"other". No I/O, no network.
 """
 
 from __future__ import annotations
@@ -131,6 +132,7 @@ def build_flow(
     dedup_global: dict[str, Any] = {}
     merged_before: int | None = None
     missing = 0
+    retracted = 0
     prefilter_reasons: dict[str, int] = {}
     ta = {"included": 0, "excluded": 0}
     ft = {"included": 0, "excluded": 0}
@@ -150,6 +152,8 @@ def build_flow(
             dedup_global = dict(payload)
         elif event.event_type == EventType.INFO.value and event.kind == "validity":
             missing = _int(payload.get("missing_count"))
+            by_reason = payload.get("by_reason")
+            retracted = _int(by_reason.get("RETRACTED")) if isinstance(by_reason, dict) else 0
         elif event.event_type == EventType.INFO.value and event.kind == "prefilter":
             by_reason = payload.get("by_reason")
             prefilter_reasons = (
@@ -182,6 +186,8 @@ def build_flow(
     else:
         duplicates = _int(dedup_global.get("removed"))
         other_dedup = max(0, (identified_total - after_dedup) - duplicates)
+    if retracted:  # excluded retracted studies count as a pre-filter (plan 35.4)
+        prefilter_reasons["RETRACTED"] = retracted
     prefiltered = sum(prefilter_reasons.values())
     other = other_dedup + prefiltered
 

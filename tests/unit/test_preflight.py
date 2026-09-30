@@ -142,6 +142,15 @@ def project(tmp_path: Path) -> Workspace:
     return create_project(tmp_path / "p", template="demo")
 
 
+def no_prefilters(project: Workspace) -> None:
+    """The demo template filters by year; these tests are about abstracts, not metadata."""
+    import yaml
+
+    data = yaml.safe_load(project.project_yaml.read_text(encoding="utf-8"))
+    data["prefilters"] = {}
+    project.project_yaml.write_text(yaml.safe_dump(data), encoding="utf-8")
+
+
 def add(
     project: Workspace, tmp_path: Path, name: str, rows: list[tuple[str, str]], label: str
 ) -> None:
@@ -157,6 +166,7 @@ def test_empty_project_is_an_error(project: Workspace) -> None:
 def test_records_without_any_abstract_leave_nothing_to_screen(project: Workspace) -> None:
     first = DATA / "example_db_nr1_total-15_duplicates-0.ris"
     import_source(project, ImportRequest(first, label="A"))
+    no_prefilters(project)
     report = check_project(project)
     assert report.status is PreflightStatus.ERROR
     assert ProjectIssue.NOTHING_TO_SCREEN in report.issues
@@ -171,6 +181,7 @@ def test_title_only_mode_makes_the_same_project_screenable(project: Workspace) -
     import_source(project, ImportRequest(first, label="A"))
     data = yaml.safe_load(project.project_yaml.read_text(encoding="utf-8"))
     data["screening"]["include_title_only"] = True
+    data["prefilters"] = {}
     project.project_yaml.write_text(yaml.safe_dump(data), encoding="utf-8")
     report = check_project(project)
     assert report.valid_for_model == 13 and ProjectIssue.NOTHING_TO_SCREEN not in report.issues
@@ -183,7 +194,10 @@ def test_two_sources_with_different_coverage(project: Workspace, tmp_path: Path)
     report = check_project(project)
     good, poor = report.sources
     assert (good.label, good.records, good.with_abstract, good.status) == (
-        "Good", 5, 5, PreflightStatus.OK
+        "Good",
+        5,
+        5,
+        PreflightStatus.OK,
     )
     assert (poor.label, poor.with_abstract, poor.status) == ("Poor", 1, PreflightStatus.WARNING)
     assert poor.issues == [ProjectIssue.LOW_ABSTRACT_RATIO] and good.issues == []

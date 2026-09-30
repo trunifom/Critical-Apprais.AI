@@ -76,6 +76,9 @@ def test_warnings_exit_four_and_explain_themselves(project: Workspace, tmp_path:
 
 def test_nothing_to_screen_is_an_error_with_exit_one(project: Workspace) -> None:
     load(project, DATA / "example_db_nr1_total-15_duplicates-0.ris", "Db1")
+    data = yaml.safe_load(project.project_yaml.read_text(encoding="utf-8"))
+    data["prefilters"] = {}  # the demo template filters by year; this test is about abstracts
+    project.project_yaml.write_text(yaml.safe_dump(data), encoding="utf-8")
     result = invoke("check", project.root, "--lang", "en")
     assert result.exit_code == 1
     assert "Preflight: ERROR" in result.output and "No record can go to the model" in result.output

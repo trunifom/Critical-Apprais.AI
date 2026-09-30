@@ -20,3 +20,4 @@ Kurze Entscheidungsprotokolle. Neue Datei `NNNN-titel.md` mit *Entscheidung / Al
 - 0016 - Lizenz des Codes: PolyForm Noncommercial 1.0.0
 - 0017 - Technische Namen: Kurzform CrAp-AI, Paket und Befehl `crapai`
 - 0018 - Markieren statt Löschen: Ausschlussgründe, Reihenfolge, Vorsicht bei Duplikaten
+- 0019 - Deterministische Vorfilter: Reihenfolge, Gründe, fehlende Metadaten

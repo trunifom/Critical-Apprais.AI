@@ -39,7 +39,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from crapai.io.records_store import Record
-from crapai.prisma.reasons import REASON_DUPLICATE, VALIDITY_REASONS
+from crapai.prisma.reasons import REASON_DUPLICATE, REPLACEABLE_BY_DEDUP
 
 logger = logging.getLogger(__name__)
 
@@ -265,9 +265,9 @@ def mark_duplicates(records: list[Record], config: DedupConfig | None = None) ->
                 "duplicate_of": keeper.study_uid,
                 "dedup_method": method,
             }
-            # DUPLICATE beats the validity reasons (PRISMA removes duplicates first) but never
-            # replaces a reason set by the import (EMPTY_RECORD, IMPORT_ERROR).
-            if not duplicate.exclusion_reason or duplicate.exclusion_reason in VALIDITY_REASONS:
+            # DUPLICATE beats the validity and pre-filter reasons (PRISMA removes duplicates
+            # first) but never replaces a reason set by the import (EMPTY_RECORD, IMPORT_ERROR).
+            if not duplicate.exclusion_reason or duplicate.exclusion_reason in REPLACEABLE_BY_DEDUP:
                 update["exclusion_reason"] = REASON_DUPLICATE
                 update["exclusion_details"] = f"duplicate of {keeper.study_uid} ({method})"
             result.records[index] = duplicate.model_copy(update=update)

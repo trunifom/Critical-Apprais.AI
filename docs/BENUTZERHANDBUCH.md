@@ -257,6 +257,26 @@ Bei einem leeren oder unvollständigen Projekt erscheint „Die Konfiguration br
 `crapai status mein-review --json` liefert dieselben Angaben maschinenlesbar.
 Läuft gerade ein anderer Prozess im Projekt, wird das gemeldet.
 
+## 6e. Vorfilter: Sprache, Jahr, Publikationstyp
+
+Manche Kriterien sind Metadaten, die das Sprachmodell nicht zuverlässig beurteilt (zum Beispiel die Sprache einer Studie). Sie prüfen diese im Programm, **vor** dem Modell und ohne Kosten. Die Einstellung steht in der `project.yaml`:
+
+```yaml
+prefilters:
+  language: { allow: [eng, ger], on_missing: pass }
+  year: { min: 2015, max: null, on_missing: pass }
+  publication_types: { exclude: [Editorial, Letter, Comment], on_missing: pass }
+  exclude_retracted: true
+```
+
+* Die Filter laufen automatisch bei `crapai check` (nach den Duplikaten, vor der Gültigkeitsprüfung). Datensätze, die durchfallen, werden **markiert, nicht gelöscht**: `PREFILTER_LANGUAGE`, `PREFILTER_YEAR`, `PREFILTER_TYPE` (Tabelle in 7a); `exclusion_details` sagt genau warum, zum Beispiel `language: fre (allowed: eng, ger)`.
+* **Fehlende Angaben:** Fehlt Sprache, Jahr oder Typ, gilt `on_missing`. Mit `pass` (Standard) geht der Datensatz ans Modell, damit nichts wegen fehlender Daten verloren geht; mit `exclude` wird er markiert. Ein Sprachtext wie "n/a" zählt als fehlend.
+* **Sprache:** `de`, `deu`, `ger` und `German` sind dasselbe. Hat ein Datensatz mehrere Sprachen ("eng; fre"), genügt eine erlaubte.
+* **Jahr:** Grenzen gelten einschliesslich; `null` heisst offen.
+* **Publikationstyp:** Ein Datensatz wird ausgeschlossen, wenn irgendeiner seiner Typen in der Liste steht (Gross-/Kleinschreibung egal). Steht `Editorial` in der Liste, verfällt auch "Journal Article; Editorial".
+* Ändern Sie eine Einstellung, berechnet der nächste `crapai check` alles neu; alte Markierungen verschwinden, wenn sie nicht mehr zutreffen.
+* Im PRISMA-Fluss zählen diese Datensätze (und ausgeschlossene zurückgezogene Studien) unter "vor dem Screening aus anderen Gründen entfernt" (Abschnitt 6d).
+
 ## 6d. Ereignisse und PRISMA-Zahlen
 
 Jeder Import, jede Duplikat-Markierung und jede Gültigkeitsprüfung schreibt eine Zeile in `data/events.jsonl` (was, wann, wie viele). Daraus berechnet das Programm die Zahlen des PRISMA-2020-Flussdiagramms: gefundene Datensätze je Quelle, entfernte Duplikate, vor dem Screening aus anderen Gründen Entfernte, Datensätze zum Screening. Die Datei wird nie umgeschrieben; löschen Sie sie nicht von Hand.
@@ -287,18 +307,21 @@ Wichtigste Spalten:
 
 ### 7a. Warum ein Datensatz nicht ans Modell geht (`exclusion_reason`)
 
-Jeder Datensatz hat höchstens einen Grund; er wird **markiert, nie gelöscht**. Die Prüfung läuft in dieser Reihenfolge: Import, Duplikate, Gültigkeit.
+Jeder Datensatz hat höchstens einen Grund; er wird **markiert, nie gelöscht**. Die Prüfung läuft in dieser Reihenfolge: Import, Duplikate, Vorfilter, Gültigkeit.
 
 | Grund | Bedeutung | Gesetzt durch |
 |---|---|---|
 | `EMPTY_RECORD` | weder Titel noch Abstract | Import |
 | `DUPLICATE` | Duplikat eines anderen Datensatzes (Verweis in `duplicate_of`) | `crapai dedup` |
+| `PREFILTER_LANGUAGE` | Sprache nicht in `prefilters.language.allow` (Abschnitt 6e) | Vorfilter |
+| `PREFILTER_YEAR` | Jahr ausserhalb von `prefilters.year.min`/`max` | Vorfilter |
+| `PREFILTER_TYPE` | ein Publikationstyp steht in `prefilters.publication_types.exclude` | Vorfilter |
 | `NOT_SCREENABLE` | kein Studieninhalt, der Titel ist nur "Front-matter", "Index", "Table of contents", "Cover" u. ä. | Gültigkeitsprüfung |
 | `RETRACTED` | zurückgezogene Publikation, nur wenn `prefilters.exclude_retracted: true` gesetzt ist | Gültigkeitsprüfung |
 | `NO_ABSTRACT` | kein Abstract (ausser bei `screening.include_title_only: true`, dann geht der Titel allein ans Modell) | Gültigkeitsprüfung |
 | *(leer)* | geht ans Modell | |
 
-Ein Duplikat ohne Abstract zählt als `DUPLICATE`, nicht als `NO_ABSTRACT` (im PRISMA-Fluss werden Duplikate zuerst entfernt). Zurückgezogene Studien, die nicht ausgeschlossen werden, bleiben im Lauf und
+Ein Duplikat ohne Abstract zählt als `DUPLICATE`, nicht als `NO_ABSTRACT` (im PRISMA-Fluss werden Duplikate zuerst entfernt); ein Vorfilter-Grund geht einem Gültigkeitsgrund vor. Zurückgezogene Studien, die nicht ausgeschlossen werden, bleiben im Lauf und
 sind über `is_retracted = true` erkennbar. Die Gültigkeitsprüfung wird mit `crapai check` ausgeführt (Abschnitt 6b).
 
 ## 8. Fehlermeldungen

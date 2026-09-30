@@ -133,6 +133,11 @@ def record_validity(workspace: Workspace, total: int, by_reason: Mapping[str, in
     _safe_append(workspace, [ev.validity_checked(total, by_reason)])
 
 
+def record_prefilter(workspace: Workspace, total: int, by_reason: Mapping[str, int]) -> None:
+    """Write the pre-filter snapshot (records marked per ``PREFILTER_*`` reason)."""
+    _safe_append(workspace, [ev.prefilter_applied(total, by_reason)])
+
+
 def reporting_mode(workspace: Workspace) -> DuplicatesReportingMode:
     """``dedup.reporting_mode`` of ``project.yaml``; the default if the file is unusable."""
     try:

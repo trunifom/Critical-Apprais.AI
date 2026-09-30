@@ -8,7 +8,8 @@ Two checks, both free of any UI framework and working on paths only:
 ``check_project``
     The state of a project *before* screening: records per source, duplicates, why records do not go
     to the model, abstract quality, retracted studies that stay in. With ``update=True`` it first
-    runs dedup and the validity check in the right order (import, dedup, validity) so the numbers
+    runs dedup, the pre-filters and the validity check in the right order (import, dedup,
+    pre-filters, validity) so the numbers
     are current.
 
 Results are machine readable: a :class:`~crapai.enums.PreflightStatus` and issue codes. The
@@ -34,6 +35,7 @@ from crapai.io.readers.dispatch import read_source
 from crapai.io.records_store import read_records
 from crapai.project.workspace import Workspace
 from crapai.services.dedup import dedup_project
+from crapai.services.prefilter import prefilter_project
 from crapai.services.validity import validate_project
 
 logger = logging.getLogger(__name__)
@@ -210,6 +212,7 @@ def check_project(
     workspace = Workspace.open(workspace.root)
     if update:
         dedup_project(workspace)
+        prefilter_project(workspace)
         validate_project(workspace)
     records = read_records(workspace.records_csv)
 

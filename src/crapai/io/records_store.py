@@ -101,6 +101,9 @@ EXCLUSION_REASONS = frozenset(
         "NOT_SCREENABLE",
         "IMPORT_ERROR",
         "RETRACTED",
+        "PREFILTER_LANGUAGE",
+        "PREFILTER_YEAR",
+        "PREFILTER_TYPE",
     }
 )
 
