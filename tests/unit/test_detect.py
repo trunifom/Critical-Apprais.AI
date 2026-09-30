@@ -173,3 +173,88 @@ def test_decode_head_chain() -> None:
     assert decode_head(b"abc", truncated=False) == ("abc", "utf-8-sig")
     assert decode_head("é".encode("cp1252"), truncated=False) == ("é", "cp1252")
     assert decode_head(b"\x81", truncated=False)[1] == "latin-1"  # undefined in cp1252
+
+
+# --- tables (CSV / TSV) ---
+
+
+def write_table(path: Path, delimiter: str, rows: int = 8, encoding: str = "utf-8") -> Path:
+    lines = [delimiter.join(["title", "abstract", "doi"])]
+    for i in range(rows):
+        lines.append(delimiter.join([f"Title {i}", f"An abstract, with a comma {i}", f"10.1/{i}"]))
+    path.write_bytes(("\n".join(lines) + "\n").encode(encoding))
+    return path
+
+
+@pytest.mark.parametrize(
+    ("delimiter", "expected"),
+    [
+        (",", SourceFormat.CSV),
+        (";", SourceFormat.CSV),
+        ("\t", SourceFormat.TSV),
+        ("|", SourceFormat.CSV),
+    ],
+)
+def test_table_delimiter_and_format(tmp_path: Path, delimiter: str, expected: SourceFormat) -> None:
+    result = detect_format(write_table(tmp_path / "records.txt", delimiter))
+    assert result.format is expected
+    assert result.delimiter == delimiter
+    assert result.confidence >= 0.8 and "columns" in result.reason
+
+
+def test_semicolon_table_with_commas_inside_values_is_not_read_as_comma(tmp_path: Path) -> None:
+    """Values contain commas ('An abstract, with a comma'); the semicolon still wins."""
+    result = detect_format(write_table(tmp_path / "x.csv", ";"))
+    assert result.delimiter == ";" and result.confidence == 0.9  # extension agrees
+
+
+def test_quoted_separator_inside_values_keeps_the_delimiter(tmp_path: Path) -> None:
+    path = tmp_path / "q.csv"
+    path.write_text('title,abstract\n"A, B","x, y, z"\n"C","d, e"\n', encoding="utf-8")
+    result = detect_format(path)
+    assert (result.format, result.delimiter) == (SourceFormat.CSV, ",")
+
+
+def test_cp1252_semicolon_table_like_the_legacy_runs(tmp_path: Path) -> None:
+    path = write_table(tmp_path / "legacy.csv", ";", encoding="cp1252")
+    path.write_bytes(path.read_bytes().replace(b"Title 1", "Größe 1".encode("cp1252")))
+    result = detect_format(path)
+    assert result.delimiter == ";" and result.encoding == "cp1252"
+
+
+def test_tsv_content_with_csv_extension_is_flagged(tmp_path: Path) -> None:
+    result = detect_format(write_table(tmp_path / "export.csv", "\t"))
+    assert result.format is SourceFormat.TSV and result.extension_mismatch
+    assert "extension says .csv" in result.reason
+
+
+def test_two_row_table_is_enough_but_one_line_is_not(tmp_path: Path) -> None:
+    small = tmp_path / "s.csv"
+    small.write_text("a,b\n1,2\n", encoding="utf-8")
+    assert detect_format(small).format is SourceFormat.CSV
+    one = tmp_path / "o.txt"
+    one.write_text("just, one, line of prose\n", encoding="utf-8")
+    with pytest.raises(ImportFailed):
+        detect_format(one)
+
+
+def test_prose_with_irregular_commas_is_not_a_table(tmp_path: Path) -> None:
+    path = tmp_path / "letter.txt"
+    path.write_text(
+        "Dear all,\nthe attached list, as agreed, is complete.\nKind regards\nA, B, C, D\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ImportFailed):
+        detect_format(path)
+
+
+def test_bibliographic_formats_win_over_table_detection() -> None:
+    """RIS lines contain ' - ' and commas but must never be taken for a table."""
+    for name in ("IEEE-Xplore_SR_2023-2024.ris", "pubmed-adhd-set.nbib", "citation-export.bib"):
+        assert detect_format(DATA / name).format not in {SourceFormat.CSV, SourceFormat.TSV}
+
+
+def test_legacy_run_csv_files_are_detected_as_tables() -> None:
+    sample = next((ROOT / "legacy_runs").rglob("*.csv"))
+    result = detect_format(sample)
+    assert result.format is SourceFormat.CSV and result.delimiter == ";"

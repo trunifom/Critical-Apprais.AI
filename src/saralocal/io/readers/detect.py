@@ -10,9 +10,12 @@ Only the first :data:`SNIFF_BYTES` of a file are examined, so detection is fast 
 
 from __future__ import annotations
 
+import csv
+import io
 import logging
 import re
 import zipfile
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -59,7 +62,12 @@ _RIS_TAG = re.compile(r"^[A-Z][A-Z0-9] {2}- ", re.MULTILINE)
 _NBIB_PMID = re.compile(r"^PMID- +\d", re.MULTILINE)
 _BIBTEX_ENTRY = re.compile(r"^\s*@[A-Za-z]+\s*[{(]", re.MULTILINE)
 
-OLE_MAGIC = b"\xd0\xcf\x11\xe0"  # legacy .xls
+# Candidate field separators for tables, in order of preference when several fit equally well.
+DELIMITERS = (",", ";", "\t", "|")
+MAX_SNIFF_ROWS = 50
+MIN_ROW_AGREEMENT = 0.8
+
+OLE_MAGIC =b"\xd0\xcf\x11\xe0"  # legacy .xls
 
 
 @dataclass(frozen=True)
@@ -156,6 +164,39 @@ def _sniff_bibliographic(text: str) -> tuple[SourceFormat, float, str] | None:
     return None
 
 
+def _sniff_delimited(text: str, *, truncated: bool) -> tuple[str, int, int] | None:
+    """Find the field separator of a table sample.
+
+    A separator fits when at least two rows exist, the most common row has two or more fields
+    and at least 80 % of the rows have that same number of fields (quoted values with the
+    separator inside do not disturb this because ``csv.reader`` honours quotes).
+
+    Returns:
+        ``(delimiter, fields_per_row, rows_examined)`` for the best fit, or None.
+    """
+    best: tuple[str, int, int] | None = None
+    for delimiter in DELIMITERS:
+        try:
+            rows = [
+                row
+                for row in csv.reader(io.StringIO(text), delimiter=delimiter)
+                if any(cell.strip() for cell in row)
+            ]
+        except csv.Error:
+            continue
+        if truncated and rows:
+            rows = rows[:-1]  # the last row may be cut off by the sample limit
+        rows = rows[:MAX_SNIFF_ROWS]
+        if len(rows) < 2:
+            continue
+        width, count = Counter(len(row) for row in rows).most_common(1)[0]
+        if width < 2 or count / len(rows) < MIN_ROW_AGREEMENT:
+            continue
+        if best is None or width > best[1]:
+            best = (delimiter, width, len(rows))
+    return best
+
+
 def detect_format(path: Path) -> DetectionResult:
     """Detect the format of ``path`` (content first, extension second).
 
@@ -195,6 +236,20 @@ def detect_format(path: Path) -> DetectionResult:
         found, confidence, reason = sniffed
         return _finish(
             path, DetectionResult(found, confidence, reason, encoding=encoding), by_extension
+        )
+
+    table = _sniff_delimited(text, truncated=truncated)
+    if table is not None:
+        delimiter, width, rows = table
+        found = SourceFormat.TSV if delimiter == "	" else SourceFormat.CSV
+        agrees = by_extension == found
+        confidence = 0.9 if agrees else (0.8 if rows >= 5 else 0.6)
+        name = "tab" if delimiter == "	" else repr(delimiter)
+        reason = f"content is a table with {width} columns separated by {name}"
+        return _finish(
+            path,
+            DetectionResult(found, confidence, reason, encoding=encoding, delimiter=delimiter),
+            by_extension,
         )
 
     if by_extension in (SourceFormat.RIS, SourceFormat.NBIB, SourceFormat.BIBTEX):
