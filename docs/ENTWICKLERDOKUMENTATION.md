@@ -107,6 +107,8 @@ Einzelbausteine:
 | `io.records_store.write_records / read_records` | `records.csv`; `backup_dir=` legt Sicherungen an |
 | `io.import_log.append_entry / ensure_not_imported` | Protokoll, E106 |
 | `prisma.dedup.mark_duplicates(records, DedupConfig(strategy, keep))` | markiert Duplikate; `DedupResult(records, marked, groups, by_method, within_source, across_sources)` |
+| `prisma.validity.mark_validity(records, ValidityConfig(include_title_only, exclude_retracted))` | setzt `exclusion_reason` (`NOT_SCREENABLE`/`RETRACTED`/`NO_ABSTRACT`), `has_abstract`, `abstract_quality`; `ValidityResult(records, by_reason, quality, valid_for_model)` |
+| `services.validity.validate_project(workspace, include_title_only=None, exclude_retracted=None)` | wie `dedup_project`: Sperre, Sicherung, Optionen aus Befehlszeile > `project.yaml` > aus |
 | `services.dedup.dedup_project(workspace, strategy=None, keep="best")` | liest `records.csv`, markiert, schreibt nach Sicherung; Strategie: Befehlszeile > `project.yaml` > Standard |
 
 `RawRecord.fields` benutzt die internen Spaltennamen; Felder ohne Spalte in `records.csv` (`notes`, `database_name`, `publisher`, `place`,
@@ -136,6 +138,8 @@ fulltext_of, zip_member, import_notes, extra_json`
 * `exclusion_reason` (Plan Kap. 26.3): `DUPLICATE, NO_ABSTRACT, NO_TEXT, ENCRYPTED, EMPTY_RECORD, NOT_SCREENABLE, IMPORT_ERROR, RETRACTED` oder leer. Heute setzt der Import nur `EMPTY_RECORD`.
 * `is_duplicate`, `duplicate_of`, `dedup_method` werden von `crapai dedup` gesetzt. `dedup_method`: `doi`, `pmid`, `title_norm`, `title_authors` (`fuzzy` folgt mit T-M2-02). **`pmid` ergänzt die Liste aus Plan Kap. 26.1 und ist von der Projektleitung zu bestätigen.** `abstract_quality` ist noch nicht befüllt *(geplant: T-M2-03)*.
 * Ein Datensatz mit Titel und Abstract leer bleibt in der Datei (Markierung, nie Löschen).
+* `exclusion_reason`: ein Grund je Datensatz. Besitz und Vorrang stehen in `prisma/reasons.py` und ADR 0018 (Import: `EMPTY_RECORD`, `IMPORT_ERROR`; Dedup: `DUPLICATE`, ersetzt Gültigkeitsgründe; Gültigkeit: `NOT_SCREENABLE` > `RETRACTED` > `NO_ABSTRACT`). Sollreihenfolge: Import, Dedup, Gültigkeit.
+* `abstract_quality`: `ok`, `short` (< 20 Wörter), `suspect_concat` (Wort über 40 Buchstaben oder mittlere Wortlänge über 9); nur ein Hinweis, nie ein Ausschlussgrund.
 
 ### 4.2 `data/records.import.jsonl`
 

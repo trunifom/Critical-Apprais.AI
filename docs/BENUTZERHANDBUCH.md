@@ -224,12 +224,29 @@ Wichtigste Spalten:
 | `title`, `abstract`, `authors`, `year`, `journal`, `doi`, `pmid` | bibliografische Angaben |
 | `has_abstract` | `true`/`false` |
 | `is_duplicate`, `duplicate_of`, `dedup_method` | Duplikat, Verweis auf den behaltenen Datensatz und Grund (`doi`, `pmid`, `title_norm`, `title_authors`); befüllt durch `crapai dedup` |
-| `exclusion_reason`, `exclusion_details` | Grund, warum ein Datensatz nicht ans Modell geht; heute nur `EMPTY_RECORD` |
+| `exclusion_reason`, `exclusion_details` | Grund, warum ein Datensatz nicht ans Modell geht (Tabelle unten). Der Datensatz bleibt trotzdem in der Tabelle |
+| `abstract_quality` | Hinweis zum Abstract: `ok`, `short` (unter 20 Wörter) oder `suspect_concat` (verdächtig kaputt oder zusammengeklebt); schliesst nie aus |
 | `is_retracted` | „true“, wenn PubMed den Datensatz als zurückgezogen führt |
 | `import_notes` | Hinweise des Imports zu diesem Datensatz |
 | `extra_json` | alle übrigen Angaben aus der Quelldatei |
 
 Öffnen in Excel: Datei → Öffnen → Textdatei, Kodierung **UTF-8**, Trennzeichen **Komma**, sonst erscheinen Umlaute falsch.
+
+### 7a. Warum ein Datensatz nicht ans Modell geht (`exclusion_reason`)
+
+Jeder Datensatz hat höchstens einen Grund; er wird **markiert, nie gelöscht**. Die Prüfung läuft in dieser Reihenfolge: Import, Duplikate, Gültigkeit.
+
+| Grund | Bedeutung | Gesetzt durch |
+|---|---|---|
+| `EMPTY_RECORD` | weder Titel noch Abstract | Import |
+| `DUPLICATE` | Duplikat eines anderen Datensatzes (Verweis in `duplicate_of`) | `crapai dedup` |
+| `NOT_SCREENABLE` | kein Studieninhalt, der Titel ist nur "Front-matter", "Index", "Table of contents", "Cover" u. ä. | Gültigkeitsprüfung |
+| `RETRACTED` | zurückgezogene Publikation, nur wenn `prefilters.exclude_retracted: true` gesetzt ist | Gültigkeitsprüfung |
+| `NO_ABSTRACT` | kein Abstract (ausser bei `screening.include_title_only: true`, dann geht der Titel allein ans Modell) | Gültigkeitsprüfung |
+| *(leer)* | geht ans Modell | |
+
+Ein Duplikat ohne Abstract zählt als `DUPLICATE`, nicht als `NO_ABSTRACT` (im PRISMA-Fluss werden Duplikate zuerst entfernt). Zurückgezogene Studien, die nicht ausgeschlossen werden, bleiben im Lauf und
+sind über `is_retracted = true` erkennbar. Die Gültigkeitsprüfung wird mit `crapai check` ausgeführt *(geplant, T-M2-04)*.
 
 ## 8. Fehlermeldungen
 

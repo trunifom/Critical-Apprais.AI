@@ -51,6 +51,9 @@ So bleibt der Kern ohne Oberfläche testbar und später von Streamlit und CLI ge
 | `project.atomic` | Sicheres Schreiben | `atomic_write`: Temp-Datei, `fsync`, `os.replace`, Wiederholung bei Sperre, Ausweichdatei |
 | `project.lock` | Ein Schreiber je Projekt | `ProjectLock` mit Herzschlag, Übernahme veralteter Sperren |
 | `project.workspace` | Ordnerstruktur | `Workspace.create/open`, Schema-Version, Warnung bei OneDrive/Dropbox |
+| `prisma.reasons` | Katalog der Ausschlussgründe und wer sie setzen darf | `VALIDITY_REASONS`, `REASON_*` (ADR 0018) |
+| `prisma.validity` | Gültigkeit: fehlende Abstracts, Front-Matter, zurückgezogene Studien, Abstract-Qualität | `mark_validity`, `ValidityConfig`, `classify_abstract`, `is_not_screenable` |
+| `services.validity` | Gültigkeit im Projekt anwenden | `validate_project` |
 | `prisma.dedup` | Duplikate markieren (nicht löschend) | `mark_duplicates`, `DedupConfig`, `DedupResult`, `normalize_title`; Strategien `doi_or_title`, `strict_ids`, `title`, `title_authors` |
 | `services.dedup` | Duplikate im Projekt markieren | `dedup_project` (Sperre, Sicherung, atomares Schreiben) |
 | `io.readers.detect` | Formaterkennung | `detect_format` (Inhalt vor Endung), `SourceFormat` |
@@ -151,6 +154,7 @@ Umsetzungsentscheide, die im Code gefallen sind (auch in `docs/UMSETZUNGSPLAN_UN
 * Schichtentest mit `ast` statt `import-linter` (keine neue Abhängigkeit).
 * BibTeX: eigener toleranter Scanner statt `pybtex` (Cochrane-Dateien sind kein gültiges BibTeX; ein Codepfad).
 * Duplikate: Union-Find über Schlüssel (DOI, PMID, normalisierter Titel), im Zweifel **nicht** markieren (Titeltreffer mit verschiedenen DOIs werden verworfen); der behaltene Datensatz ist der vollständigste.
+* Ausschlussgründe: ein Grund je Datensatz, Besitz je Schritt, Rangfolge `NOT_SCREENABLE` > `RETRACTED` > `NO_ABSTRACT`; Duplikate ersetzen Gültigkeitsgründe (ADR 0018).
 * Import-Protokoll als letzter Schritt (macht den Import atomar im Sinne der Buchführung).
 * `Exit-Code 4` bei Warnungen (fehlende Abstracts, `EMPTY_RECORD`).
 

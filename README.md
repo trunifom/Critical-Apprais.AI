@@ -18,7 +18,8 @@ bereitet sie auf und wird sie zusammen mit Ihren Ein- und Ausschlusskriterien ei
 | Konfiguration `project.yaml` (geprüft, Rangfolge CLI > Umgebung > Projekt > Benutzer) | **umgesetzt** |
 | Meldungen und Fehlertexte Deutsch/Englisch | **umgesetzt** |
 | Duplikate markieren (`crapai dedup`) | **umgesetzt** |
-| Fehlende Abstracts, Vorfilter, Kostenschätzung (M2) | in Planung |
+| Gültigkeitsprüfung (fehlende Abstracts, Front-Matter, zurückgezogene Studien) | Bausteine **umgesetzt**, Befehl `crapai check` folgt |
+| Vorfilter, Kostenschätzung (M2) | in Planung |
 | Unscharfe Duplikatsuche (T-M2-02) | **zurückgestellt** (braucht `rapidfuzz`, Freigabe offen) |
 | Screening mit Sprachmodell, Wiederaufnahme, Ergebnisse, PRISMA (M3-M4) | in Planung |
 | Statistik (Test-Retest, Vergleich mit Menschen), Oberfläche (Streamlit) | in Planung |
