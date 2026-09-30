@@ -8,6 +8,7 @@ tokens but no cost.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
 from crapai.config.loader import load_project_config
@@ -18,6 +19,8 @@ from crapai.cost.pricing import CsvPriceSource, Price
 from crapai.cost.tokenizers import tokenizer_for
 from crapai.io.records_store import read_records
 from crapai.project.workspace import Workspace
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -99,6 +102,14 @@ def estimate_project(workspace: Workspace, *, instructions: str = "") -> Project
         tokenizer_for(provider, model),
         price=price,
         config=EstimatorConfig(max_output_tokens=config.llm.max_output_tokens),
+    )
+    logger.info(
+        "Estimate: %d record(s) for %s/%s, %d input tokens, tokenizer %s",
+        estimate.n_items,
+        provider,
+        model,
+        estimate.input_tokens,
+        estimate.tokenizer,
     )
     limit = config.limits.max_cost
     over = limit is not None and estimate.cost_max is not None and estimate.cost_max > limit

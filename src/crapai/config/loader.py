@@ -104,7 +104,7 @@ def config_error_from_validation(exc: ValidationError, source: str) -> ConfigErr
     return ConfigError(
         message,
         code=problems[0]["code"] if problems else CODE_INVALID,
-        hint="Correct the listed fields in project.yaml.",
+        hint="Correct the listed fields (in project.yaml, or in the layer named above).",
         details={"source": source, "problems": problems},
     )
 
@@ -256,6 +256,16 @@ def resolve_config(
     merged = deep_merge(merged, read_yaml_mapping(project_path))
     merged = deep_merge(merged, env_overrides(environ))
     merged = deep_merge(merged, dict(cli or {}))
-    config = validate_config(merged, source=project_path.name)
+    layers = [
+        name
+        for name, present in (
+            ("user configuration", bool(user_path.is_file())),
+            ("environment variables", bool(env_overrides(environ))),
+            ("command line", bool(cli)),
+        )
+        if present
+    ]
+    label = project_path.name + (f" (merged with: {', '.join(layers)})" if layers else "")
+    config = validate_config(merged, source=label)
     logger.info("Resolved project configuration for %s", project_path)
     return config

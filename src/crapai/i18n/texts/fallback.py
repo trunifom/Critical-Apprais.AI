@@ -130,15 +130,15 @@ DEFAULT_TEXTS = {
                     "placeholder": "e.g. PubMed, MEDLINE, Embase, CINAHL",
                     "help": HELP_DATABASE_INPUT,
                 },
-            "fulltext": {
-                "header": "3️⃣ Upload Fulltext Files",
-                "instructions": (
-                    "Upload a .zip file containing the full text articles as PDFs.  \n"
-                    "Supported formats: **.zip** (max. 150 MB).  \n\n"
-                ),
-                "file_type": {"label": "Select file type", "options": [".zip"]},
-                "file_uploader": {"label": "Choose files"},
-                "database_names_header": "**Database/source label for each uploaded file:**"
+                "fulltext": {
+                    "header": "3️⃣ Upload Fulltext Files",
+                    "instructions": (
+                        "Upload a .zip file containing the full text articles as PDFs.  \n"
+                        "Supported formats: **.zip** (max. 150 MB).  \n\n"
+                    ),
+                    "file_type": {"label": "Select file type", "options": [".zip"]},
+                    "file_uploader": {"label": "Choose files"},
+                    "database_names_header": "**Database/source label for each uploaded file:**",
                 },
             }
         },
@@ -192,7 +192,6 @@ DEFAULT_TEXTS = {
             "Results and download links will be sent to **{email}**.  \n"
             "Submitted items: **{total}**."
         ),
-    # (E-mail templates of the predecessor removed: the product sends no e-mail.)
-},
+        # (E-mail templates of the predecessor removed: the product sends no e-mail.)
+    },
 }
-

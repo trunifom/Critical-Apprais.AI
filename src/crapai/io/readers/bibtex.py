@@ -310,9 +310,7 @@ def _year(*values: str) -> int | None:
     return None
 
 
-def _map_fields(
-    index: int, entry_type: str, key: str, fields: list[tuple[str, str]]
-) -> RawRecord:
+def _map_fields(index: int, entry_type: str, key: str, fields: list[tuple[str, str]]) -> RawRecord:
     by_name: dict[str, list[str]] = {}
     for name, value in fields:
         by_name.setdefault(name, []).append(value.strip())

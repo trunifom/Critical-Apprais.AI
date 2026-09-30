@@ -159,9 +159,19 @@ def dedup_global(before: int, marked: int, method: str) -> PrismaEvent:
     )
 
 
-def validity_checked(total: int, by_reason: Mapping[str, int]) -> PrismaEvent:
-    """The validity check ran: records per exclusion reason (DUPLICATE is not part of it)."""
-    missing = int(by_reason.get("NO_ABSTRACT", 0))
+def validity_checked(
+    total: int, by_reason: Mapping[str, int], without_abstract: int | None = None
+) -> PrismaEvent:
+    """The validity check ran.
+
+    Args:
+        total: All records of the project.
+        by_reason: Records per exclusion reason. It counts every reason that is set, including
+            ``DUPLICATE`` and the import reasons, because a record carries one reason in all.
+        without_abstract: Records without an abstract whatever their reason (also when
+            ``include_title_only`` is on, and duplicates). Defaults to the ``NO_ABSTRACT`` count.
+    """
+    missing = int(by_reason.get("NO_ABSTRACT", 0) if without_abstract is None else without_abstract)
     return PrismaEvent(
         step=PrismaStep.DEDUP_MERGED.value,
         event_type=EventType.INFO.value,

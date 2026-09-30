@@ -33,6 +33,7 @@ class DedupSummary:
     by_method: dict[str, int]
     within_source: dict[str, int]
     across_sources: int
+    events_written: bool = True  # False: the PRISMA event could not be written
 
 
 def _configured_strategy(workspace: Workspace) -> Strategy | None:
@@ -65,16 +66,38 @@ def dedup_project(
     """
     workspace = Workspace.open(workspace.root)
     with workspace.lock():
-        records = read_records(workspace.records_csv)
-        if strategy is not None:
-            chosen, source = strategy, "cli"
-        else:
-            configured = _configured_strategy(workspace)
-            chosen, source = (configured, "project") if configured else ("doi_or_title", "default")
-        result: DedupResult = mark_duplicates(records, DedupConfig(strategy=chosen, keep=keep))
-        if result.records != records:
-            write_records(workspace.records_csv, result.records, backup_dir=workspace.backup_dir)
-        record_dedup(workspace, result.records, chosen, result.within_source, result.across_sources)
+        return apply_dedup(workspace, strategy=strategy, keep=keep)
+
+
+def apply_dedup(
+    workspace: Workspace,
+    *,
+    strategy: Strategy | None = None,
+    keep: Keep = "best",
+) -> DedupSummary:
+    """Mark duplicates; the caller holds the project lock (see :func:`dedup_project`)."""
+    records = read_records(workspace.records_csv)
+    if strategy is not None:
+        chosen, source = strategy, "cli"
+    else:
+        configured = _configured_strategy(workspace)
+        chosen, source = (configured, "project") if configured else ("doi_or_title", "default")
+    result: DedupResult = mark_duplicates(records, DedupConfig(strategy=chosen, keep=keep))
+    written = result.records != records
+    if written:
+        write_records(workspace.records_csv, result.records, backup_dir=workspace.backup_dir)
+    events_ok = record_dedup(
+        workspace, result.records, chosen, result.within_source, result.across_sources
+    )
+    logger.info(
+        "Dedup (%s, keep=%s): %d of %d records marked in %d group(s); records.csv %s",
+        chosen,
+        keep,
+        result.marked,
+        len(result.records),
+        result.groups,
+        "rewritten" if written else "unchanged",
+    )
     return DedupSummary(
         strategy=chosen,
         keep=keep,
@@ -85,4 +108,5 @@ def dedup_project(
         by_method=result.by_method,
         within_source=result.within_source,
         across_sources=result.across_sources,
+        events_written=events_ok,
     )

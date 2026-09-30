@@ -35,6 +35,7 @@ class ValiditySummary:
     include_title_only: bool
     exclude_retracted: bool
     options_source: str  # "cli", "project" or "default"
+    events_written: bool = True  # False: the PRISMA event could not be written
 
 
 def _options_from_project(workspace: Workspace) -> tuple[bool, bool] | None:
@@ -68,19 +69,40 @@ def validate_project(
     """
     workspace = Workspace.open(workspace.root)
     with workspace.lock():
-        records = read_records(workspace.records_csv)
-        overridden = include_title_only is not None or exclude_retracted is not None
-        stored = None if overridden else _options_from_project(workspace)
-        source = "cli" if overridden else ("project" if stored is not None else "default")
-        base_title, base_retracted = stored if stored is not None else (False, False)
-        config = ValidityConfig(
-            include_title_only=base_title if include_title_only is None else include_title_only,
-            exclude_retracted=base_retracted if exclude_retracted is None else exclude_retracted,
+        return apply_validity(
+            workspace, include_title_only=include_title_only, exclude_retracted=exclude_retracted
         )
-        result = mark_validity(records, config)
-        if result.records != records:
-            write_records(workspace.records_csv, result.records, backup_dir=workspace.backup_dir)
-        record_validity(workspace, len(result.records), result.by_reason)
+
+
+def apply_validity(
+    workspace: Workspace,
+    *,
+    include_title_only: bool | None = None,
+    exclude_retracted: bool | None = None,
+) -> ValiditySummary:
+    """Mark invalid records; the caller holds the project lock (see :func:`validate_project`)."""
+    records = read_records(workspace.records_csv)
+    overridden = include_title_only is not None or exclude_retracted is not None
+    stored = None if overridden else _options_from_project(workspace)
+    source = "cli" if overridden else ("project" if stored is not None else "default")
+    base_title, base_retracted = stored if stored is not None else (False, False)
+    config = ValidityConfig(
+        include_title_only=base_title if include_title_only is None else include_title_only,
+        exclude_retracted=base_retracted if exclude_retracted is None else exclude_retracted,
+    )
+    result = mark_validity(records, config)
+    written = result.records != records
+    if written:
+        write_records(workspace.records_csv, result.records, backup_dir=workspace.backup_dir)
+    without_abstract = sum(1 for r in result.records if not r.has_abstract)
+    events_ok = record_validity(workspace, len(result.records), result.by_reason, without_abstract)
+    logger.info(
+        "Validity (options from %s): %d of %d records go to the model; records.csv %s",
+        source,
+        result.valid_for_model,
+        len(result.records),
+        "rewritten" if written else "unchanged",
+    )
     return ValiditySummary(
         records=len(result.records),
         valid_for_model=result.valid_for_model,
@@ -89,4 +111,5 @@ def validate_project(
         include_title_only=config.include_title_only,
         exclude_retracted=config.exclude_retracted,
         options_source=source,
+        events_written=events_ok,
     )

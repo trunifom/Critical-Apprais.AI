@@ -186,8 +186,7 @@ def test_warnings_for_missing_abstracts_and_empty_records(
     assert no_abstracts.warnings == ("no_abstracts",)
     mixed = tmp_path / "mixed.ris"
     mixed.write_text(
-        "TY  - JOUR\nTI  - A\nAB  - has abstract\nER  - \n"
-        "TY  - JOUR\nAU  - Only, Author\nER  - \n",
+        "TY  - JOUR\nTI  - A\nAB  - has abstract\nER  - \nTY  - JOUR\nAU  - Only, Author\nER  - \n",
         encoding="utf-8",
     )
     summary = import_source(workspace, ImportRequest(mixed))

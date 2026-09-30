@@ -80,7 +80,8 @@ def test_json_mode_prints_partial_results_before_an_error(tmp_path: Path) -> Non
     args = ["import", str(project), str(missing), "--json", "--lang", "en"]
     result = CliRunner().invoke(app, args)
     assert result.exit_code == 1
-    assert json.loads(result.stdout) == {"imported": []}  # stdout stays valid JSON
+    document = json.loads(result.stdout)  # stdout stays one valid JSON document
+    assert document["imported"] == [] and document["error"]["code"] == "E101"
     assert "Error E101" in result.stderr
 
 

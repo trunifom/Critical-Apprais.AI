@@ -23,6 +23,7 @@ from enum import Enum
 
 class StringEnum(str, Enum):
     """String-valued Enum that remains JSON/DB friendly."""
+
     def __str__(self) -> str:  # pragma: no cover
         return self.value
 
@@ -31,8 +32,10 @@ class StringEnum(str, Enum):
 # Preflight (UI-only validation of uploaded files)
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class PreflightStatus(StringEnum):
     """Overall status of a preflight check for a single file."""
+
     OK = "ok"
     WARNING = "warning"
     ERROR = "error"
@@ -40,6 +43,7 @@ class PreflightStatus(StringEnum):
 
 class PreflightIssueCode(StringEnum):
     """Machine-readable reason codes for preflight outcomes (used in i18n mapping)."""
+
     PARSE_FAILED = "parse_failed"
     NO_RECORDS = "no_records"
     NO_ABSTRACTS = "no_abstracts"
@@ -51,10 +55,11 @@ class PreflightIssueCode(StringEnum):
 # PRISMA: coarse workflow states (optional, useful for UI)
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class PrismaWorkflowState(StringEnum):
     INITIAL = "initial"
     SOURCES_IMPORTED = "sources_imported"
-    SOURCES_DEDUPED = "sources_deduped"      # optional per-source optimization
+    SOURCES_DEDUPED = "sources_deduped"  # optional per-source optimization
     MERGED = "merged"
     MERGED_DEDUPED = "merged_deduped"
     TITLE_ABSTRACT_SCREENED = "title_abstract_screened"
@@ -66,8 +71,10 @@ class PrismaWorkflowState(StringEnum):
 # PRISMA: steps and event types used by the audit logger
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class PrismaStep(StringEnum):
     """High-level PRISMA steps used for event 'step' classification."""
+
     IMPORT = "import"
     DEDUP_PER_SOURCE = "dedup_per_source"
     MERGE = "merge"
@@ -79,6 +86,7 @@ class PrismaStep(StringEnum):
 
 class EventType(StringEnum):
     """Fine-grained event types for the audit trail."""
+
     SOURCE_IMPORTED = "SOURCE_IMPORTED"
     DEDUP_WITHIN_SOURCE = "DEDUP_WITHIN_SOURCE"
     MERGE_ALL_SOURCES = "MERGE_ALL_SOURCES"
@@ -93,6 +101,7 @@ class EventType(StringEnum):
 
 class LogLevel(StringEnum):
     """Severity levels for events."""
+
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
@@ -101,12 +110,14 @@ class LogLevel(StringEnum):
 
 class ScreeningPhase(StringEnum):
     """Screening phase classification."""
+
     ABSTRACT = "abstract"
     FULLTEXT = "fulltext"
 
 
 class RunStatus(StringEnum):
     """Run lifecycle states."""
+
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
@@ -121,6 +132,7 @@ class DuplicatesReportingMode(StringEnum):
     - BETWEEN_DATABASES_ONLY: counts ONLY duplicates removed in the global
       cross-source dedup step; within-source removals are booked as 'other'.
     """
+
     ALL_BEFORE_SCREENING = "all_before_screening"
     BETWEEN_DATABASES_ONLY = "between_databases_only"
 
@@ -129,6 +141,7 @@ class DuplicatesReportingMode(StringEnum):
 # Misc. shared enums (optional but handy for payloads and UI)
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class ScreeningMode(StringEnum):
     ABSTRACT = "abstract"
     FULLTEXT = "fulltext"
@@ -136,6 +149,7 @@ class ScreeningMode(StringEnum):
 
 class PrismaEventType(StringEnum):
     """Legacy/general-purpose event bucket for UI dashboards (optional)."""
+
     PROJECT_CREATED = "project_created"
     SOURCE_IMPORTED = "source_imported"
     SOURCE_DEDUPED = "source_deduped"
@@ -151,6 +165,7 @@ class PrismaEventType(StringEnum):
 
 class FileType(StringEnum):
     """Supported bibliographic file types (if needed in payloads/UI)."""
+
     RIS = "ris"
     BIB = "bib"
     CSV = "csv"
@@ -160,6 +175,7 @@ class FileType(StringEnum):
 
 class Framework(StringEnum):
     """Search/screening frameworks."""
+
     PICOS = "PICOS"
     SPIDER = "SPIDER"
     PECO = "PECO"
@@ -168,11 +184,12 @@ class Framework(StringEnum):
 
 class LLMProvider(StringEnum):
     """LLM providers (expand as needed)."""
+
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
-    GOOGLE = "google"     # Gemini
-    META = "meta"         # Llama
-    XAI = "xai"           # Grok
+    GOOGLE = "google"  # Gemini
+    META = "meta"  # Llama
+    XAI = "xai"  # Grok
     MISTRAL = "mistral"
 
 

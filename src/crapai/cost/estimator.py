@@ -172,7 +172,7 @@ def estimate_run(
     if price is None:
         return estimate
     cost = cost_of(price, input_tokens, output_tokens)
-    band = max(0.0, config.cost_uncertainty)
+    band = min(1.0, max(0.0, config.cost_uncertainty))  # the low end never goes below 0
     worst = cost_of(price, input_tokens, n_items * max(0, config.max_output_tokens))
     logger.info(
         "Estimate: %d records, %d input tokens, cost %.4f %s",

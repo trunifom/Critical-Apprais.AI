@@ -1,7 +1,7 @@
 """Token counters (plan chapters 8.5 and 29.4).
 
-A tokenizer turns a text into a token count, locally and without any network call. Two are
-provided:
+A tokenizer turns a text into a token count, locally. Counting never sends the text anywhere.
+Two are provided:
 
 ``CharTokenizer``
     Characters divided by a constant, rounded up. Always available, never exact. Used for every
@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -28,6 +29,9 @@ logger = logging.getLogger(__name__)
 # safety factor makes the fallback err on the high side so that cost is not underestimated.
 DEFAULT_CHARS_PER_TOKEN = 4.0
 FALLBACK_SAFETY_FACTOR = 1.10
+_WIDE_SCRIPTS = re.compile(
+    r"[\u0e00-\u0e7f\u1100-\u11ff\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]"
+)
 
 
 class Tokenizer(Protocol):
@@ -67,10 +71,16 @@ class CharTokenizer:
             raise ValueError("chars_per_token and safety_factor must be positive")
 
     def count(self, text: str) -> int:
-        """Return the approximate token count; at least 1 for a non-empty text."""
+        """Return the approximate token count; at least 1 for a non-empty text.
+
+        Characters of scripts written without spaces (Chinese, Japanese, Korean, Thai) cost about
+        one token each, so they are counted one by one; everything else by ``chars_per_token``.
+        """
         if not text:
             return 0
-        return max(1, math.ceil(len(text) / self.chars_per_token * self.safety_factor))
+        wide = len(_WIDE_SCRIPTS.findall(text))
+        tokens = wide + (len(text) - wide) / self.chars_per_token
+        return max(1, math.ceil(tokens * self.safety_factor))
 
 
 class TiktokenTokenizer:
@@ -94,9 +104,14 @@ class TiktokenTokenizer:
         try:
             import tiktoken
 
+            # The first use downloads the encoding file unless it is cached (TIKTOKEN_CACHE_DIR).
             self._encoding = tiktoken.get_encoding(encoding_name)
         except Exception as exc:  # missing package, or encoding file not downloadable offline
-            logger.info("tiktoken %s unavailable (%s); using characters", encoding_name, exc)
+            logger.warning(
+                "tiktoken %s unavailable (%s); token counts are approximate",
+                encoding_name,
+                type(exc).__name__,
+            )
         self.exact = self._encoding is not None
         self.name = f"tiktoken:{encoding_name}" if self.exact else self.fallback.name
 

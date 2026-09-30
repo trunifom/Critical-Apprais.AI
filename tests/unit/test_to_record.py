@@ -77,8 +77,14 @@ def test_doi_is_normalised_and_invalid_doi_is_kept_in_extra() -> None:
 def test_unknown_fields_and_types_are_kept_in_extra_json() -> None:
     raw = RawRecord(
         1,
-        {"title": "t", "notes": "n", "database_name": "Embase", "record_type": "podcast",
-         "year": "n.d.", "publisher": "P"},
+        {
+            "title": "t",
+            "notes": "n",
+            "database_name": "Embase",
+            "record_type": "podcast",
+            "year": "n.d.",
+            "publisher": "P",
+        },
     )
     record = to_record(raw, context())
     assert record.record_type == "other"
@@ -115,8 +121,11 @@ def chain(reader_result, source_format: str, tmp_path: Path):  # type: ignore[no
 
 @pytest.mark.parametrize(
     "name",
-    sorted(n.removeprefix("data/") for n, i in EXPECTED.items()
-           if n.startswith("data/") and i.get("kind") == "ris"),
+    sorted(
+        n.removeprefix("data/")
+        for n, i in EXPECTED.items()
+        if n.startswith("data/") and i.get("kind") == "ris"
+    ),
 )
 def test_ris_fixtures_through_the_whole_chain(name: str, tmp_path: Path) -> None:
     records, loaded = chain(read_ris(DATA / name), "ris", tmp_path)
@@ -130,9 +139,10 @@ def test_ris_fixtures_through_the_whole_chain(name: str, tmp_path: Path) -> None
 
 def test_zotero_ris_keeps_every_doi_valid_and_flags_untitled_records(tmp_path: Path) -> None:
     records, _ = chain(read_ris(DATA / "pubmed_adhd_converted-zotero.ris"), "ris", tmp_path)
-    assert sum(1 for r in records if r.doi) + sum(
-        1 for r in records if "doi_invalid" in r.extra_json
-    ) == 546
+    assert (
+        sum(1 for r in records if r.doi) + sum(1 for r in records if "doi_invalid" in r.extra_json)
+        == 546
+    )
     assert all(r.doi == r.doi.lower() and "doi.org" not in r.doi for r in records)
     assert sum(1 for r in records if not r.title) == 2
 

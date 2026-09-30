@@ -51,8 +51,7 @@ def test_zotero_file_keeps_multi_line_abstracts_complete() -> None:
 
 def test_continuation_lines_are_joined_with_one_space() -> None:
     text = (
-        "TY  - JOUR\nTI  - Title\nAB  - First part\nsecond part\n  third part  \n"
-        "KW  - x\nER  - \n"
+        "TY  - JOUR\nTI  - Title\nAB  - First part\nsecond part\n  third part  \nKW  - x\nER  - \n"
     )
     record = parse_ris_text(text).records[0]
     assert record.fields["abstract"] == "First part second part third part"

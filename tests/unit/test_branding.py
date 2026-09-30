@@ -13,6 +13,9 @@ def test_product_name_is_exact_and_not_a_predecessor_name() -> None:
 def test_ui_texts_do_not_call_the_product_sara() -> None:
     """User-visible YAML texts must not mention the predecessor name."""
     for yaml_file in (SRC / "i18n" / "texts").glob("*.yaml"):
-        body = "".join(line for line in yaml_file.read_text(encoding="utf-8").splitlines(True)
-                       if not line.lstrip().startswith("#"))
+        body = "".join(
+            line
+            for line in yaml_file.read_text(encoding="utf-8").splitlines(True)
+            if not line.lstrip().startswith("#")
+        )
         assert "SARA" not in body, yaml_file.name

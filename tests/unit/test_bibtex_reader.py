@@ -200,7 +200,7 @@ def test_no_entries_raises_e102() -> None:
 
 def test_clean_latex_and_clean_abstract() -> None:
     assert clean_latex("plain text") == "plain text"
-    assert clean_latex("{ADHD} and {\\\"u}ber") == "ADHD and über"
+    assert clean_latex('{ADHD} and {\\"u}ber') == "ADHD and über"
     assert clean_latex("50\\% of {\\&}") == "50% of &"
     assert clean_latex("100% sure") == "100% sure"  # bare % must not start a comment
     assert clean_abstract("a  \n b \\% \\&") == "a b % &"

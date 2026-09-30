@@ -37,7 +37,8 @@ def resolve_language(explicit: str | None = None, project_yaml: Path | None = No
             language = data["project"]["language"]
             if language in SUPPORTED_LANGUAGES:
                 return str(language)
-        except (OSError, yaml.YAMLError, KeyError, TypeError):
+        except (OSError, ValueError, yaml.YAMLError, KeyError, TypeError):
+            # ValueError includes UnicodeDecodeError (project.yaml saved in another encoding)
             logger.debug("No usable project language in %s", project_yaml)
     environment = (os.environ.get("LC_ALL") or os.environ.get("LANG") or "").lower()
     return "de" if environment.startswith("de") else DEFAULT_LANGUAGE
@@ -59,8 +60,9 @@ class Messages:
             return key
         try:
             return template.format(**values)
-        except (KeyError, IndexError):
-            logger.warning("Text %s has placeholders that were not supplied", key)
+        except (KeyError, IndexError, ValueError, AttributeError, TypeError):
+            # a missing value, or a malformed translation such as '{0' or '{a.b}'
+            logger.warning("Text %s has unusable placeholders", key)
             return template
 
     def error_lines(self, error: SaraError) -> list[str]:
@@ -71,7 +73,8 @@ class Messages:
             code_for_text = UNEXPECTED_ERROR_CODE
         else:
             code_for_text = code
-        lines = [f"{self.text('cli.error.prefix', code=code)}: {self.text(f'errors.{code_for_text}.title')}"]
+        prefix = self.text("cli.error.prefix", code=code)
+        lines = [f"{prefix}: {self.text(f'errors.{code_for_text}.title')}"]
         cause = self._i18n.t(f"errors.{code_for_text}.cause")
         if cause:
             lines.append(f"{self.text('cli.error.cause')}: {cause}")

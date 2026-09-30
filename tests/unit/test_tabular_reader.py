@@ -25,10 +25,14 @@ def write_csv(path: Path, text: str, encoding: str = "utf-8") -> Path:
 
 
 BASIC = (
-    "Title;Abstract;Authors;Year;DOI;PMID;Keywords\n"
-    "First study;An abstract, with comma;Doe, J; Roe, R;2020;10.1/a;32559806;x; y\n"
-    "Second;;Solo A;n.d.;;0123;z\n"
-).replace("Doe, J; Roe, R", '"Doe, J; Roe, R"').replace("x; y", '"x; y"')
+    (
+        "Title;Abstract;Authors;Year;DOI;PMID;Keywords\n"
+        "First study;An abstract, with comma;Doe, J; Roe, R;2020;10.1/a;32559806;x; y\n"
+        "Second;;Solo A;n.d.;;0123;z\n"
+    )
+    .replace("Doe, J; Roe, R", '"Doe, J; Roe, R"')
+    .replace("x; y", '"x; y"')
+)
 
 
 def test_semicolon_csv_is_mapped_by_alias(tmp_path: Path) -> None:
@@ -237,7 +241,7 @@ def test_xlsx_formulas_are_read_as_values_only(tmp_path: Path) -> None:
     sheet = workbook.active
     assert sheet is not None
     sheet.append(["Title", "Abstract"])
-    sheet.append(["=\"A\"&\"B\"", "abstract"])
+    sheet.append(['="A"&"B"', "abstract"])
     sheet.append(["plain", "abstract 2"])
     path = tmp_path / "f.xlsx"
     workbook.save(path)

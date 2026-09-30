@@ -259,6 +259,18 @@ Bei einem leeren oder unvollständigen Projekt erscheint „Die Konfiguration br
 `crapai status mein-review --json` liefert dieselben Angaben maschinenlesbar.
 Läuft gerade ein anderer Prozess im Projekt, wird das gemeldet.
 
+## 6f. Veraltete Sperre entfernen: `crapai unlock`
+
+```powershell
+crapai unlock mein-review          # fragt nach, bevor die Sperre entfernt wird
+crapai unlock mein-review --yes    # ohne Nachfrage (für Skripte)
+```
+
+Jeder Befehl, der das Projekt ändert, legt die Sperre `.crapai/lock` an und entfernt sie am Ende. Stürzt ein Lauf ab oder wird er beendet, bleibt die Sperre liegen und alle weiteren
+Befehle melden `E402`. `crapai unlock` entfernt sie nur, wenn sie **veraltet** ist: Der Prozess läuft nicht mehr und die Sperre hat seit 60 Sekunden kein Lebenszeichen gezeigt.
+Gehört sie einem laufenden Prozess, wird nichts geändert (Rückgabecode 2). Ohne Terminal und ohne `--yes` wird nichts entfernt (Rückgabecode 1). Die Sperre darf **nie** von Hand
+gelöscht werden, während ein Lauf aktiv ist.
+
 ## 6e. Vorfilter: Sprache, Jahr, Publikationstyp
 
 Manche Kriterien sind Metadaten, die das Sprachmodell nicht zuverlässig beurteilt (zum Beispiel die Sprache einer Studie). Sie prüfen diese im Programm, **vor** dem Modell und ohne Kosten. Die Einstellung steht in der `project.yaml`:
@@ -339,7 +351,7 @@ Ein Fehler wird in vier Zeilen erklärt: **Fehler CODE: Was ist passiert · Waru
 | E106 | Datei bereits importiert | `--force`, falls Sie es wirklich zweimal wollen |
 | E201 / E203 | Angabe in der `project.yaml` fehlt / ist ungültig | die genannte Angabe korrigieren |
 | E401 | Datei kann nicht geschrieben werden (z. B. `records.csv` ist in Excel geöffnet) | in anderen Programmen schliessen, Rechte prüfen, Befehl wiederholen |
-| E402 | Projekt in Benutzung | anderen Lauf beenden; ist keiner aktiv, ist die Sperre veraltet |
+| E402 | Projekt in Benutzung | anderen Lauf beenden; ist keiner aktiv, ist die Sperre veraltet: `crapai unlock mein-review` (Abschnitt 6f) |
 | E403 | Speicherplatz voll | Platz schaffen |
 | E404 | kein Projektordner dieser Version oder Datei beschädigt | richtigen Ordner wählen, Sicherung aus `data/.backup` verwenden |
 | E999 | unerwarteter Fehler | `.crapai/app.log` ansehen und den Fehler melden |

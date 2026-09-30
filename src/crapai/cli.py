@@ -28,7 +28,8 @@ from crapai.branding import CLI_NAME, PRODUCT_NAME, STATE_DIR_NAME
 from crapai.cost.duration import format_duration
 from crapai.errors import UNEXPECTED_ERROR_CODE, ConfigError, SaraError
 from crapai.i18n.messages import Messages, resolve_language
-from crapai.project.workspace import Workspace
+from crapai.project.lock import pid_alive
+from crapai.project.workspace import Workspace, cloud_sync_marker
 from crapai.services.cost import ProjectEstimate, estimate_project
 from crapai.services.dedup import dedup_project
 from crapai.services.importing import ImportRequest, ImportSummary, import_source
@@ -104,19 +105,43 @@ def _setup_file_log(folder: Path) -> None:
                 return
             root.removeHandler(existing)  # a different project was used earlier in this process
             existing.close()
-    handler = logging.handlers.RotatingFileHandler(
-        target, maxBytes=1_000_000, backupCount=3, encoding="utf-8"
-    )
+    try:
+        handler = logging.handlers.RotatingFileHandler(
+            target, maxBytes=1_000_000, backupCount=3, encoding="utf-8"
+        )
+    except OSError as exc:
+        # A read-only share or a log held by another program must not stop the command itself.
+        typer.secho(
+            f"Warning: cannot write the log file ({type(exc).__name__}).", fg="yellow", err=True
+        )
+        return
     handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
     root.addHandler(handler)
     root.setLevel(logging.INFO)
 
 
+def error_json(error: Exception) -> dict[str, Any]:
+    """The error as a JSON-able dictionary (code, message, hint); no details, no record content."""
+    if isinstance(error, SaraError):
+        return {"code": error.code, "message": error.user_message, "hint": error.hint}
+    return {"code": UNEXPECTED_ERROR_CODE, "message": type(error).__name__, "hint": None}
+
+
+def _interactive() -> bool:
+    """True if the user can be asked a question (stdin is a terminal)."""
+    return sys.stdin.isatty()
+
+
 def _fail(error: Exception, messages: Messages, *, json_mode: bool) -> typer.Exit:
-    """Report ``error`` and return the exit for it (the caller raises it)."""
+    """Report ``error`` (log, stderr, and in JSON mode also stdout) and return the exit for it.
+
+    The caller raises the returned exit. Only the code and the message are logged: the error's
+    ``details`` may hold paths and must never hold record content.
+    """
     if isinstance(error, SaraError):
         code = EXIT_SYSTEM_ERROR if error.code in SYSTEM_ERROR_CODES else EXIT_USER_ERROR
         lines = messages.error_lines(error)
+        logger.error("%s: %s", error.code, error.user_message)
     else:
         logger.exception("Unexpected error")
         code = EXIT_SYSTEM_ERROR
@@ -127,6 +152,8 @@ def _fail(error: Exception, messages: Messages, *, json_mode: bool) -> typer.Exi
         ]
     for line in lines:
         typer.secho(line, fg="red", err=True)
+    if json_mode:
+        typer.echo(json.dumps({"error": error_json(error)}, ensure_ascii=False, indent=2))
     return typer.Exit(code)
 
 
@@ -200,7 +227,11 @@ def init_command(
     except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
         raise _fail(error, messages, json_mode=False) from error
     _setup_file_log(workspace.root)
+    logger.info("Created project %s from template %s", workspace.root.name, from_template)
     typer.secho(messages.text("cli.init.done", path=workspace.root), fg="green")
+    marker = cloud_sync_marker(workspace.root)
+    if marker:
+        typer.secho(messages.text("cli.init.sync_warning", marker=marker), fg="yellow", err=True)
     typer.echo(messages.text("cli.init.next"))
     typer.echo(messages.text("cli.init.example", command=COMMAND, path=folder))
 
@@ -251,9 +282,10 @@ def import_command(
             if summary.warnings:
                 exit_code = EXIT_WARNINGS
     except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
-        if as_json:
-            typer.echo(json.dumps({"imported": results}, ensure_ascii=False))
-        raise _fail(error, messages, json_mode=as_json) from error
+        if as_json:  # one JSON document: what was imported before the failure, and the failure
+            document = {"imported": results, "error": error_json(error)}
+            typer.echo(json.dumps(document, ensure_ascii=False, indent=2))
+        raise _fail(error, messages, json_mode=False) from error
     if as_json:
         typer.echo(json.dumps({"imported": results}, ensure_ascii=False, indent=2))
     raise typer.Exit(exit_code)
@@ -349,7 +381,7 @@ def status_command(
     if status.config_ok:
         typer.secho(messages.text("cli.status.config_ok"), fg="green")
     else:
-        first_line = (status.config_problem or "").splitlines()[0] if status.config_problem else ""
+        first_line = next(iter((status.config_problem or "").splitlines()), "")
         typer.secho(messages.text("cli.status.config_problem", problem=first_line), fg="yellow")
     if status.in_use:
         typer.secho(messages.text("cli.status.in_use"), fg="yellow")
@@ -388,13 +420,16 @@ def dedup_command(
         )
     except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
         raise _fail(error, messages, json_mode=as_json) from error
+    exit_code = EXIT_OK if summary.events_written else EXIT_WARNINGS
     if as_json:
         typer.echo(json.dumps(dataclasses.asdict(summary), ensure_ascii=False, indent=2))
-        return
+        raise typer.Exit(exit_code)
+    if not summary.events_written:
+        typer.secho(messages.text("cli.warning.events_not_written"), fg="yellow", err=True)
     source = messages.text(f"cli.dedup.source.{summary.strategy_source}")
     if summary.marked == 0:
         typer.echo(messages.text("cli.dedup.none", strategy=summary.strategy, source=source))
-        return
+        raise typer.Exit(exit_code)
     typer.secho(
         messages.text(
             "cli.dedup.done",
@@ -415,6 +450,7 @@ def dedup_command(
             across=summary.across_sources,
         )
     )
+    raise typer.Exit(exit_code)
 
 
 @app.command("check")
@@ -460,7 +496,11 @@ def _estimate_for(folder: Path, report: ProjectReport) -> tuple[ProjectEstimate 
     try:
         return estimate_project(Workspace(folder)), None
     except SaraError as error:
+        logger.warning("Cost estimate not available: %s", error.code)
         return None, f"{error.code}: {error.user_message}"
+    except Exception as error:  # noqa: BLE001 - the estimate is optional; the report stands
+        logger.exception("Cost estimate failed")
+        return None, f"{UNEXPECTED_ERROR_CODE}: {type(error).__name__}"
 
 
 def _estimate_json(estimate: ProjectEstimate | None) -> dict[str, Any] | None:
@@ -613,13 +653,56 @@ def _print_report(report: ProjectReport, messages: Messages) -> None:
     typer.echo(messages.text("cli.check.updated" if report.updated else "cli.check.read_only"))
 
 
+@app.command("unlock")
+def unlock_command(
+    folder: Annotated[Path, typer.Argument(help="Project folder.")],
+    yes: Annotated[bool, typer.Option("--yes", help="Remove a stale lock without asking.")] = False,
+    lang: LangOption = None,
+) -> None:
+    """Remove a stale project lock left behind by a crashed or killed run.
+
+    A lock is only removed when its process is gone and it has shown no sign of life for 60
+    seconds; a lock of a running process is never touched.
+    Example: crapai unlock my-review
+    """
+    messages = Messages(resolve_language(lang, folder / "project.yaml"))
+    _setup_file_log(folder)
+    try:
+        lock = Workspace.open(folder).lock()
+        info = lock.inspect()
+        if info is None:
+            typer.echo(messages.text("cli.unlock.none"))
+            return
+        if not info.stale:
+            alive = pid_alive(info.pid)
+            key = "cli.unlock.in_use" if alive or info.pid == 0 else "cli.unlock.not_stale"
+            typer.secho(messages.text(key, pid=info.pid), fg="yellow", err=True)
+            raise typer.Exit(EXIT_SYSTEM_ERROR)
+        if not yes:
+            if not _interactive():
+                typer.echo(messages.text("cli.unlock.declined"), err=True)
+                raise typer.Exit(EXIT_USER_ERROR)
+            if not typer.confirm(messages.text("cli.unlock.confirm", pid=info.pid)):
+                typer.echo(messages.text("cli.unlock.declined"))
+                raise typer.Exit(EXIT_USER_ERROR)
+        lock.remove_stale(info)
+    except typer.Exit:
+        raise
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        raise _fail(error, messages, json_mode=False) from error
+    logger.info("Removed the stale project lock of PID %d", info.pid)
+    typer.secho(messages.text("cli.unlock.removed"), fg="green")
+
+
 def main() -> None:
     """Console-script entry point."""
-    if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
-        # Windows consoles default to cp1252; titles and messages contain other characters.
-        reconfigure = getattr(sys.stdout, "reconfigure", None)
-        if reconfigure is not None:
-            reconfigure(encoding="utf-8", errors="replace")
+    for stream in (sys.stdout, sys.stderr):
+        if stream.encoding and stream.encoding.lower() != "utf-8":
+            # Windows consoles default to cp1252; titles and messages contain other characters.
+            # stderr matters too: in --json mode all messages and errors go there.
+            reconfigure = getattr(stream, "reconfigure", None)
+            if reconfigure is not None:
+                reconfigure(encoding="utf-8", errors="replace")
     app()
 
 

@@ -69,9 +69,7 @@ RECORD_COLUMNS: tuple[str, ...] = (
     "import_notes",
     "extra_json",
 )
-BOOLEAN_COLUMNS = frozenset(
-    {"is_retracted", "is_duplicate", "has_abstract", "has_fulltext"}
-)
+BOOLEAN_COLUMNS = frozenset({"is_retracted", "is_duplicate", "has_abstract", "has_fulltext"})
 INTEGER_COLUMNS = frozenset({"source_row", "year"})
 
 SOURCE_FORMATS = frozenset({"ris", "bib", "nbib", "csv", "xlsx", "pdf"})

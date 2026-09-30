@@ -69,8 +69,16 @@ def test_init_blank_and_errors(tmp_path: Path) -> None:
 
 def test_import_several_files_with_labels_and_status(demo: Path) -> None:
     result = invoke(
-        "import", demo, DATA / "example_db_nr1_total-15_duplicates-0.ris", RIS10,
-        "--label", "Db1", "--label", "Db2", "--lang", "en",
+        "import",
+        demo,
+        DATA / "example_db_nr1_total-15_duplicates-0.ris",
+        RIS10,
+        "--label",
+        "Db1",
+        "--label",
+        "Db2",
+        "--lang",
+        "en",
     )
     assert result.exit_code == 4  # warnings: the fixtures hold no abstracts
     assert "Warning: none of these records has an abstract" in result.output
@@ -83,13 +91,33 @@ def test_import_several_files_with_labels_and_status(demo: Path) -> None:
 
 
 def test_one_label_applies_to_all_files_and_wrong_count_is_an_error(demo: Path) -> None:
-    ok = invoke("import", demo, DATA / "example_AB_nr4.ris", DATA / "citation-export.ris",
-                "--label", "Same", "--lang", "en")
+    ok = invoke(
+        "import",
+        demo,
+        DATA / "example_AB_nr4.ris",
+        DATA / "citation-export.ris",
+        "--label",
+        "Same",
+        "--lang",
+        "en",
+    )
     assert ok.exit_code == 0
     labels = {r.source_label for r in read_records(demo / "data" / "records.csv")}
     assert labels == {"Same"}
-    bad = invoke("import", demo, RIS10, DATA / "example_db_nr3_total-8_duplicates-2.ris",
-                 "--label", "a", "--label", "b", "--label", "c", "--lang", "en")
+    bad = invoke(
+        "import",
+        demo,
+        RIS10,
+        DATA / "example_db_nr3_total-8_duplicates-2.ris",
+        "--label",
+        "a",
+        "--label",
+        "b",
+        "--label",
+        "c",
+        "--lang",
+        "en",
+    )
     assert bad.exit_code == 1 and "3 --label values for 2 files" in bad.output
 
 

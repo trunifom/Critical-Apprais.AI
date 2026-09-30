@@ -35,6 +35,7 @@ class PrefilterSummary:
     passed_on_missing: dict[str, int]
     active: bool
     config_source: str  # "given", "project" or "default"
+    events_written: bool = True  # False: the PRISMA event could not be written
 
 
 def config_from_settings(settings: Prefilters) -> PrefilterConfig:
@@ -77,18 +78,31 @@ def prefilter_project(
     """
     workspace = Workspace.open(workspace.root)
     with workspace.lock():
-        records = read_records(workspace.records_csv)
-        if config is not None:
-            chosen, source = config, "given"
-        else:
-            configured = _configured(workspace)
-            chosen, source = (
-                (configured, "project") if configured else (PrefilterConfig(), "default")
-            )
-        result = mark_prefilters(records, chosen)
-        if result.records != records:
-            write_records(workspace.records_csv, result.records, backup_dir=workspace.backup_dir)
-        record_prefilter(workspace, len(result.records), result.by_reason)
+        return apply_prefilters(workspace, config=config)
+
+
+def apply_prefilters(
+    workspace: Workspace, *, config: PrefilterConfig | None = None
+) -> PrefilterSummary:
+    """Mark records; the caller holds the project lock (see :func:`prefilter_project`)."""
+    records = read_records(workspace.records_csv)
+    if config is not None:
+        chosen, source = config, "given"
+    else:
+        configured = _configured(workspace)
+        chosen, source = (configured, "project") if configured else (PrefilterConfig(), "default")
+    result = mark_prefilters(records, chosen)
+    written = result.records != records
+    if written:
+        write_records(workspace.records_csv, result.records, backup_dir=workspace.backup_dir)
+    events_ok = record_prefilter(workspace, len(result.records), result.by_reason)
+    logger.info(
+        "Pre-filters (settings from %s): %d of %d records marked; records.csv %s",
+        source,
+        result.removed,
+        len(result.records),
+        "rewritten" if written else "unchanged",
+    )
     return PrefilterSummary(
         records=len(result.records),
         removed=result.removed,
@@ -96,4 +110,5 @@ def prefilter_project(
         passed_on_missing=result.passed_on_missing,
         active=chosen.active,
         config_source=source,
+        events_written=events_ok,
     )

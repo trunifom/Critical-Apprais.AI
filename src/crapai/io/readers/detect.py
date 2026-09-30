@@ -67,7 +67,7 @@ DELIMITERS = (",", ";", "\t", "|")
 MAX_SNIFF_ROWS = 50
 MIN_ROW_AGREEMENT = 0.8
 
-OLE_MAGIC =b"\xd0\xcf\x11\xe0"  # legacy .xls
+OLE_MAGIC = b"\xd0\xcf\x11\xe0"  # legacy .xls
 
 
 @dataclass(frozen=True)

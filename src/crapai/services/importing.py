@@ -145,8 +145,10 @@ def _import_locked(workspace: Workspace, request: ImportRequest, now: datetime) 
             forced=request.force,
         ),
     )
-    record_import(workspace, label, stored.name, result.format.value, len(new_records))
+    events_ok = record_import(workspace, label, stored.name, result.format.value, len(new_records))
     warnings = _warnings(len(new_records), abstracts, empty)
+    if not events_ok:
+        warnings.append("events_not_written")
     logger.info("Imported %d record(s) from %s as '%s'", len(new_records), path.name, label)
     return ImportSummary(
         source_file=stored.name,

@@ -34,9 +34,9 @@ from crapai.io.normalize import ImportContext, to_records
 from crapai.io.readers.dispatch import read_source
 from crapai.io.records_store import read_records
 from crapai.project.workspace import Workspace
-from crapai.services.dedup import dedup_project
-from crapai.services.prefilter import prefilter_project
-from crapai.services.validity import validate_project
+from crapai.services.dedup import apply_dedup
+from crapai.services.prefilter import apply_prefilters
+from crapai.services.validity import apply_validity
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +52,7 @@ class ProjectIssue(StringEnum):
     SUSPECT_ABSTRACTS = "suspect_abstracts"
     RETRACTED_INCLUDED = "retracted_included"
     CONFIG_INVALID = "config_invalid"
+    EVENTS_NOT_WRITTEN = "events_not_written"
 
 
 @dataclass(frozen=True)
@@ -109,6 +110,7 @@ def check_file(
             path, encoding=encoding, delimiter=delimiter, sheet=sheet, mapping=mapping
         )
     except ImportFailed as exc:
+        logger.warning("Preflight of %s failed: %s", path.name, exc.code)
         result.status = PreflightStatus.ERROR
         result.error_code, result.detail = exc.code, exc.user_message
         if exc.code == "E102":
@@ -122,6 +124,7 @@ def check_file(
             result.message_key = "preflight.status.error_unparseable"
         return result
     except SaraError as exc:
+        logger.warning("Preflight of %s failed: %s", path.name, exc.code)
         result.status = PreflightStatus.ERROR
         result.issues.append(PreflightIssueCode.PARSE_FAILED)
         result.message_key = "preflight.status.error_unparseable"
@@ -194,6 +197,7 @@ class ProjectReport:
     issues: list[ProjectIssue] = field(default_factory=list)
     config_problem: str | None = None
     updated: bool = False
+    events_written: bool = True  # False: a PRISMA event could not be written
 
 
 def check_project(
@@ -210,11 +214,18 @@ def check_project(
     """
     config = config or PreflightConfig()
     workspace = Workspace.open(workspace.root)
+    events_ok = True
     if update:
-        dedup_project(workspace)
-        prefilter_project(workspace)
-        validate_project(workspace)
-    records = read_records(workspace.records_csv)
+        # One lock for the three steps and the read that follows: an import cannot slip in
+        # between and make the report mix two states of the project.
+        with workspace.lock():
+            dedup = apply_dedup(workspace)
+            prefilters = apply_prefilters(workspace)
+            validity = apply_validity(workspace)
+            records = read_records(workspace.records_csv)
+        events_ok = dedup.events_written and prefilters.events_written and validity.events_written
+    else:
+        records = read_records(workspace.records_csv)
 
     report = ProjectReport(updated=update)
     by_source: dict[str, SourceReport] = {}
@@ -233,6 +244,7 @@ def check_project(
             quality[record.abstract_quality] += 1
         if record.is_retracted and record.exclusion_reason != "RETRACTED":
             report.retracted_included += 1
+    report.events_written = events_ok
     report.records = len(records)
     report.duplicates = sum(s.duplicates for s in by_source.values())
     report.by_reason = dict(reasons)
@@ -261,6 +273,8 @@ def _judge(report: ProjectReport, workspace: Workspace, config: PreflightConfig)
         report.issues.append(ProjectIssue.SUSPECT_ABSTRACTS)
     if report.retracted_included:
         report.issues.append(ProjectIssue.RETRACTED_INCLUDED)
+    if not report.events_written:
+        report.issues.append(ProjectIssue.EVENTS_NOT_WRITTEN)
     if workspace.project_yaml.exists():
         try:
             load_project_config(workspace.project_yaml)

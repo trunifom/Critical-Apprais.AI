@@ -7,9 +7,7 @@ from crapai.prisma import reasons
 
 
 def test_every_reason_constant_is_in_the_persisted_catalogue() -> None:
-    constants = {
-        getattr(reasons, name) for name in dir(reasons) if name.startswith("REASON_")
-    }
+    constants = {getattr(reasons, name) for name in dir(reasons) if name.startswith("REASON_")}
     assert constants <= EXCLUSION_REASONS  # a reason not in the catalogue would not load back
     assert constants >= reasons.VALIDITY_REASONS
 

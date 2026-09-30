@@ -237,9 +237,7 @@ def resolve_columns(
     for internal, aliases in ALIASES.items():
         if internal in chosen:
             continue
-        matches = [
-            header for alias in aliases for header in headers if normalised[header] == alias
-        ]
+        matches = [header for alias in aliases for header in headers if normalised[header] == alias]
         if matches:
             chosen[internal] = matches[0]
             others = [h for h in dict.fromkeys(matches) if h != matches[0]]

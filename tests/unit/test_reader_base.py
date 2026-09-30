@@ -22,7 +22,7 @@ def test_decode_chain_and_newline_normalisation() -> None:
     assert decode_text(b"a\r\nb\rc\n") == ("a\nb\nc\n", "utf-8-sig")
     assert decode_text(b"\xef\xbb\xbfTY  - JOUR") == ("TY  - JOUR", "utf-8-sig")  # BOM removed
     assert decode_text("Größe".encode("cp1252")) == ("Größe", "cp1252")
-    assert decode_text(b"\x81\x8d") [1] == "latin-1"  # bytes cp1252 does not define
+    assert decode_text(b"\x81\x8d")[1] == "latin-1"  # bytes cp1252 does not define
 
 
 def test_explicit_encoding_is_strict() -> None:

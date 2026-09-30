@@ -116,9 +116,7 @@ def _to_record(index: int, block: list[list[str]]) -> RawRecord:
         return collected
 
     publication_types = unique_in_order(take("PT"))
-    fields["record_type"] = (
-        "journal_article" if "Journal Article" in publication_types else "other"
-    )
+    fields["record_type"] = "journal_article" if "Journal Article" in publication_types else "other"
     if publication_types:
         fields["publication_types"] = join_values(publication_types)
 

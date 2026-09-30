@@ -160,6 +160,14 @@ cli:
     done: "Projekt angelegt: {path}"
     next: "Als Nächstes: project.yaml bearbeiten (mindestens ein Einschlusskriterium) und danach Dateien importieren."
     example: "Beispiel: {command} import {path} <datei> --label <name>"
+    sync_warning: "Warnung: Der Ordner liegt in einem synchronisierten Bereich ({marker}). Sync-Programme greifen auf Dateien zu, während sie geschrieben werden. Führen Sie das Screening in einem nicht synchronisierten Ordner aus und archivieren Sie es danach."
+  unlock:
+    none: "Es gibt keine Sperre: Das Projekt wird nicht benutzt."
+    in_use: "Das Projekt wird von einem laufenden Prozess benutzt (PID {pid}). Es wurde nichts geändert."
+    not_stale: "Die Sperre ist noch neu und kann noch nicht entfernt werden (sie gilt nach 60 Sekunden ohne Lebenszeichen eines beendeten Prozesses als veraltet). Es wurde nichts geändert."
+    confirm: "Die Sperre von PID {pid} ist veraltet: Der Prozess läuft nicht mehr. Entfernen?"
+    declined: "Es wurde nichts geändert. Mit --yes wird eine veraltete Sperre ohne Nachfrage entfernt."
+    removed: "Veraltete Sperre entfernt. Das Projekt kann wieder benutzt werden."
   import:
     done: "{records} Datensatz/Datensätze aus {file} als \"{label}\" importiert, davon {abstracts} mit Abstract. Das Projekt enthält jetzt {total} Datensätze."
     format: "Format: {format} ({reason})"
@@ -171,6 +179,7 @@ cli:
     no_abstracts: "Warnung: Keiner dieser Datensätze hat einen Abstract. Das Screening braucht Abstracts (oder die Option nur Titel)."
     low_abstract_ratio: "Warnung: Weniger als 60 % dieser Datensätze haben einen Abstract."
     empty_records: "Warnung: {count} Datensatz/Datensätze haben weder Titel noch Abstract und sind als EMPTY_RECORD markiert."
+    events_not_written: "Warnung: Die PRISMA-Ereignisdatei (data/events.jsonl) konnte nicht geschrieben werden. Die Datensätze sind gespeichert; führen Sie später 'crapai check' erneut aus, um das Ereignis nachzutragen."
   check:
     status:
       ok: "Preflight: in Ordnung. Das Projekt ist bereit für das Screening."
@@ -200,6 +209,7 @@ cli:
       low_abstract_ratio: "Bei einigen Quellen haben weniger als 60 % der Datensätze einen Abstract. Datensätze ohne Abstract werden nicht bewertet, bleiben aber sichtbar."
       suspect_abstracts: "{suspect} Abstract(s) wirken verstümmelt oder zusammengeklebt. Bitte prüfen Sie sie."
       retracted_included: "{retracted} zurückgezogene Publikation(en) bleiben im Lauf. Mit prefilters.exclude_retracted schliessen Sie sie aus."
+      events_not_written: "Die PRISMA-Ereignisdatei (data/events.jsonl) konnte nicht geschrieben werden, die Flusszahlen haben darum eine Lücke. Die Datensätze sind gespeichert; führen Sie die Prüfung erneut aus, sobald die Datei frei ist."
       config_invalid: "Die project.yaml braucht Aufmerksamkeit: {problem}"
     updated: "Duplikate und Gültigkeit wurden soeben neu berechnet."
     read_only: "Nur gelesen: Duplikate und Gültigkeit wurden nicht neu berechnet."

@@ -33,21 +33,21 @@ logger = logging.getLogger(__name__)
 
 # Canonical field sets per framework
 _DEFAULT_FRAMEWORK_FIELDS: Dict[str, List[str]] = {
-    "PICOS":  ["Population", "Intervention", "Comparison", "Outcome", "Study Design"],
+    "PICOS": ["Population", "Intervention", "Comparison", "Outcome", "Study Design"],
     "SPIDER": ["Sample", "Phenomenon of Interest", "Design", "Evaluation", "Research Type"],
-    "PECO":   ["Population", "Exposure", "Comparison", "Outcome"],
-    "PIRD":   ["Population", "Index Test", "Reference Standard", "Diagnosis"],
+    "PECO": ["Population", "Exposure", "Comparison", "Outcome"],
+    "PIRD": ["Population", "Index Test", "Reference Standard", "Diagnosis"],
     "CUSTOM": [],  # CUSTOM is dynamic from user-provided `custom_fields`
 }
 
 # Default prompt labels for to_prompt_string()
 _DEFAULT_PROMPT_TEXTS: Dict[str, str] = {
-    "header":           "Screening Criteria",
-    "framework_label":  "Framework",
+    "header": "Screening Criteria",
+    "framework_label": "Framework",
     "inclusion_header": "Inclusion",
     "exclusion_header": "Exclusion",
-    "field_separator":  "",   # set to '---' in YAML if you want visual separators
-    "empty_value":      "-",  # shown when a field is empty
+    "field_separator": "",  # set to '---' in YAML if you want visual separators
+    "empty_value": "-",  # shown when a field is empty
 }
 
 
@@ -55,6 +55,7 @@ _DEFAULT_PROMPT_TEXTS: Dict[str, str] = {
 # Minimal i18n access (optional)
 # We try to import your project-level i18n loader; if not available, we fall back.
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def _deep_get(d: Dict[str, Any], dotted: str) -> Any:
     """Return nested value by dot path, or None if missing."""
@@ -76,6 +77,7 @@ def _load_texts(lang: str = "en", base_dir: Optional[str] = None) -> Dict[str, A
     try:
         # Lazy import so this file stays reusable in other contexts (tests, CLI)
         from crapai.i18n import I18n  # type: ignore
+
         i18n = I18n(base_dir=base_dir)
         return i18n.load(lang)
     except Exception as e:
@@ -84,20 +86,20 @@ def _load_texts(lang: str = "en", base_dir: Optional[str] = None) -> Dict[str, A
         return {
             "screening": {
                 "framework_fields": {
-                    "PICOS":  _DEFAULT_FRAMEWORK_FIELDS["PICOS"],
+                    "PICOS": _DEFAULT_FRAMEWORK_FIELDS["PICOS"],
                     "SPIDER": _DEFAULT_FRAMEWORK_FIELDS["SPIDER"],
-                    "PECO":   _DEFAULT_FRAMEWORK_FIELDS["PECO"],
-                    "PIRD":   _DEFAULT_FRAMEWORK_FIELDS["PIRD"],
+                    "PECO": _DEFAULT_FRAMEWORK_FIELDS["PECO"],
+                    "PIRD": _DEFAULT_FRAMEWORK_FIELDS["PIRD"],
                     # CUSTOM omitted intentionally (dynamic)
                 }
             },
-            "criteria": {
-                "prompt": dict(_DEFAULT_PROMPT_TEXTS)
-            }
+            "criteria": {"prompt": dict(_DEFAULT_PROMPT_TEXTS)},
         }
 
 
-def _texts_get_list(texts: Dict[str, Any], path: str, default: Optional[List[str]] = None) -> List[str]:
+def _texts_get_list(
+    texts: Dict[str, Any], path: str, default: Optional[List[str]] = None
+) -> List[str]:
     val = _deep_get(texts, path)
     if isinstance(val, list):
         return [str(x) for x in val]
@@ -114,6 +116,7 @@ def _texts_get_str(texts: Dict[str, Any], path: str, default: Optional[str] = No
 # ──────────────────────────────────────────────────────────────────────────────
 # Core model
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class CriteriaTemplate:
     """
@@ -152,30 +155,20 @@ class CriteriaTemplate:
             "Intervention": "",
             "Comparison": "",
             "Outcome": "",
-            "Study Design": ""
+            "Study Design": "",
         },
         "SPIDER": {
             "Sample": "",
             "Phenomenon of Interest": "",
             "Design": "",
             "Evaluation": "",
-            "Research Type": ""
+            "Research Type": "",
         },
-        "PECO": {
-            "Population": "",
-            "Exposure": "",
-            "Comparison": "",
-            "Outcome": ""
-        },
-        "PIRD": {
-            "Population": "",
-            "Index Test": "",
-            "Reference Standard": "",
-            "Diagnosis": ""
-        },
+        "PECO": {"Population": "", "Exposure": "", "Comparison": "", "Outcome": ""},
+        "PIRD": {"Population": "", "Index Test": "", "Reference Standard": "", "Diagnosis": ""},
         "CUSTOM": {
             # dynamic at runtime
-        }
+        },
     }
 
     def __init__(
@@ -195,7 +188,9 @@ class CriteriaTemplate:
         self.selected_elements: List[str] = list(selected_elements or [])
 
         # Load i18n texts (YAML overlays) or use provided dict, with safe fallback
-        self._texts: Dict[str, Any] = texts if texts is not None else _load_texts(lang=lang, base_dir=texts_base_dir)
+        self._texts: Dict[str, Any] = (
+            texts if texts is not None else _load_texts(lang=lang, base_dir=texts_base_dir)
+        )
 
         # Resolve field names for this framework
         if self.template_type == "CUSTOM":
@@ -210,7 +205,8 @@ class CriteriaTemplate:
         # If unknown framework (or empty), gracefully degrade to CUSTOM fields
         if not fields and self.template_type != "CUSTOM":
             logger.warning(
-                "No fields resolved for framework '%s'. Falling back to CUSTOM fields.", self.template_type
+                "No fields resolved for framework '%s'. Falling back to CUSTOM fields.",
+                self.template_type,
             )
             fields = self.custom_fields
 
@@ -309,12 +305,33 @@ class CriteriaTemplate:
             - criteria.prompt.field_separator
             - criteria.prompt.empty_value
         """
-        header          = _texts_get_str(self._texts, "criteria.prompt.header",           _DEFAULT_PROMPT_TEXTS["header"])
-        framework_label = _texts_get_str(self._texts, "criteria.prompt.framework_label",  _DEFAULT_PROMPT_TEXTS["framework_label"])
-        inc_header      = _texts_get_str(self._texts, "criteria.prompt.inclusion_header", _DEFAULT_PROMPT_TEXTS["inclusion_header"])
-        exc_header      = _texts_get_str(self._texts, "criteria.prompt.exclusion_header", _DEFAULT_PROMPT_TEXTS["exclusion_header"])
-        field_sep       = _texts_get_str(self._texts, "criteria.prompt.field_separator",  _DEFAULT_PROMPT_TEXTS["field_separator"]) or ""
-        empty_value     = _texts_get_str(self._texts, "criteria.prompt.empty_value",      _DEFAULT_PROMPT_TEXTS["empty_value"])
+        header = _texts_get_str(
+            self._texts, "criteria.prompt.header", _DEFAULT_PROMPT_TEXTS["header"]
+        )
+        framework_label = _texts_get_str(
+            self._texts, "criteria.prompt.framework_label", _DEFAULT_PROMPT_TEXTS["framework_label"]
+        )
+        inc_header = _texts_get_str(
+            self._texts,
+            "criteria.prompt.inclusion_header",
+            _DEFAULT_PROMPT_TEXTS["inclusion_header"],
+        )
+        exc_header = _texts_get_str(
+            self._texts,
+            "criteria.prompt.exclusion_header",
+            _DEFAULT_PROMPT_TEXTS["exclusion_header"],
+        )
+        field_sep = (
+            _texts_get_str(
+                self._texts,
+                "criteria.prompt.field_separator",
+                _DEFAULT_PROMPT_TEXTS["field_separator"],
+            )
+            or ""
+        )
+        empty_value = _texts_get_str(
+            self._texts, "criteria.prompt.empty_value", _DEFAULT_PROMPT_TEXTS["empty_value"]
+        )
 
         lines: List[str] = []
         if header:

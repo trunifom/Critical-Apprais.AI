@@ -95,8 +95,18 @@ def test_cochrane_glued_words_are_a_known_limit() -> None:
 
 @pytest.mark.parametrize(
     "title",
-    ["Front-matter", "FRONT MATTER", "Index", "Table of Contents", "Table of contents.", "Cover",
-     "Back Matter", "Author Index", "Title page", "Contents"],
+    [
+        "Front-matter",
+        "FRONT MATTER",
+        "Index",
+        "Table of Contents",
+        "Table of contents.",
+        "Cover",
+        "Back Matter",
+        "Author Index",
+        "Title page",
+        "Contents",
+    ],
 )
 def test_front_and_back_matter_titles(title: str) -> None:
     assert is_not_screenable(title)
@@ -104,8 +114,14 @@ def test_front_and_back_matter_titles(title: str) -> None:
 
 @pytest.mark.parametrize(
     "title",
-    ["Index of suspicion in paediatric sepsis", "A cover letter study", "Contents of tea: an assay",
-     "Front matter of the brain", "", "Effects of exercise"],
+    [
+        "Index of suspicion in paediatric sepsis",
+        "A cover letter study",
+        "Contents of tea: an assay",
+        "Front matter of the brain",
+        "",
+        "Effects of exercise",
+    ],
 )
 def test_real_study_titles_are_not_mistaken_for_front_matter(title: str) -> None:
     assert not is_not_screenable(title)
@@ -228,9 +244,12 @@ def test_zotero_ris_about_550_records_lack_an_abstract() -> None:
     marked = result.by_reason
     assert without == 550
     # Every record without an abstract has exactly one reason: empty, front matter or no abstract.
-    assert marked.get("NO_ABSTRACT", 0) + marked.get("NOT_SCREENABLE", 0) + marked.get(
-        "EMPTY_RECORD", 0
-    ) == without
+    assert (
+        marked.get("NO_ABSTRACT", 0)
+        + marked.get("NOT_SCREENABLE", 0)
+        + marked.get("EMPTY_RECORD", 0)
+        == without
+    )
     assert result.valid_for_model == expected["abstracts"]
     assert 540 <= marked["NO_ABSTRACT"] <= 550  # "about 550" of the card
     assert len(result.records) == 706

@@ -23,20 +23,33 @@ LEGACY_STATE_DIR_NAME = ".sara"  # working name before ADR 0017; only used to gi
 SYNC_FOLDER_MARKERS = ("onedrive", "dropbox", "sharepoint")
 
 
+def cloud_sync_marker(path: Path) -> str | None:
+    """Name of the sync service if ``path`` lies in a synchronised folder, else None.
+
+    A folder counts when one of its parts *is* the service folder (``Dropbox``, ``OneDrive``,
+    ``OneDrive - Company``, ``SharePoint``), not when a name merely contains the word: a user called
+    ``dropbox-fan`` gets no false alarm.
+    """
+    for part in (p.lower() for p in path.resolve().parts):
+        for marker in SYNC_FOLDER_MARKERS:
+            if part == marker or part.startswith(f"{marker} "):
+                return marker
+    return None
+
+
 def cloud_sync_hint(path: Path) -> str | None:
     """Return a warning text if ``path`` lies in a synchronised folder, else None.
 
     Sync clients touch files while they are written and create conflict copies, so active runs
     should live in a non-synchronised folder (plan chapter 28.9).
     """
-    lowered = [part.lower() for part in path.resolve().parts]
-    for marker in SYNC_FOLDER_MARKERS:
-        if any(marker in part for part in lowered):
-            return (
-                f"The project folder is inside a synchronised location ({marker}). "
-                "Run screening in a non-synchronised folder and archive it afterwards."
-            )
-    return None
+    marker = cloud_sync_marker(path)
+    if marker is None:
+        return None
+    return (
+        f"The project folder is inside a synchronised location ({marker}). "
+        "Run screening in a non-synchronised folder and archive it afterwards."
+    )
 
 
 @dataclass(frozen=True)

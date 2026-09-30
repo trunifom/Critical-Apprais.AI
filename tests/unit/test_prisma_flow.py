@@ -148,8 +148,10 @@ def test_prefilter_snapshot_latest_wins() -> None:
 def test_screening_phases_and_final_included() -> None:
     events = scenario({}, 0, {"A": 100}) + [
         ev.screening_done(ScreeningPhase.ABSTRACT, 20, 70),
-        ev.screening_done(ScreeningPhase.FULLTEXT, 8, 12, reasons={"wrong population": 7, "x": 5}),
-        ev.screening_done(ScreeningPhase.FULLTEXT, 0, 1, reasons={"x": 1}),
+        ev.screening_done(
+            ScreeningPhase.FULLTEXT, 8, 12, reasons={"wrong population": 7, "x": 5}, run_id="r1"
+        ),
+        ev.screening_done(ScreeningPhase.FULLTEXT, 0, 1, reasons={"x": 1}, run_id="r1"),
     ]
     flow = build_flow(events, ALL)
     assert flow.records_screened_title_abstract == 90 and flow.records_excluded_title_abstract == 70
@@ -309,3 +311,78 @@ def test_equal_to_the_predecessor_for_random_projects(
         (data.draw(st.integers(0, 20)), data.draw(st.integers(0, 20))),
     )
     assert same_numbers(our_flow(facts, mode), oracle_flow(facts, mode))
+
+
+# --- stale snapshots, repeated runs, independent arithmetic (review fixes) ----------------------
+
+
+def test_records_imported_after_the_last_dedup_are_not_reported_as_duplicates() -> None:
+    events = scenario({}, 10, {"A": 100})  # 100 records, 10 duplicates
+    events.append(ev.source_imported("B", "b.ris", "ris", 50))  # dedup has not seen these
+    flow = build_flow(events, ALL)
+    assert flow.duplicates_removed == 10 and flow.records_after_deduplication == 140
+    assert flow.records_to_screen == 140
+    assert flow.stale_steps == ("dedup",)
+    assert {w.code for w in validate_flow(flow)} >= {"STALE_DEDUP"}
+
+
+def test_a_dedup_after_the_prefilter_makes_the_prefilter_stale_and_avoids_double_counting() -> None:
+    events = scenario({}, 0, {"A": 100}) + [ev.prefilter_applied(100, {"PREFILTER_YEAR": 10})]
+    assert build_flow(events).records_removed_by_prefilter == 10
+    events += scenario({}, 4, {"A": 100})[1:]  # dedup runs again: 4 of those become duplicates
+    flow = build_flow(events, ALL)
+    assert flow.stale_steps == ("prefilter",)
+    assert flow.records_removed_by_prefilter == 0 and flow.records_to_screen == 96
+    assert "STALE_PREFILTER" in {w.code for w in validate_flow(flow)}
+
+
+def test_a_dedup_after_the_validity_check_makes_it_stale() -> None:
+    events = scenario({}, 0, {"A": 10}) + [ev.validity_checked(10, {"RETRACTED": 2}, 3)]
+    assert build_flow(events).prefilter_reasons == {"RETRACTED": 2}
+    events += scenario({}, 1, {"A": 10})[1:]
+    flow = build_flow(events)
+    assert flow.prefilter_reasons == {} and flow.records_with_missing_abstracts == 0
+    assert "validity" in flow.stale_steps
+
+
+def test_a_repeated_screening_run_replaces_the_earlier_one() -> None:
+    events = scenario({}, 0, {"A": 300}) + [
+        ev.screening_done(ScreeningPhase.ABSTRACT, 30, 170, run_id="run-1"),
+        ev.screening_done(ScreeningPhase.ABSTRACT, 40, 160, run_id="run-2"),
+    ]
+    flow = build_flow(events)
+    assert flow.records_screened_title_abstract == 200 and flow.studies_included_in_review == 40
+    assert validate_flow(flow) == []
+
+
+def test_events_of_one_run_add_up() -> None:
+    events = scenario({}, 0, {"A": 300}) + [
+        ev.screening_done(ScreeningPhase.ABSTRACT, 10, 90, run_id="r"),
+        ev.screening_done(ScreeningPhase.ABSTRACT, 5, 95, run_id="r"),
+    ]
+    assert build_flow(events).records_screened_title_abstract == 200
+
+
+def test_missing_abstracts_come_from_the_validity_event_not_from_the_reason() -> None:
+    event = ev.validity_checked(300, {"DUPLICATE": 20}, without_abstract=300)
+    assert build_flow([event]).records_with_missing_abstracts == 300
+    assert ev.validity_checked(10, {"NO_ABSTRACT": 4}).payload["missing_count"] == 4
+
+
+def test_arithmetic_checks_use_independent_numbers() -> None:
+    events = scenario({"A": 2}, 3, {"A": 20})
+    merge = next(e for e in events if e.event_type == "MERGE_ALL_SOURCES")
+    merge.payload["merged_records_before_global_dedup"] = 17  # should be 20 - 2 = 18
+    assert "ARITHMETIC_MISMATCH" in {w.code for w in validate_flow(build_flow(events))}
+    consistent = scenario({"A": 2}, 3, {"A": 20})
+    assert validate_flow(build_flow(consistent)) == []
+
+
+@pytest.mark.parametrize(
+    "value,expected", [(5, 5), (-3, 0), (4.9, 4), ("12", 12), (" 7 ", 7), ("x", 0), (None, 0),
+                       (True, 0), (float("nan"), 0), (float("inf"), 0)],
+)  # fmt: skip
+def test_payload_numbers_are_read_defensively(value: object, expected: int) -> None:
+    from crapai.prisma.flow import _int
+
+    assert _int(value) == expected
