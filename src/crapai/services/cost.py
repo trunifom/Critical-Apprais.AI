@@ -19,6 +19,7 @@ from crapai.cost.pricing import CsvPriceSource, Price
 from crapai.cost.tokenizers import tokenizer_for
 from crapai.io.records_store import read_records
 from crapai.project.workspace import Workspace
+from crapai.prompts.builder import builder_for
 
 logger = logging.getLogger(__name__)
 
@@ -82,9 +83,14 @@ def find_price(workspace: Workspace, provider: str, model: str) -> tuple[Price |
 def estimate_project(workspace: Workspace, *, instructions: str = "") -> ProjectEstimate:
     """Estimate tokens and cost of screening all records that would go to the model.
 
+    The shared part is the **real prompt** of the run: the system prompt and the stable prefix
+    (project, criteria, instructions) of the chosen prompt variant, exactly as
+    :class:`~crapai.prompts.builder.PromptBuilder` will send them. ``instructions`` is used only
+    for the legacy ``shared_text_of`` helper and is ignored here.
+
     Args:
         workspace: The project.
-        instructions: Instruction text of the chosen prompt variant, if known.
+        instructions: Kept for compatibility; the variant supplies the instructions.
 
     Raises:
         ConfigError: E201/E203 if ``project.yaml`` or ``pricing.csv`` is unusable.
@@ -94,11 +100,13 @@ def estimate_project(workspace: Workspace, *, instructions: str = "") -> Project
     config = load_project_config(workspace.project_yaml)
     records = read_records(workspace.records_csv)
     items = [(r.title, r.abstract) for r in records if not r.exclusion_reason]
+    builder = builder_for(config, workspace.prompts_dir)
+    shared_text = builder.system + "\n\n" + builder.prefix
     provider, model = config.llm.provider, config.llm.model
     price, found = find_price(workspace, provider, model)
     estimate = estimate_run(
         items,
-        shared_text_of(config, instructions),
+        shared_text,
         tokenizer_for(provider, model),
         price=price,
         config=EstimatorConfig(

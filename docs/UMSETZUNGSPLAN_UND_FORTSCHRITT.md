@@ -136,13 +136,25 @@ neue Module in die Architektur, Änderungen ins `CHANGELOG.md`, Stand ins `READM
 
 ### M3 (Karten in `tasks/`)
 
-M3: T-M3-01 Provider-Protokoll + MockProvider, -02 OpenAI-kompatibel (SwissGPT zuerst),
--03 Retry, -04 Rate-Limiter, -05 Prompt-Builder, -06 Antwortschema/Parser, -07 Engine, -08 Checkpoint/Resume, -09 CLI `screen`,
--10 Akzeptanztests. Pro Karte hier Zeilen ergänzen, sobald sie beginnt.
+| Status | Karte | Inhalt | h | Datum / Uhrzeit | Commit |
+|---|---|---|---|---|---|
+| [x] | T-M3-01 | `llm/base.py`, `llm/mock_provider.py`: Protokoll, Fehlerklassen mit Wiederholungsregel, Szenarien S1-S15 | 8 | 2026-10-01 | `50d26313` |
+| [x] | T-M3-02 | `llm/openai_provider.py`: OpenAI und OpenAI-kompatibel (SwissGPT), Fehlerabbildung, Test mit gefälschtem Transport | 8 | 2026-10-01 | `50d26313` |
+| [x] | T-M3-03 | `llm/resilience.py`: `RetryPolicy`, `call_with_retry`, `CircuitBreaker` | 6 | 2026-10-01 | `50d26313` |
+| [x] | T-M3-04 | `llm/resilience.py`: `RateLimiter` (RPM/TPM), `AdaptiveConcurrency` | 8 | 2026-10-01 | `50d26313` |
+| [x] | T-M3-05 | `prompts/builder.py`, Varianten, Prompt-Hash; Kostenschätzung zählt den echten Prompt | 6 | 2026-10-01 | `50d26313`, Folgecommit |
+| [x] | T-M3-06 | `screening/answer.py`: Schema, Gegenprobe, Zitate, altes Format | 8 | 2026-10-01 | `50d26313` |
+| [x] | T-M3-07 | `screening/engine.py`: Päckchen, Arbeiter, einziger Schreiber, Kostenlimit, Steuerdatei | 12 | 2026-10-01 | `50d26313` |
+| [x] | T-M3-08 | `screening/store.py`, `services/screening.py`: Manifest, Fortsetzen, Fingerabdruck (E204), Sperre; kumulative Zähler | 8 | 2026-10-01 | `50d26313`, `7e625209` |
+| [x] | T-M3-09 | `crapai screen/runs/pause/stop`, Fortschrittsbalken; Seite „Lauf“ der Oberfläche | 4 | 2026-10-01 | `20d2e8fd`, `7e625209` |
+| [x] | T-M3-10 | `tests/integration/test_acceptance.py`: AT2-AT4; Live-Test ohne Schlüssel übersprungen | 4 | 2026-10-01 | `50d26313` |
+
+**Live-Test mit echtem Schlüssel: offen.** Der Schlüssel (SwissGPT und/oder OpenAI) wird von der Projektleitung später geliefert; er wird nie in Dateien, Protokollen oder im Chat abgelegt. Ablauf: Umgebungsvariable setzen, `CRAPAI_LIVE_KEY_ENV` auf deren Namen setzen, `pytest -m live`.
+
 
 ## 5. Nächster Schritt (bitte aktuell halten)
 
-**Meilenstein A ist erreicht und M1 ist vollständig** (T-M1-09 bleibt zurückgestellt). M2: `T-M2-01` (Duplikate), `T-M2-03` (Gültigkeit) , `T-M2-04` (Preflight, `crapai check`) und `T-M2-05` (Kostenschätzung), `T-M2-07` (PRISMA-Ereignisse) und `T-M2-08` (Vorfilter) und `T-M2-06` (Dauer, Kostenausgabe) sind fertig; **Meilenstein M2 ist vollständig bis auf das zurückgestellte `T-M2-02`**. **Nächster Schritt: Meilenstein M3** (Anbieter-Schnittstelle, Prompt-Bau, Antwortschema und Parser, Screening-Lauf), siehe `tasks/README.md`. **Zurückgestellt, nicht vergessen:** `T-M2-02` unscharfe Duplikatsuche (braucht `rapidfuzz`). Pflege der Dokumentation: Benutzerhandbuch, Entwicklerdokumentation, Architektur, README, CHANGELOG nach jeder Aufgabe mitführen.
+**Meilenstein A ist erreicht und M1 ist vollständig** (T-M1-09 bleibt zurückgestellt). M2: `T-M2-01` (Duplikate), `T-M2-03` (Gültigkeit) , `T-M2-04` (Preflight, `crapai check`) und `T-M2-05` (Kostenschätzung), `T-M2-07` (PRISMA-Ereignisse) und `T-M2-08` (Vorfilter) und `T-M2-06` (Dauer, Kostenausgabe) sind fertig; **Meilenstein M2 ist vollständig bis auf das zurückgestellte `T-M2-02`**. **Meilenstein M3 (Screening-Kern) ist umgesetzt** (Anbieter, Wiederholung, Limiter, Prompt, Antwortprüfung, Engine mit Päckchen und Fortsetzen, `crapai screen`, Seite „Lauf“, Akzeptanztests AT2-AT4, ADR 0022). **Nächste Schritte:** Live-Test mit echtem Schlüssel (Schlüssel folgt von der Projektleitung), danach M4 (Ergebnistabelle, Test-Retest, Vergleich mit Menschen). **Zurückgestellt, nicht vergessen:** `T-M2-02` unscharfe Duplikatsuche (braucht `rapidfuzz`). Pflege der Dokumentation: Benutzerhandbuch, Entwicklerdokumentation, Architektur, README, CHANGELOG nach jeder Aufgabe mitführen.
 
 ## 6. Abweichungen und offene Punkte
 
@@ -181,4 +193,4 @@ Offen aus der Prüfung (bewusst nicht geändert, siehe ADR 0020): ungenutzte Auf
 | [x] | `logging_setup.py` (Sitzungskennung, Schutz vor Schlüsseln, `--verbose`), `ErrorReport` | `bfccaa5` |
 | [x] | `scripts/qa.py`, schnellere und von der Maschine unabhängige Tests, CI mit Extra `ui` | `bfccaa5` |
 
-Nicht Teil dieser Version (bewusst): die Seite „Lauf“ (Screening mit Sprachmodell, Meilenstein M3), Kriterien-Editor nach Rahmenwerk (bearbeitet wird vorerst `project.yaml` direkt), PRISMA-Grafik (PNG/SVG, Export M8).
+Nicht Teil dieser Version (bewusst): Kriterien-Editor nach Rahmenwerk (bearbeitet wird vorerst `project.yaml` direkt), PRISMA-Grafik (PNG/SVG, Export M8).

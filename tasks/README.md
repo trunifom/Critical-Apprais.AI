@@ -27,15 +27,15 @@ One file per task. Pick the first task whose dependencies are done. Update the `
 | [T-M2-06](T-M2-06.md) | M2 | Duration estimate, cost confirmation, `crapai check` | 4 | T-M2-04, T-M2-05 | done |
 | [T-M2-07](T-M2-07.md) | M2 | PRISMA events for import and dedup (events.jsonl) | 5 | T-M2-01 | done |
 | [T-M2-08](T-M2-08.md) | M2 | Deterministic pre-filters (language, year, publication type, retracted) | 5 | T-M1-10, T-M2-03 | done |
-| [T-M3-01](T-M3-01.md) | M3 | LLMProvider protocol and MockProvider with scenarios S1-S15 | 8 | T-M1-01 | done (review) |
-| [T-M3-02](T-M3-02.md) | M3 | OpenAI-compatible provider (SwissGPT first) and OpenAI provider (chat, usage, error mapping) | 8 | T-M3-01 | todo |
-| [T-M3-03](T-M3-03.md) | M3 | Retry/backoff, error classes, circuit breaker | 6 | T-M3-01 | todo |
-| [T-M3-04](T-M3-04.md) | M3 | Rate limiter (RPM/TPM) and adaptive concurrency | 8 | T-M3-01 | todo |
-| [T-M3-05](T-M3-05.md) | M3 | Prompt builder, YAML prompt variants, prompt hash | 6 | T-M1-02 | todo |
-| [T-M3-06](T-M3-06.md) | M3 | Answer schema, parser, consistency rule, quote check, legacy parser | 8 | T-M3-05 | todo |
-| [T-M3-07](T-M3-07.md) | M3 | Screening engine (producer, workers, single writer), cost limit, control file | 12 | T-M3-02, T-M3-03, T-M3-04, T-M3-06 | todo |
-| [T-M3-08](T-M3-08.md) | M3 | Checkpoint, resume, manifest, run lock | 8 | T-M3-07, T-M1-03 | todo |
-| [T-M3-09](T-M3-09.md) | M3 | CLI: screen (--sample, --repeats, --resume, --yes), status | 4 | T-M3-08 | todo |
-| [T-M3-10](T-M3-10.md) | M3 | Acceptance tests AT2-AT4 and live smoke test | 4 | T-M3-09 | todo |
+| [T-M3-01](T-M3-01.md) | M3 | LLMProvider protocol and MockProvider with scenarios S1-S15 | 8 | T-M1-01 | done |
+| [T-M3-02](T-M3-02.md) | M3 | OpenAI-compatible provider (SwissGPT first) and OpenAI provider (chat, usage, error mapping) | 8 | T-M3-01 | done |
+| [T-M3-03](T-M3-03.md) | M3 | Retry/backoff, error classes, circuit breaker | 6 | T-M3-01 | done |
+| [T-M3-04](T-M3-04.md) | M3 | Rate limiter (RPM/TPM) and adaptive concurrency | 8 | T-M3-01 | done |
+| [T-M3-05](T-M3-05.md) | M3 | Prompt builder, YAML prompt variants, prompt hash | 6 | T-M1-02 | done |
+| [T-M3-06](T-M3-06.md) | M3 | Answer schema, parser, consistency rule, quote check, legacy parser | 8 | T-M3-05 | done |
+| [T-M3-07](T-M3-07.md) | M3 | Screening engine (producer, workers, single writer), cost limit, control file | 12 | T-M3-02, T-M3-03, T-M3-04, T-M3-06 | done |
+| [T-M3-08](T-M3-08.md) | M3 | Checkpoint, resume, manifest, run lock | 8 | T-M3-07, T-M1-03 | done |
+| [T-M3-09](T-M3-09.md) | M3 | CLI: screen (--sample, --repeats, --resume, --yes), status | 4 | T-M3-08 | done |
+| [T-M3-10](T-M3-10.md) | M3 | Acceptance tests AT2-AT4 and live smoke test | 4 | T-M3-09 | done |
 
 Total estimate: 170 h without deferred tasks (33 tasks). Later milestones (M4-M8) follow chapter 21 of the plan and get cards when M3 is done.

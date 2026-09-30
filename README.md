@@ -22,12 +22,13 @@ bereitet sie auf und wird sie zusammen mit Ihren Ein- und Ausschlusskriterien ei
 | Vorprüfung, Kosten- und Dauerschätzung (`crapai check`) | **umgesetzt** |
 | Deterministische Vorfilter (Sprache, Jahr, Publikationstyp) | **umgesetzt** |
 | Export (`crapai export`: CSV, XLSX, RIS, PRISMA-Fluss als JSON) und `crapai unlock` | **umgesetzt** |
-| Lokale grafische Oberfläche (`crapai ui`, Streamlit) | **umgesetzt** (ohne Screening-Lauf) |
+| Lokale grafische Oberfläche (`crapai ui`, Streamlit) | **umgesetzt** (mit Seite „Lauf“) |
 | Protokoll-System (`--verbose`, Sitzungskennung, Schutz vor Schlüsseln) und `scripts/qa.py` | **umgesetzt** |
 | Gesamtprüfung des Codes (Fehlerbehandlung, Protokolle, Datenverlust), ADR 0020 | **umgesetzt** |
 | PRISMA-Ereignisse und Flusszahlen (`data/events.jsonl`) | **umgesetzt** (Export als Datei und Grafik folgt mit M8) |
 | Unscharfe Duplikatsuche (T-M2-02) | **zurückgestellt** (braucht `rapidfuzz`, Freigabe offen) |
-| Screening mit Sprachmodell, Wiederaufnahme, Ergebnisse, PRISMA (M3-M4) | in Planung |
+| Screening mit Sprachmodell (`crapai screen`): Päckchen, Prüfung, Fortschrittsbalken, Fortsetzen nach Abbruch (M3) | **umgesetzt** (getestet mit dem Mock-Anbieter; Live-Test mit Schlüssel folgt) |
+| Ergebnistabelle, PRISMA-Grafik (M4-M8) | in Planung |
 | Statistik (Test-Retest, Vergleich mit Menschen), Oberfläche (Streamlit) | in Planung |
 
 Meilenstein A („Import steht“) ist erreicht: Alle Beispieldateien in `tests/data/` lassen sich importieren und die Zahlen stimmen mit `tests/data/EXPECTED.json` überein.

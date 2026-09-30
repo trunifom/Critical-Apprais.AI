@@ -299,3 +299,38 @@ def test_a_provider_error_outside_the_run_is_not_swallowed(project: Workspace) -
         pass
     assert isinstance(ProviderError("x", code="E305"), ProviderError)
     assert RunState.FAILED.resumable
+
+
+# --- templates and the estimate ---------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "src/crapai/config/templates/demo.yaml",
+        "src/crapai/config/templates/blank.yaml",
+        "templates/project.example.yaml",
+    ],
+)
+def test_every_template_lists_all_run_settings(path: str) -> None:
+    from crapai.config.models import RunSettings
+
+    root = Path(__file__).resolve().parents[2]
+    text = (root / path).read_text(encoding="utf-8")
+    block = text.split("\nrun:\n", 1)[1].split("\n\n", 1)[0]
+    for name in RunSettings.model_fields:
+        assert f"  {name}:" in block, f"{name} missing in the run: block of {path}"
+
+
+def test_the_estimate_counts_the_real_prompt_of_the_run(project: Workspace) -> None:
+    from crapai.cost.tokenizers import tokenizer_for
+    from crapai.prompts.builder import builder_for
+    from crapai.services.cost import estimate_project
+
+    config = load_project_config(project.project_yaml)
+    builder = builder_for(config, project.prompts_dir)
+    estimate = estimate_project(project)
+    tokenizer = tokenizer_for(config.llm.provider, config.llm.model)
+    expected = tokenizer.count(builder.system + "\n\n" + builder.prefix)
+    assert estimate.estimate.shared_tokens == expected
+    assert expected > 400  # system prompt with schema + criteria + instructions, not a stub

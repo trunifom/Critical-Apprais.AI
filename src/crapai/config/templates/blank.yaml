@@ -49,6 +49,20 @@ limits:
   seconds_per_request: 3.0               # assumed time of one request (duration estimate only)
   cost_uncertainty: 0.15                 # half width of the cost band (0.15 = plus/minus 15 %)
 
+# How a screening run is organised and protected (crapai screen). All values are settings.
+run:
+  batch_size: 1000                 # records per batch ("package"); checked on disk after each batch
+  max_batch_error_rate: 0.5        # pause if more than this share of a batch failed (0 to 1)
+  max_consecutive_errors: 20       # pause after this many failed records in a row (0 = off)
+  retry_failed_on_resume: true     # try records that failed before again when a run is resumed
+  checkpoint_seconds: 2            # how often the progress file is saved during a batch
+  heartbeat_seconds: 10            # how often the project lock shows that the run is alive
+  stop_grace_seconds: 10           # after a stop request: time for running requests to finish
+  sample_seed: 42                  # seed of --sample (the same records are drawn again)
+  retry_base_delay_s: 1            # first wait before a repeat (doubles each time)
+  retry_max_delay_s: 60            # longest single wait
+  max_retry_time_s: 600            # longest total wait on a rate limit before a record fails
+
 # Thresholds of the abstract-quality hint (it never excludes a record).
 quality:
   long_word_letters: 40            # a longer single word looks glued together

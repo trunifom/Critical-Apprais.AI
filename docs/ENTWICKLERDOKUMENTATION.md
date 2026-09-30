@@ -232,6 +232,100 @@ Regeln: Texte stehen unter `ui.*` in `i18n/texts/{en,de}.yaml` (Paritätstest); 
 
 `python scripts/qa.py` führt die Gates in der Reihenfolge der CI aus (Lint, `ruff format --check`, `mypy`, alle Tests ohne `live`) und bricht beim ersten Fehler ab; `--fix` lässt `ruff` vorher reparieren und formatieren, `--fast` setzt einen festen Hypothesis-Startwert und stoppt beim ersten Fehler, `--ci` setzt die Umgebung von GitHub Actions. Die Tests sind von der Maschine unabhängig (`tests/conftest.py`): feste Terminalausgabe, ein eigenes Heimverzeichnis je Test (die echte Liste der letzten Projekte bleibt unberührt), kein `fsync` und keine Wartezeiten bei Wiederholungen (`atomic.FSYNC`, `atomic.DEFAULT_DELAY_S`).
 
+## 5e. Der Screening-Kern (M3)
+
+Überblick und Begründung: `docs/adr/0022-screening-kern-paeckchen-pruefung-fortsetzen.md`. Bedienung: Benutzerhandbuch, Abschnitt 6k.
+
+### Schichten und Datenfluss
+
+```
+cli.screen / ui.pages.run ──► services.screening.screen_project
+                                   │  plant (plan.json), prüft Fingerabdruck (E204), sperrt das Projekt
+                                   ▼
+                          screening.engine.ScreeningEngine.run
+                                   │  Päckchen → Arbeiter → _process (je Datensatz)
+                ┌──────────────────┼────────────────────────┐
+                ▼                  ▼                        ▼
+      prompts.builder      llm.resilience            screening.answer
+      (Prompt, Hash)   (Wiederholen, Limiter,      (Schema, Gegenprobe,
+                        Parallelität, Schalter)     Zitate, altes Format)
+                                   ▼
+                        llm.base.LLMProvider  ◄── llm.mock_provider / llm.openai_provider
+                                   │
+                                   ▼
+                      screening.store.RunStore  (manifest.json, screening.jsonl, control.json)
+```
+
+### Anbieter (`crapai.llm`)
+
+* `base.py`: `LLMRequest`, `LLMResponse`, `Capabilities`, Protokoll `LLMProvider` mit `async complete(request)`, `count_tokens(text, model)` und `capabilities(model)`. Ein Anbieter liefert eine Antwort oder wirft eine Unterklasse von `ProviderError`; er versteckt nie einen Fehler im Text. Die Fehlerklasse trägt die Wiederholungsregel: `RateLimited` (E302) warten, `TransientError` (E305) wiederholen, `AuthError` (E301) Lauf beenden, `QuotaExceeded` (E307) Lauf pausieren, `ContextTooLong` (E303) und `ContentRefused` (E306) nicht wiederholen.
+* `resilience.py`: `RetryPolicy` (Verdopplung ab `run.retry_base_delay_s`, Deckel `retry_max_delay_s`, Zufallsanteil 25 %, Gesamtwartezeit `max_retry_time_s`), `call_with_retry(call, policy, sleep=, clock=, rng=, on_retry=, on_rate_limit=)`, `RateLimiter(rpm, tpm, clock, sleep)` (gleitendes 60-s-Fenster; eine Anfrage, die allein über dem Limit liegt, wird allein durchgelassen; `correct()` ersetzt die Schätzung durch die echte Tokenzahl), `AdaptiveConcurrency` (halbiert bei 429, steigt nach `recover_after` Erfolgen um eins), `CircuitBreaker` (Fehler in Folge).
+* `openai_provider.py`: ein Anbieter für OpenAI und jeden OpenAI-kompatiblen Dienst (SwissGPT, Azure, vLLM, LM Studio, Ollama). `translate(exc)` bildet SDK-Fehler auf die eigenen Klassen ab (Tabelle im Modul-Docstring); `max_completion_tokens` bei `openai`, `max_tokens` sonst; `response_format` und `seed` werden nur gesendet, wenn das Projekt es verlangt. `http_client` ist für Tests einsetzbar. **Hinweis:** Das installierte SDK nutzt `httpx2`; Tests fälschen den Transport mit `httpx2.MockTransport`, nicht mit `respx` (das `httpx` abfängt).
+* `mock_provider.py`: `MockProvider(szenario, burst=, after=, delay_s=, retry_after_s=)`. Verhalten hängt nur vom Text des Datensatzes (CRC32) und der Zahl der Aufrufe ab, nie von Zeit oder Zufall. Entscheidungen: Text mit `EXCLUDE_ME` ergibt `EXCLUDE`, mit `UNSURE_ME` `UNCERTAIN`, sonst `INCLUDE`.
+
+| Szenario | Verhalten des Mocks | Erwartung an die Engine |
+|---|---|---|
+| S1 | alles gelingt | alle `ok` |
+| S2 | die ersten `burst` Aufrufe antworten 429 mit `retry_after` | drosseln, nichts verlieren |
+| S3 | jeder 7. Aufruf ist ein 5xx | wiederholen, alle `ok` |
+| S4 | ein Viertel der Datensätze läuft immer in die Frist | nach Wiederholungen `api_error` (E305) |
+| S5 | ein Viertel der Datensätze erhält kaputtes JSON | `parse_error`, nie ein Label |
+| S6 | die erste Antwort wird abgeschnitten (`length`), die Hälfte immer | mit höherem Limit wiederholen, sonst `truncated` |
+| S7 | Schlüssel abgelehnt nach `after` Aufrufen | sofort Halt, `failed` E301 |
+| S8 | langsame Antworten (`delay_s`), länger als die Frist scheitert | Frist greift, kein Hängen |
+| S9 | wie S1, aber langsam: Stopp mit Anfragen im Flug | nach dem Fortsetzen keine Doppelzeile |
+| S10 | ein Viertel erhält eine leere Antwort | `parse_error` |
+| S11 | ein Fünftel wird verweigert (Filter) | `api_error` E306, Lauf geht weiter |
+| S12 | ein Drittel widerspricht den eigenen Urteilen | `consistent = false`, Markierung `inconsistent` |
+| S13 | ein Drittel zitiert Text, der nicht im Datensatz steht | Markierung `quote_unverified` |
+| S14 | Guthaben aufgebraucht nach `after` Aufrufen | `paused` E307, Fortsetzen möglich |
+| S15 | Modellname wechselt nach 5 Aufrufen | Warnung im Manifest, Markierung `model_changed` |
+
+### Prompt und Antwort
+
+* `prompts/builder.py`: `PromptBuilder(config, variant)` baut `system` (Rolle, Schutz vor eingeschleusten Anweisungen, Antwortschema) und `user` (stabiler Anfang: Projekt, Ziele, Kriterien, Anweisungen; dann der Block `<record>…</record>`). `prefix_hash` ist der SHA-256 von System und stabilem Anfang und wandert in jede Ergebniszeile und den Fingerabdruck. Varianten sind YAML-Dateien (`src/crapai/prompts/variants/` im Paket, `prompts/` im Projekt überschreibt). `templates/prompts/*.yaml` und die Paketkopien müssen gleich bleiben (Wächtertest). `screening.output_format` und das Format der Variante müssen übereinstimmen (E203).
+* `screening/answer.py`: `parse_answer(text)` → `Answer` (Felder `inclusion`, `exclusion`, `ambiguities`, `reasoning`, `decision`; Entscheidung zuletzt; Fences und Geschwätz um das JSON werden toleriert; unbekannte Felder, falsche Werte oder fehlende Pflichtfelder sind `ParseError` E304 mit dem Grund). `derive_decision` ist die Gegenprobe (`not_met` oder `triggered` schliesst aus, `unclear` ergibt `UNCERTAIN`); `check_quotes` prüft, dass Zitate (Gross-/Kleinschreibung, Leerraum und Satzzeichen egal, `...` verbindet Teile) im Datensatz stehen; `parse_legacy` liest das alte Format (letzte Zeile `XXX` = ausschliessen, `YYY` = einschliessen).
+
+### Lauf
+
+* `screening/store.py`: `RunState`, `ResultRow` (Ergebniszeile, `extra="forbid"`), `Manifest`, `RunStore` (`create`, `save_manifest`, `append_result`, `read_results`, `read_results_since(offset)`, `last_results`, `write_control/read_control/clear_control`). `append_result` wandelt `OSError` in `StorageError` E403 (Platte voll) oder E401.
+* `screening/engine.py`: `ScreeningEngine(provider, builder, settings, store, manifest, price=, clock=, sleep=, rng=, progress=, control=, heartbeat=, already_ok=)`.
+  * `run(items)` teilt in Päckchen (`chunks`), startet `min(concurrency, len(batch))` Arbeiter je Päckchen und ruft danach `_verify_batch` und `_check_batch_rules`.
+  * `_process(item)` ist die Schleife je Datensatz: Kontextlänge prüfen (`too_long` ohne Aufruf), Limiter, `call_with_retry`, Antwort prüfen; bei `finish_reason == "length"` einmal mit doppeltem Limit, bei ungültiger Antwort bis `limits.max_parse_retries` Nachfragen. `AuthError` und `QuotaExceeded` werden als `RunAbort` nach oben gereicht, alles andere wird zu einer Ergebniszeile.
+  * `_commit(row)` ist der einzige Schreiber (`asyncio.Lock`), aktualisiert Zähler, Schutzschalter und Nebenläufigkeit und speichert das Manifest höchstens alle `run.checkpoint_seconds`.
+  * `_monitor()` prüft jede Sekunde `control()` und zeigt den Herzschlag der Sperre; ein verlorener Herzschlag ergibt `failed`.
+  * `_wait_for(workers)` gewährt nach einem Stopp `run.stop_grace_seconds`, danach werden Anfragen im Flug abgebrochen (für sie wurde nichts geschrieben; sie werden beim Fortsetzen wiederholt).
+  * Zähler, `Progress` und `RunSummary` sind kumulativ; `_base` hält die Ergebnisse früherer Sitzungen (einmal je Sitzung aus `screening.jsonl` gelesen), `session_done` die der Sitzung.
+  * In Protokoll und Fehlertexten stehen nur `study_uid` und Codes, nie Titel, Abstracts oder Antworten.
+* `services/screening.py`: `plan_items` (auswählbare Datensätze, `--sample` reproduzierbar mit `run.sample_seed`), `settings_from_config`, `fingerprint_parts/fingerprint`, `make_provider` (mock, openai, openai_compatible; `anthropic` → E203), `screen_project(workspace, RunOptions)` (Sperre, Plan, Fortsetzen, SIGINT: erstes Strg+C → `interrupted` nach Nachfrist, zweites → sofortiger Abbruch, PRISMA-Ereignis `SCREEN_TA` nur für abgeschlossene Läufe ohne Stichprobe), `list_runs`, `find_run`, `request_control`. Ein `SCREEN_TA`-Ereignis zählt `UNCERTAIN` als "conflicts".
+
+### Dateien eines Laufs (Datenvertrag)
+
+`runs/<lauf-id>/manifest.json` (Schema 1; Felder siehe `Manifest`), `screening.jsonl` (Felder siehe `ResultRow`), `plan.json` (`{"uids": [...]}`), `control.json` (`{"command": "pause"|"stop", "at": …}`). Die Lauf-ID hat die Form `YYYY-MM-DDTHH-MM_run-NNN`. Änderungen an diesen Namen oder Feldern sind Änderungen am Datenvertrag (CHANGELOG, Rückfrage).
+
+### Tests
+
+| Datei | Was sie abdeckt |
+|---|---|
+| `test_answer.py` | Schema, Fences, Gegenprobe, Zitate, altes Format |
+| `test_resilience.py` | Wartezeiten, `Retry-After`, Limiter (Fenster, Grosse Anfrage, Korrektur), Parallelität, Schutzschalter; alles ohne echte Wartezeit |
+| `test_mock_provider.py` | jedes Szenario für sich, Determinismus |
+| `test_prompt_builder.py` | Varianten, Hash ändert sich mit jeder Einflussgrösse, Formatkonflikt, kaputte Variantendateien, Kopien = Vorlagen |
+| `test_run_store.py` | Manifest, angehängte Zeilen, abgebrochene letzte Zeile, kaputte Zeile in der Mitte, Kontrolldatei, Plattenfehler |
+| `test_engine.py` | Szenarien S2-S15 durch die Engine, Pause/Stopp/Abbruch, Nachfrist, Schutzregeln, Kostenlimit, Plattenfehler, Sperrverlust, kumulative Zähler nach dem Fortsetzen, nichts vom Datensatz im Protokoll |
+| `test_screening_service.py` | Planung, Stichprobe, Fortsetzen (auch `completed` mit Fehlern), E204, Sperre, Anbieter-Fabrik, Vorlagen enthalten alle `run.*`, Schätzung zählt den echten Prompt |
+| `test_openai_provider.py` | Fehlerabbildung je Statuscode, Parameter je Anbieter, SDK ohne eigene Wiederholung, Schlüssel nie in Fehlern oder Protokoll |
+| `test_screen_command.py` | `screen`, `runs`, `pause`, `stop`, Rückgabecodes, Fortschrittsbalken |
+| `tests/ui/test_app.py` | Seite Lauf (gesperrt, Einverständnis, Start, Fehler, läuft, pausiert, beendet, veraltet) |
+| `tests/integration/test_acceptance.py` | AT2 (Serverfehler und Fortsetzen), AT3 (echter Prozess wird beendet, Fortsetzen, gleiches Ergebnis), AT4 (manipulierte Antwort); Live-Test nur mit Schlüssel (`CRAPAI_LIVE_KEY_ENV`, Marke `live`) |
+
+Async-Tests brauchen keinen Dekorator (`asyncio_mode = "auto"`). Gemeinsame Bausteine: `tests/unit/screening_helpers.py` (`make_config`, `make_items`, `fast_settings`, `make_engine`).
+
+### Neue Anbieter oder Szenarien hinzufügen
+
+1. Anbieter: Klasse mit `name`, `count_tokens`, `capabilities`, `async complete`; Fehler des Dienstes in die Klassen aus `crapai.errors` übersetzen (nie ein SDK-Fehler darf nach oben), SDK-Wiederholungen ausschalten, den Schlüssel nie in Texte schreiben. In `services.screening.make_provider` einhängen, `config.models.LlmSettings.provider` erweitern (Datenvertrag: Rückfrage), Test nach dem Muster von `test_openai_provider.py`. Ist der SDK-Import nötig, in `ADAPTER_MODULES` von `test_layering.py` eintragen.
+2. Szenario: in `MockProvider.complete` ergänzen, in `SCENARIOS` und in der Tabelle oben aufführen, Test in `test_engine.py`.
+
 ## 6. Einen Befehl hinzufügen
 
 Arbeit gehört in `services/`; `cli.py` parst nur Argumente, wählt die Sprache, druckt und übersetzt Fehler in Rückgabecodes (`0/1/2/4`). Texte in beide YAML-Dateien,
