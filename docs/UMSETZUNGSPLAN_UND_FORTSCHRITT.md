@@ -37,7 +37,7 @@ Commit-Schema: `type(scope): Zusammenfassung (Karten-ID)`; Ende der Nachricht: d
 | Punkt | Stand |
 |---|---|
 | Branch | Nur `main`. Die frühen Task-Branches wurden fast-forward nach `main` gemergt und gelöscht. Push: `git push origin main` durch den Projektleiter |
-| Tests | 675 passed (`python -m pytest -q`) |
+| Tests | 709 passed (`python -m pytest -q`) |
 | Lint / Typen | `ruff` sauber (ohne `reference/`), `mypy src` sauber |
 | CI | `.github/workflows/ci.yml` geschrieben (Linux/Windows/macOS x Python 3.11-3.13), noch nie auf GitHub gelaufen |
 | Extras in `pyproject.toml` | `import` (rispy, pybtex, openpyxl, pymupdf, pdfplumber, pylatexenc), `cli` (typer, rich), `dev`, u. a. Neue Abhängigkeiten ausserhalb der Extras: vorher fragen |
@@ -116,7 +116,7 @@ neue Module in die Architektur, Änderungen ins `CHANGELOG.md`, Stand ins `READM
 | [x] | T-M2-01 | `prisma/dedup.py`: Duplikate nicht löschend markieren (4 Strategien, normalisierte Titel, vollständigster Datensatz behalten) | 6 | 2026-09-30 17:10 | `edc0d2f` |
 | [x] | T-M2-01 | `services/dedup.py`, `crapai dedup`, Texte, Dokumentation (Folge-Commit; `edc0d2f` liess den Doku-Wächtertest kurz rot) | | 2026-09-30 17:16 | `97bf716` |
 | [x] | T-M2-03 | `prisma/validity.py`, `prisma/reasons.py`, `services/validity.py`: `NO_ABSTRACT`, `NOT_SCREENABLE`, `RETRACTED`, `abstract_quality`; ADR 0018. Ein Abnahmekriterium (Cochrane-Beispiel als `suspect_concat`) ist ohne Wörterbuch nicht erfüllbar | 3 | 2026-09-30 18:05 | `5034089` |
-| [ ] | T-M2-04 | Preflight-Dienst (Codes) und Ausgabe | 4 | | |
+| [x] | T-M2-04 | `services/preflight.py` (`check_file`, `check_project`, Codes `ProjectIssue`), `crapai check` (Rückgabecode 0/4/1, `--read-only`, `--json`); Fehlerbehebung: fehlende Datei in `detect_format` jetzt `E101` | 4 | 2026-09-30 18:28 | `8171cc2` |
 | [ ] | T-M2-05 | Tokenizer je Anbieter, Preisquelle, genaue Schätzung mit echten Texten | 6 | | |
 | [ ] | T-M2-07 | PRISMA-Ereignisse für Import und Dedup (`events.jsonl`) | 5 | | |
 | [ ] | T-M2-08 | deterministische Vorfilter (Sprache, Jahr, Publikationstyp, zurückgezogen) | 5 | | |
@@ -142,7 +142,7 @@ M3: T-M3-01 Provider-Protokoll + MockProvider, -02 OpenAI-kompatibel (SwissGPT z
 
 ## 5. Nächster Schritt (bitte aktuell halten)
 
-**Meilenstein A ist erreicht und M1 ist vollständig** (T-M1-09 bleibt zurückgestellt). M2: `T-M2-01` (Duplikate) und `T-M2-03` (Gültigkeit) sind fertig. **Nächster Schritt: `T-M2-04`** (Preflight-Dienst und `crapai check`, das Dedup und Gültigkeit in der Reihenfolge Import, Dedup, Gültigkeit aufruft), danach `T-M2-05` (Tokenizer, Kosten; schreibt `cost/estimator.py` neu und testet ihn), `T-M2-07` (PRISMA-Ereignisse), `T-M2-08` (Vorfilter), `T-M2-06`. **Zurückgestellt, nicht vergessen:** `T-M2-02` unscharfe Duplikatsuche (braucht `rapidfuzz`). Pflege der Dokumentation: Benutzerhandbuch, Entwicklerdokumentation, Architektur, README, CHANGELOG nach jeder Aufgabe mitführen.
+**Meilenstein A ist erreicht und M1 ist vollständig** (T-M1-09 bleibt zurückgestellt). M2: `T-M2-01` (Duplikate), `T-M2-03` (Gültigkeit) und `T-M2-04` (Preflight, `crapai check`) sind fertig. **Nächster Schritt: `T-M2-05`** (Tokenizer, Kosten; schreibt `cost/estimator.py` neu und testet ihn), `T-M2-07` (PRISMA-Ereignisse), `T-M2-08` (Vorfilter), `T-M2-06`. **Zurückgestellt, nicht vergessen:** `T-M2-02` unscharfe Duplikatsuche (braucht `rapidfuzz`). Pflege der Dokumentation: Benutzerhandbuch, Entwicklerdokumentation, Architektur, README, CHANGELOG nach jeder Aufgabe mitführen.
 
 ## 6. Abweichungen und offene Punkte
 
