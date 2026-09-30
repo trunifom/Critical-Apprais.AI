@@ -29,14 +29,14 @@ python -m pytest -q ; python -m ruff check . ; python -m mypy src
 ```
 
 Danach: erste offene Zeile in Abschnitt 4, deren Abhängigkeiten erledigt sind. Karte `tasks/<ID>.md` und die dort genannten
-Plankapitel lesen (`python scripts/plan_chapter.py <Nr>`), Branch `task/<ID>-<kurzname>`, Test zuerst, dann implementieren.
+Plankapitel lesen (`python scripts/plan_chapter.py <Nr>`), Test zuerst, dann implementieren. **Es wird direkt auf `main` gearbeitet, ohne Task-Branches** (Entscheid des Projektleiters vom 2026-09-30: er ist allein im Projekt).
 Commit-Schema: `type(scope): Zusammenfassung (Karten-ID)`; Ende der Nachricht: die Attributionszeile der Umgebung.
 
 ## 3. Stand der Umgebung
 
 | Punkt | Stand |
 |---|---|
-| Aktueller Branch-Stapel | `main` (Erst-Commit) <- `task/T-M0-02-ci` <- `task/T-M1-01-skeleton` (Arbeitsstand). Folgeaufgaben bauen auf dem letzten Task-Branch auf, bis der Projektleiter mergt |
+| Branch | Nur `main`. Die frühen Task-Branches wurden fast-forward nach `main` gemergt und gelöscht. Push: `git push origin main` durch den Projektleiter |
 | Tests | 61 passed (`python -m pytest -q`) |
 | Lint / Typen | `ruff` sauber (ohne `reference/`), `mypy src` sauber |
 | CI | `.github/workflows/ci.yml` geschrieben (Linux/Windows/macOS x Python 3.11-3.13), noch nie auf GitHub gelaufen |
