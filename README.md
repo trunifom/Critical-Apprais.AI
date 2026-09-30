@@ -15,7 +15,7 @@ Testdaten, Tests, Aufgabenkarten und Regeln für KI-Programmier-Agenten.
 ```powershell
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -e ".[dev,import]"
+python -m pip install -e ".[dev,import,cli]"
 python -m pytest -q          # alle Tests (Anzahl siehe docs/UMSETZUNGSPLAN_UND_FORTSCHRITT.md)
 python -m ruff check .       # Lint
 python -m mypy src              # Typen

@@ -39,7 +39,8 @@ def layer_violations(root: Path) -> list[str]:
     violations: list[str] = []
     for path in sorted(root.rglob("*.py")):
         relative = path.relative_to(root)
-        if relative.parts[0] in NON_CORE:
+        # A layer is a package (cli/) or a module (cli.py); compare without the suffix.
+        if relative.parts[0].removesuffix(".py") in NON_CORE:
             continue
         for module in sorted(imported_modules(path.read_text(encoding="utf-8"))):
             parts = module.split(".")

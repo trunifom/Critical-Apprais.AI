@@ -45,7 +45,8 @@ def read_template(name_or_path: str) -> str:
         resource = resources.files("saralocal.config").joinpath("templates", f"{name_or_path}.yaml")
         if not resource.is_file():
             raise ConfigError(
-                f"Unknown template '{name_or_path}'",
+                f"Unknown template '{name_or_path}' "
+                f"(available: {', '.join(available_templates())})",
                 code="E203",
                 hint="Available templates: " + ", ".join(available_templates()),
             )

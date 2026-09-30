@@ -14,6 +14,9 @@ dependencies = [
     "pyyaml>=6.0",
 ]
 
+[project.scripts]
+sara = "saralocal.cli:main"  # provisional command name (task T-M0-03); needs the "cli" extra
+
 [project.optional-dependencies]
 # Extras are introduced by the task cards (see tasks/). Listed here so agents know the plan.
 import = ["rispy", "pybtex", "openpyxl", "pymupdf", "pdfplumber", "pylatexenc"]

@@ -167,7 +167,8 @@ def _read_xlsx_rows(
             chosen = next((ws for ws in visible if ws.title == sheet), None)
             if chosen is None:
                 raise ImportFailed(
-                    f"Worksheet '{sheet}' not found in {path.name}",
+                    f"Worksheet '{sheet}' not found in {path.name} "
+                    f"(sheets: {', '.join(ws.title for ws in visible)})",
                     code="E101",
                     hint="Available sheets: " + ", ".join(ws.title for ws in visible),
                     details={"path": str(path)},
@@ -220,13 +221,13 @@ def resolve_columns(
     for internal, header in mapping.items():
         if internal not in ALIASES:
             raise ImportFailed(
-                f"Unknown target column '{internal}' in the mapping",
+                f"Unknown target column '{internal}' in the mapping (valid: {', '.join(ALIASES)})",
                 code="E104",
                 hint="Valid targets: " + ", ".join(ALIASES),
             )
         if header not in headers:
             raise ImportFailed(
-                f"Column '{header}' not found in the file",
+                f"Column '{header}' not found in the file (columns: {', '.join(headers)})",
                 code="E104",
                 hint="Available columns: " + ", ".join(headers),
                 details={"column": header},
