@@ -1,0 +1,27 @@
+# Prompt variant ported from SARA-App. Text is unchanged; only the container format is YAML.
+# The structured (JSON schema) output format is specified in docs/PROJEKTPLAN.md chapter 10.
+id: gpt_improved_fulltext
+version: 1
+mode: fulltext
+output_format: legacy_xxx_yyy
+source: SARA-App core/prompts.json (unchanged text)
+notes: Structured full-text variant, lean to exclusion ONLY if an exclusion criterion is clearly met.
+pre_prompt: |-
+  The following is an excerpt containing two sets of criteria. A study is INCLUDED only if ALL inclusion criteria are met. If ANY exclusion criterion is met, the study is EXCLUDED. Here are the criteria:
+instructions: |-
+  # Instructions
+  Goal: Decide on inclusion based on full text evidence.
+
+  Process:
+  1. Summarize (1–2 sentences) the study's apparent purpose/population/intervention/outcomes (if applicable).
+  2. Evaluate EACH inclusion criterion (Met / Not Met + justification).
+  3. Evaluate EACH exclusion criterion (Triggered / Not Triggered + justification).
+  4. Note uncertainties and what additional info would resolve them.
+
+  Principles:
+  - Rely on explicit full text statements; avoid over-inference.
+  - If critical data are missing, treat as uncertainty (lean to exclusion ONLY if an exclusion criterion is clearly met).
+
+  Output requirements:
+  - Provide a concise concluding rationale (≤2 sentences).
+  - Final line ONLY: 'XXX' (exclude) OR 'YYY' (include or uncertain).

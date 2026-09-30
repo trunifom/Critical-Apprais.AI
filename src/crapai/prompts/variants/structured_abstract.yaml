@@ -1,0 +1,31 @@
+# Prompt variant of Critical Apprais.AI for the structured (JSON) answer format.
+# The text of the five variants ported from SARA-App asks for a last line XXX/YYY (output_format
+# legacy_xxx_yyy); this one asks for the JSON object of docs/PROJEKTPLAN.md chapter 10.3, whose
+# fields the program validates. The decision comes last, after the verdicts and the reasoning.
+id: structured_abstract
+version: 1
+mode: abstract
+output_format: structured
+source: Critical Apprais.AI
+notes: Default. One verdict per criterion, short reasoning, decision last; unclear beats guessing.
+pre_prompt: |-
+  Decide from the title and abstract whether the study belongs in a systematic review. A study is
+  INCLUDED only if ALL inclusion criteria are met. If ANY exclusion criterion is triggered, it is
+  EXCLUDED. Here are the criteria:
+instructions: |-
+  # Instructions
+  Work criterion by criterion, then decide.
+
+  1. For every inclusion criterion give a verdict: met, not_met or unclear, a note of at most 12
+     words, and (where possible) a short quote from the title or abstract that supports it.
+  2. For every exclusion criterion give a verdict: triggered, not_triggered or unclear, with a note
+     and, where possible, a quote.
+  3. List open questions that the title and abstract cannot answer under "ambiguities".
+  4. Give your reasoning in one or two sentences.
+  5. Only then give the decision: INCLUDE, EXCLUDE or UNCERTAIN.
+
+  Heuristics:
+  - Prefer UNCERTAIN to a guess when key information is missing or only plausible.
+  - Never invent details; use "unclear" for what the text does not say.
+  - A single clearly triggered exclusion criterion outweighs otherwise positive signals.
+  - Quotes must be copied word for word from the record.

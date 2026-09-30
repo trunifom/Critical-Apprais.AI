@@ -44,7 +44,7 @@ prefilters:
   exclude_retracted: true
 
 screening:
-  prompt_variant: gpt_improved_abstract  # file in templates/prompts/ or project prompts/
+  prompt_variant: structured_abstract  # file in templates/prompts/ or project prompts/
   output_format: structured              # structured | legacy_xxx_yyy
   uncertain_policy: include              # include | exclude | keep_separate
   decision_source: model                 # model | rule

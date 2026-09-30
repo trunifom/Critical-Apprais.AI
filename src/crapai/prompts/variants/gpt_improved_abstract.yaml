@@ -1,0 +1,33 @@
+# Prompt variant ported from SARA-App. Text is unchanged; only the container format is YAML.
+# The structured (JSON schema) output format is specified in docs/PROJEKTPLAN.md chapter 10.
+id: gpt_improved_abstract
+version: 1
+mode: abstract
+output_format: legacy_xxx_yyy
+source: SARA-App core/prompts.json (unchanged text)
+notes: Structured sections (strategy, per-criterion verdicts, ambiguities, summary). Strict output contract.
+pre_prompt: |-
+  The following is an excerpt containing two sets of criteria. A study is INCLUDED only if ALL inclusion criteria are met. If ANY exclusion criterion is met, it is EXCLUDED. Here are the criteria:
+instructions: |-
+  # Instructions
+  Goal: High-quality, transparent abstract-level screening with concise reasoning.
+
+  Process:
+  1. Strategy: One sentence describing your decision frame.
+  2. Inclusion criteria: For each -> Met / Not Met / Unclear + ≤12 word justification.
+  3. Exclusion criteria: For each -> Triggered / Not Triggered / Unclear + ≤12 word justification.
+  4. Ambiguity: List any unresolved info gaps (bullet style, if any).
+  5. Overall: 1–2 sentence synthesis of why the tentative decision is justified.
+
+  Heuristics:
+  - Prefer provisional inclusion when key eligibility elements are plausible but underspecified.
+  - Do NOT fabricate specifics; mark as Unclear instead.
+  - A single clearly triggered exclusion criterion overrides otherwise positive signals.
+
+  Output formatting (strict):
+  Section 1: Strategy
+  Section 2: Inclusion
+  Section 3: Exclusion
+  Section 4: Ambiguities (or 'None')
+  Section 5: Summary
+  Final line ONLY: 'XXX' or 'YYY' (no punctuation, no extra text).

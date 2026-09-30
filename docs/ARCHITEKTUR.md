@@ -22,14 +22,14 @@ und kennzeichnet Geplantes ausdrücklich. Bedienung: `docs/BENUTZERHANDBUCH.md`.
 ```
 Bedienung        cli.py (typer)                      [geplant: ui/ (Streamlit)]
                     │  ruft
-Dienste          services/importing.py   services/project.py   services/dedup.py   services/validity.py   services/preflight.py   services/cost.py   services/events.py   services/prefilter.py   services/export.py
+Dienste          services/importing.py   services/project.py   services/dedup.py   services/validity.py   services/preflight.py   services/cost.py   services/events.py   services/prefilter.py   services/export.py   services/screening.py
 Oberfläche       ui/ (Streamlit: viewmodels, actions, context, app, pages/)   logging_setup.py
                  [geplant: screening, export, evaluation]
                     │  ruft
 Fachkern         io/ (readers, normalize, records_store, import_log)
                  config/ (Modelle, Loader)   project/ (Workspace, Lock, atomares Schreiben)
                  i18n/ (Texte, Meldungen)    errors.py   criteria/  cost/  enums.py  legacy.py
-                 prisma/ (dedup)            [geplant: prisma/ Rest, screening/, llm/, prompts/, stats/]
+                 prisma/ (dedup)   llm/ (base, resilience, mock, openai)   prompts/   screening/ (answer, store, engine)   [geplant: stats/]
                     │  spricht mit der Aussenwelt nur über
 Ports/Adapter    [geplant: LLMProvider, FileStore, Clock, SecretStore, EventSink]
 ```
@@ -76,6 +76,15 @@ So bleibt der Kern ohne Oberfläche testbar und später von Streamlit und CLI ge
 | `io.writers.tables`, `io.writers.ris` | Export-Dateien: CSV (UTF-8 mit BOM, Formelschutz), XLSX (fixierte Kopfzeile, Steuerzeichen entfernt), RIS (für Literaturverwaltung); alle atomar geschrieben | `write_csv`, `write_xlsx`, `write_ris` |
 | `services.export` | Datensätze (Umfang alle/screenable/excluded) und PRISMA-Fluss exportieren, ohne das Projekt zu ändern; gesperrte Zieldatei ergibt eine Ersatzdatei | `export_records`, `export_flow`, `ExportSummary` |
 | `services.cost` | Schätzung für ein Projekt: zählt die Datensätze ohne Ausschlussgrund, liest `pricing.csv` des Projekts, vergleicht den Worst Case mit `limits.max_cost`; schreibt nichts | `estimate_project`, `ProjectEstimate` |
+| `llm.base` | Schnittstelle zwischen Engine und Anbieter: Anfrage, Antwort, Fähigkeiten, `LLMProvider`-Protokoll; Fehlerklassen tragen die Wiederholungsregel (E301/E302/E303/E305/E306/E307); kein Netz, kein SDK | `LLMRequest`, `LLMResponse`, `Capabilities`, `LLMProvider`, `retry_after_of` |
+| `llm.resilience` | Wiederholen mit Backoff und `Retry-After`, gleitendes Fenster für Anfragen/Tokens pro Minute, adaptive Parallelität (halbieren bei 429, langsam steigern), Sicherung bei Fehlern in Folge; Uhr und Schlaf einsetzbar (Tests ohne Wartezeit) | `RetryPolicy`, `call_with_retry`, `RateLimiter`, `AdaptiveConcurrency`, `CircuitBreaker` |
+| `llm.mock_provider` | Anbieter ohne Netz und ohne Schlüssel mit den 15 Fehlerszenarien S1-S15 (deterministisch); die ganze Engine wird dagegen getestet | `MockProvider`, `SCENARIOS`, `answer_json` |
+| `llm.openai_provider` | OpenAI und OpenAI-kompatible Dienste (SwissGPT): Fehlerübersetzung in die eigenen Klassen, SDK-Wiederholungen aus, Schlüssel nie in Meldungen oder Logs | `OpenAICompatibleProvider`, `translate` |
+| `prompts.builder` | Prompt je Datensatz: stabiler Anfang (System, Projekt, Kriterien, Anweisungen) und `<record>`-Block, Fingerabdruck des stabilen Teils; Varianten aus YAML (Paket und Projekt) | `PromptBuilder`, `PromptVariant`, `builder_for`, `load_variant`, `hash_text` |
+| `screening.answer` | Antwort des Modells prüfen: Schema, Entscheidung zuletzt, Gegenprobe aus den Urteilen, Zitate im Datensatz, altes XXX/YYY-Format; unlesbar ist ein Fehler, nie ein Einschluss | `ANSWER_SCHEMA`, `parse_answer`, `derive_decision`, `check_quotes`, `parse_legacy` |
+| `screening.store` | Dateien eines Laufs: `manifest.json` (atomar), `screening.jsonl` (nur anhängen, letzte Zeile je Datensatz gilt), `control.json` (Pause/Stopp von aussen) | `RunStore`, `Manifest`, `ResultRow`, `RunState`, `BatchInfo` |
+| `screening.engine` | Verarbeitung in Päckchen mit Prüfung auf der Platte, Arbeiter, Fristen, Fehlerquote je Päckchen, Sicherung, Kostenlimit, Schonfrist beim Stopp; jeder Halt hat einen Zustand und einen Code | `ScreeningEngine`, `EngineSettings`, `PlanItem`, `Progress`, `RunSummary` |
+| `services.screening` | Lauf planen, starten, fortsetzen: Sperre, `plan.json`, Fingerabdruck der Einstellungen (E204), Stichprobe, Strg+C, PRISMA-Ereignis nur für vollständige Läufe | `screen_project`, `RunOptions`, `RunResult`, `make_provider`, `list_runs`, `find_run`, `request_control` |
 | `services.preflight` | Vorprüfung: eine Datei vor dem Import, das Projekt vor dem Lauf | `check_file`, `check_project`, `PreflightFileResult`, `ProjectReport`, `ProjectIssue` |
 | `prisma.dedup` | Duplikate markieren (nicht löschend) | `mark_duplicates`, `DedupConfig`, `DedupResult`, `normalize_title`; Strategien `doi_or_title`, `strict_ids`, `title`, `title_authors` |
 | `services.dedup` | Duplikate im Projekt markieren | `dedup_project` (Sperre, Sicherung, atomares Schreiben) |
@@ -126,7 +135,7 @@ mein-review/
 │  ├─ records.import.jsonl     ein Eintrag je importierter Datei (Hash, Zahlen, Zuordnung)
 │  ├─ events.jsonl             PRISMA-Ereignisse (nur anhängen): Quelle der Flusszahlen
 │  └─ .backup/                 die letzten 5 Sicherungen von records.csv
-├─ runs/                       [geplant] ein Ordner je Screening-Lauf
+├─ runs/<lauf-id>/             ein Ordner je Screening-Lauf: manifest.json, screening.jsonl, plan.json, control.json
 ├─ human/  reports/  prompts/  [geplant/optional]
 └─ .crapai/                      version (Schema), lock, app.log
 ```

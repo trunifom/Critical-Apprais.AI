@@ -151,7 +151,7 @@ class FulltextOptions(_Strict):
 class ScreeningOptions(_Strict):
     """How the screening prompt is built and how answers are interpreted."""
 
-    prompt_variant: str = "gpt_improved_abstract"
+    prompt_variant: str = "structured_abstract"
     output_format: Literal["structured", "legacy_xxx_yyy"] = "structured"
     # Sensitivity first (plan chapter 35.2): uncertain records are included by default.
     uncertain_policy: Literal["include", "exclude", "keep_separate"] = "include"
@@ -164,13 +164,15 @@ class ScreeningOptions(_Strict):
 class LlmSettings(_Strict):
     """Provider, model and sampling settings. Holds the NAME of the key variable, never the key."""
 
-    provider: Literal["openai", "anthropic", "openai_compatible"] = "openai"
+    provider: Literal["openai", "anthropic", "openai_compatible", "mock"] = "openai"
     model: str = Field(default="gpt-4o-mini", min_length=1)
     base_url: str | None = None
     temperature: float = Field(default=0.0, ge=0.0, le=2.0)
     top_p: float = Field(default=1.0, gt=0.0, le=1.0)
     seed: int | None = None
     max_output_tokens: PositiveInt = 800
+    # The model's context window, if known: longer records are not sent (status too_long).
+    context_tokens: PositiveInt | None = None
     # Expected length of one answer, for the estimate; max_output_tokens is the hard limit.
     expected_output_tokens: PositiveInt = 120
     timeout_s: float = Field(default=60.0, gt=0.0)
@@ -219,6 +221,41 @@ class Limits(_Strict):
     currency: str = Field(default="USD", min_length=3, max_length=3)
     seconds_per_request: float = Field(default=3.0, gt=0.0)
     cost_uncertainty: float = Field(default=0.15, ge=0.0, le=1.0)
+
+
+class RunSettings(_Strict):
+    """How a screening run is organised, protected and resumed (plan chapters 9.4 and 11).
+
+    A run works in **batches** ("packages"): the records are split into groups of ``batch_size``;
+    after each group the program checks that every record has a result line, looks at how many
+    failed, writes a checkpoint and only then starts the next group. A problem is therefore
+    noticed after at most one batch, and a stop never leaves more than one batch half done.
+
+    Attributes:
+        batch_size: Records per batch.
+        max_batch_error_rate: Pause the run if more than this share of a batch failed (0 to 1).
+        max_consecutive_errors: Pause after this many failed records in a row (0 = off).
+        retry_failed_on_resume: Try records that ended in an error again when a run is resumed.
+        checkpoint_seconds: How often the manifest is saved while a batch is running.
+        heartbeat_seconds: How often the project lock shows that the run is alive.
+        stop_grace_seconds: After a stop request, how long running requests may finish.
+        sample_seed: Seed for ``--sample`` so that the same records are drawn again.
+        retry_base_delay_s: First wait before a repeat; doubled for each further repeat.
+        retry_max_delay_s: Longest single wait.
+        max_retry_time_s: Longest total wait on a rate limit before the record fails.
+    """
+
+    batch_size: PositiveInt = 1000
+    max_batch_error_rate: float = Field(default=0.5, ge=0.0, le=1.0)
+    max_consecutive_errors: int = Field(default=20, ge=0)
+    retry_failed_on_resume: bool = True
+    checkpoint_seconds: float = Field(default=2.0, gt=0.0)
+    heartbeat_seconds: float = Field(default=10.0, gt=0.0)
+    stop_grace_seconds: float = Field(default=10.0, ge=0.0)
+    sample_seed: int = 42
+    retry_base_delay_s: float = Field(default=1.0, ge=0.0)
+    retry_max_delay_s: float = Field(default=60.0, ge=0.0)
+    max_retry_time_s: float = Field(default=600.0, ge=0.0)
 
 
 class QualitySettings(_Strict):
@@ -296,6 +333,7 @@ class ProjectConfig(_Strict):
     llm: LlmSettings = Field(default_factory=LlmSettings)
     limits: Limits = Field(default_factory=Limits)
     quality: QualitySettings = Field(default_factory=QualitySettings)
+    run: RunSettings = Field(default_factory=RunSettings)
     preflight: PreflightSettings = Field(default_factory=PreflightSettings)
     output: OutputSettings = Field(default_factory=OutputSettings)
     acknowledgements: Acknowledgements = Field(default_factory=Acknowledgements)

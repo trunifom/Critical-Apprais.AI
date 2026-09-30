@@ -35,6 +35,8 @@ packages = ["src/crapai"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+# Async tests (LLM layer, engine) need no decorator.
+asyncio_mode = "auto"
 # Delete the temporary folders of passed tests at once (their deletion was a quarter of the run time
 # on Windows); the folders of failed tests stay for inspection.
 tmp_path_retention_policy = "failed"
@@ -60,6 +62,7 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 "src/crapai/enums.py" = ["E501", "UP", "I"]
 "src/crapai/criteria/template.py" = ["E501", "UP", "I", "SIM"]
 "src/crapai/i18n/**" = ["E501", "UP", "I", "SIM", "B", "F401", "E402"]
+"tests/**" = ["E501"]  # long fixture lines and table-like parametrisations
 
 [tool.mypy]
 python_version = "3.11"

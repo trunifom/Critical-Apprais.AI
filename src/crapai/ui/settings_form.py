@@ -98,14 +98,30 @@ SECTIONS: tuple[Section, ...] = (
     Section(
         "llm",
         (
-            Field("llm.provider", "choice", ("openai", "anthropic", "openai_compatible")),
+            Field("llm.provider", "choice", ("openai", "anthropic", "openai_compatible", "mock")),
             Field("llm.model", "text"),
             Field("llm.base_url", "text"),
             Field("llm.api_key_env", "text"),
             Field("llm.temperature", "float", minimum=0.0, maximum=2.0, step=0.1),
+            Field("llm.context_tokens", "optional_int", minimum=256),
             Field("llm.max_output_tokens", "int", minimum=16, maximum=100_000),
             Field("llm.expected_output_tokens", "int", minimum=1, maximum=100_000),
             Field("llm.timeout_s", "float", minimum=1.0, maximum=3600.0, step=5.0),
+        ),
+    ),
+    Section(
+        "run",
+        (
+            Field("run.batch_size", "int", minimum=1, maximum=1_000_000),
+            Field("run.max_batch_error_rate", "float", minimum=0.0, maximum=1.0, step=0.05),
+            Field("run.max_consecutive_errors", "int", minimum=0, maximum=100_000),
+            Field("run.retry_failed_on_resume", "bool"),
+            Field("run.checkpoint_seconds", "float", minimum=0.1, maximum=600.0, step=0.5),
+            Field("run.stop_grace_seconds", "float", minimum=0.0, maximum=600.0, step=1.0),
+            Field("run.sample_seed", "int", minimum=0, maximum=2_000_000_000),
+            Field("run.retry_base_delay_s", "float", minimum=0.0, maximum=600.0, step=0.5),
+            Field("run.retry_max_delay_s", "float", minimum=0.0, maximum=3600.0, step=1.0),
+            Field("run.max_retry_time_s", "float", minimum=0.0, maximum=86_400.0, step=10.0),
         ),
     ),
     Section(
@@ -138,6 +154,9 @@ def parse_value(form_field: Field, raw: Any) -> Any:
         if isinstance(raw, list):
             return raw
         return [part.strip() for part in str(raw).split(",") if part.strip()]
+    if kind == "optional_int":
+        text = "" if raw is None else str(raw).strip()
+        return int(text) if text else None
     if kind == "optional_float":
         text = "" if raw is None else str(raw).strip()
         return float(text.replace(",", ".")) if text else None

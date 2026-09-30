@@ -129,8 +129,8 @@ PAGE_KEYS: tuple[str, ...] = (
 # Codes of the error catalogue (plan chapter 26.4); each needs title, cause and action.
 ERROR_CODES: tuple[str, ...] = (
     "E101", "E102", "E103", "E104", "E105", "E106",
-    "E201", "E202", "E203",
-    "E301", "E302", "E303", "E304", "E305", "E306", "E307",
+    "E201", "E202", "E203", "E204",
+    "E301", "E302", "E303", "E304", "E305", "E306", "E307", "E308",
     "E401", "E402", "E403", "E404", "E405",
     "E501", "E502",
     "E999",

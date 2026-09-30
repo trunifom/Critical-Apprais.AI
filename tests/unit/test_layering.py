@@ -21,6 +21,9 @@ FORBIDDEN_THIRD_PARTY = frozenset(
 UPPER_LAYERS = frozenset({"cli", "ui", "services", "adapters"})
 # Top-level sub-packages that are allowed to depend on the forbidden packages.
 NON_CORE = UPPER_LAYERS
+# Adapters: the one place per SDK where the outside world is touched (ports and adapters). They
+# may import their SDK, but still must not import an upper layer. Keep this list short.
+ADAPTER_MODULES = {"llm/openai_provider.py": frozenset({"openai"})}
 
 
 def imported_modules(source: str) -> set[str]:
@@ -44,7 +47,8 @@ def layer_violations(root: Path) -> list[str]:
             continue
         for module in sorted(imported_modules(path.read_text(encoding="utf-8"))):
             parts = module.split(".")
-            forbidden = parts[0] in FORBIDDEN_THIRD_PARTY
+            allowed = ADAPTER_MODULES.get(relative.as_posix(), frozenset())
+            forbidden = parts[0] in FORBIDDEN_THIRD_PARTY and parts[0] not in allowed
             upward = parts[0] == "crapai" and len(parts) > 1 and parts[1] in UPPER_LAYERS
             if forbidden or upward:
                 violations.append(f"{relative.as_posix()}: {module}")
@@ -73,3 +77,13 @@ def test_detector_flags_forbidden_and_upward_imports(tmp_path: Path) -> None:
         "engine.py: streamlit",
         "provider.py: openai",
     ]
+
+
+def test_only_the_adapter_modules_may_import_an_sdk() -> None:
+    """The exemption is exact: the adapter may import openai, nobody else may."""
+    importers = {
+        path.relative_to(SRC).as_posix()
+        for path in SRC.rglob("*.py")
+        if "openai" in {m.split(".")[0] for m in imported_modules(path.read_text(encoding="utf-8"))}
+    }
+    assert importers == set(ADAPTER_MODULES)

@@ -1,0 +1,15 @@
+# Prompt variant ported from SARA-App. Text is unchanged; only the container format is YAML.
+# The structured (JSON schema) output format is specified in docs/PROJEKTPLAN.md chapter 10.
+id: baseline_fulltext
+version: 1
+mode: fulltext
+output_format: legacy_xxx_yyy
+source: SARA-App core/prompts.json (unchanged text)
+notes: Full-text variant of the baseline prompt (legacy output format).
+pre_prompt: |-
+  The following is an excerpt of two sets of criteria. A study is considered included if it meets all the inclusion criteria. If a study meets any of the exclusion criteria, it should be excluded. Here are the two sets of criteria:
+instructions: |-
+  # Instructions
+  We now assess whether the paper should be included from the systematic review by evaluating it against each and every predefined inclusion and exclusion criterion. First, we will reflect on how we will decide whether a paper should be included or excluded. Then, we will think step by step for each criteria, giving reasons for why they are met or not met.
+
+  We will conclude by outputting (on the very last line) 'XXX' if the paper warrants exclusion, or 'YYY' if inclusion is advised or uncertainty persists. We must output either 'XXX' or 'YYY'.
