@@ -15,6 +15,7 @@ from crapai.errors import SaraError
 from crapai.io.records_store import read_records, write_records
 from crapai.prisma.dedup import DedupConfig, DedupResult, Keep, Strategy, mark_duplicates
 from crapai.project.workspace import Workspace
+from crapai.services.events import record_dedup
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,7 @@ def dedup_project(
         result: DedupResult = mark_duplicates(records, DedupConfig(strategy=chosen, keep=keep))
         if result.records != records:
             write_records(workspace.records_csv, result.records, backup_dir=workspace.backup_dir)
+        record_dedup(workspace, result.records, chosen, result.within_source, result.across_sources)
     return DedupSummary(
         strategy=chosen,
         keep=keep,

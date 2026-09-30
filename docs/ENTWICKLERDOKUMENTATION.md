@@ -113,6 +113,10 @@ Einzelbausteine:
 | `cost.pricing.CsvPriceSource(path).get_price(provider, model)` | `Price(input_per_1k, output_per_1k, currency, valid_from, source)` oder `None`; Gross-/Kleinschreibung egal, Komma oder Punkt als Dezimalzeichen, erste Zeile gewinnt, ungültige Zeilen werden übersprungen (Warnung im Protokoll); fehlende Pflichtspalte oder unlesbare Datei = `E203` |
 | `cost.estimator.estimate_run(items, shared_text, tokenizer, price=None, config=None)` | `RunEstimate`: `n_items`, `shared_tokens`, `item_tokens`, `input_tokens`, `output_tokens`, `total_tokens`, `cost`, `cost_low`, `cost_high`, `cost_max` (Worst Case: jede Antwort an der Grenze `llm.max_output_tokens`), `tokenizer`, `exact`. Ohne Preis sind alle Kosten `None`. Kein fester Wert für Volltext: ein längerer Text wird einfach gezählt |
 | `services.cost.estimate_project(workspace)` | `ProjectEstimate(estimate, provider, model, max_cost, over_limit, price_file_found)`; zählt die Datensätze ohne `exclusion_reason`; gemeinsamer Anteil aus `project.yaml` (bis der Prompt-Bauer in M3 den genauen Text liefert) |
+| `prisma.events.*` | `PrismaEvent(step, event_type, level, message, source_label, run_id, payload)` (Werte aus `EventType`/`PrismaStep`); Fabriken `source_imported`, `dedup_within_source`, `merge_all_sources`, `dedup_global`, `validity_checked`, `prefilter_applied`, `screening_done`, `warning`; `to_json_line`, `from_json_line`. Tatsachen ohne eigenen Enum-Wert sind `INFO`-Ereignisse mit `payload.kind` (`validity`, `prefilter`) |
+| `prisma.flow.build_flow(events, mode, final_included=None)` | `PrismaFlow` (Schlüssel wie `to_prisma_flow` des Vorgängers plus `records_to_screen`, `records_removed_by_prefilter`, `prefilter_reasons`); `to_dict()` ist der Inhalt von `prisma_flow.json` |
+| `prisma.flow.validate_flow(flow)` | Liste von `FlowWarning(code, message, payload)`; Codes `DEDUP_AFTER_EXCEEDS_BEFORE`, `MERGED_EXCEEDS_IDENTIFIED`, `ARITHMETIC_MISMATCH`, `SCREENED_EXCEEDS_AVAILABLE`, `FULLTEXT_EXCEEDS_INCLUDED` |
+| `services.events.project_flow(workspace, mode=None)` | `(PrismaFlow, Warnungen)`; Modus standardmässig aus `dedup.reporting_mode` |
 | `services.preflight.check_file(path, label, ...)` | trockenes Lesen einer Datei vor dem Import, nichts wird geschrieben; `PreflightFileResult(status, issues, message_key, error_code, ...)` mit `PreflightStatus`/`PreflightIssueCode` aus `enums.py` (nur Pfade, keine UI-Typen); wirft nie bei schlechten Dateien |
 | `services.preflight.check_project(workspace, update=True)` | optional Dedup + Gültigkeit ausführen, dann `ProjectReport(status, issues, by_reason, sources, ...)` mit `ProjectIssue` (`no_records`, `nothing_to_screen`, `low_abstract_ratio`, `suspect_abstracts`, `retracted_included`, `config_invalid`) |
 | `services.dedup.dedup_project(workspace, strategy=None, keep="best")` | liest `records.csv`, markiert, schreibt nach Sicherung; Strategie: Befehlszeile > `project.yaml` > Standard |
@@ -151,6 +155,10 @@ fulltext_of, zip_member, import_notes, extra_json`
 
 Ein JSON-Objekt je importierter Datei: `schema, timestamp (mit Zeitzone), source_file, sha256, source_label, format, records, abstracts, encoding,
 options (delimiter, sheet), column_map, notes, forced`.
+
+### 4.2a `data/events.jsonl`
+
+Ein JSON-Objekt je Ereignis, nur anhängen: `schema, event_id, timestamp (UTC), step, event_type, level, message, source_label, run_id, payload`. Schreiber: Import (`SOURCE_IMPORTED`), Dedup (je Quelle `DEDUP_WITHIN_SOURCE`, dann `MERGE_ALL_SOURCES`, `DEDUP_GLOBAL`), Gültigkeit (`INFO` mit `kind: validity`). Eine halb geschriebene letzte Zeile wird ignoriert, eine unlesbare Zeile in der Mitte ist `E404`. Die Zahlen berechnet `prisma.flow.build_flow`; Regeln (Momentaufnahme oder Summe) stehen im Modulkopf.
 
 ### 4.3 `.crapai/lock`, `.crapai/version`
 

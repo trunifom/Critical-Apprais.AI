@@ -32,6 +32,7 @@ from crapai.io.normalize import ImportContext, to_records
 from crapai.io.readers.dispatch import read_source
 from crapai.io.records_store import read_records, write_records
 from crapai.project.workspace import Workspace
+from crapai.services.events import record_import
 
 logger = logging.getLogger(__name__)
 
@@ -144,6 +145,7 @@ def _import_locked(workspace: Workspace, request: ImportRequest, now: datetime) 
             forced=request.force,
         ),
     )
+    record_import(workspace, label, stored.name, result.format.value, len(new_records))
     warnings = _warnings(len(new_records), abstracts, empty)
     logger.info("Imported %d record(s) from %s as '%s'", len(new_records), path.name, label)
     return ImportSummary(

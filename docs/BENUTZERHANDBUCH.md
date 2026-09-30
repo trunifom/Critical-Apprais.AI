@@ -68,6 +68,7 @@ mein-review/
 ├─ data/
 │  ├─ records.csv            alle Datensätze in einer Tabelle
 │  ├─ records.import.jsonl   Protokoll der Importe
+│  ├─ events.jsonl           Ereignisse für das PRISMA-Flussdiagramm (wird nur ergänzt)
 │  └─ .backup/               die letzten 5 Sicherungen von records.csv
 ├─ runs/  human/  reports/   für spätere Funktionen (Screening-Läufe, menschliche Entscheidungen, Berichte)
 └─ .crapai/                    Technisches: Version, Sperre, Protokoll (app.log)
@@ -255,6 +256,15 @@ Konfiguration: in Ordnung
 Bei einem leeren oder unvollständigen Projekt erscheint „Die Konfiguration braucht Aufmerksamkeit: …“ mit dem ersten Problem, z. B. fehlende Einschlusskriterien.
 `crapai status mein-review --json` liefert dieselben Angaben maschinenlesbar.
 Läuft gerade ein anderer Prozess im Projekt, wird das gemeldet.
+
+## 6d. Ereignisse und PRISMA-Zahlen
+
+Jeder Import, jede Duplikat-Markierung und jede Gültigkeitsprüfung schreibt eine Zeile in `data/events.jsonl` (was, wann, wie viele). Daraus berechnet das Programm die Zahlen des PRISMA-2020-Flussdiagramms: gefundene Datensätze je Quelle, entfernte Duplikate, vor dem Screening aus anderen Gründen Entfernte, Datensätze zum Screening. Die Datei wird nie umgeschrieben; löschen Sie sie nicht von Hand.
+
+* **Wiederholtes `crapai dedup` zählt nichts doppelt**: pro Quelle gilt der letzte Stand.
+* **Zwei Arten, Duplikate zu berichten** (`dedup.reporting_mode` in der `project.yaml`): `all_before_screening` zählt alle Duplikate als "Duplikate entfernt"; `between_databases_only` zählt nur die zwischen verschiedenen Quellen, Duplikate innerhalb einer Quelle erscheinen unter "vor dem Screening aus anderen Gründen entfernt". Die Summe stimmt in beiden Fällen.
+* Fehlt ein Ereignis (zum Beispiel weil die Platte voll war), bleibt die Arbeit gültig; führen Sie `crapai dedup` und `crapai check` erneut aus.
+* Die Ausgabe als Datei und Grafik (`prisma_flow.json`, `.png`) folgt mit dem Export (M8); die Berechnung selbst steht bereits zur Verfügung.
 
 ## 7. Die Tabelle `records.csv` lesen
 

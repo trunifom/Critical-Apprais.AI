@@ -62,6 +62,11 @@ class Workspace:
         return self.data_dir / "records.import.jsonl"
 
     @property
+    def events_jsonl(self) -> Path:
+        """``data/events.jsonl``: the PRISMA event stream of the project (append-only)."""
+        return self.data_dir / "events.jsonl"
+
+    @property
     def version_file(self) -> Path:
         """``.crapai/version``: the schema version of the project folder."""
         return self.state_dir / "version"

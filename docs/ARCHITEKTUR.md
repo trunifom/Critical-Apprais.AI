@@ -22,7 +22,7 @@ und kennzeichnet Geplantes ausdrücklich. Bedienung: `docs/BENUTZERHANDBUCH.md`.
 ```
 Bedienung        cli.py (typer)                      [geplant: ui/ (Streamlit)]
                     │  ruft
-Dienste          services/importing.py   services/project.py   services/dedup.py   services/validity.py   services/preflight.py   services/cost.py
+Dienste          services/importing.py   services/project.py   services/dedup.py   services/validity.py   services/preflight.py   services/cost.py   services/events.py
                  [geplant: screening, export, evaluation]
                     │  ruft
 Fachkern         io/ (readers, normalize, records_store, import_log)
@@ -53,6 +53,9 @@ So bleibt der Kern ohne Oberfläche testbar und später von Streamlit und CLI ge
 | `project.lock` | Ein Schreiber je Projekt | `ProjectLock` mit Herzschlag, Übernahme veralteter Sperren |
 | `project.workspace` | Ordnerstruktur | `Workspace.create/open`, Schema-Version, Warnung bei OneDrive/Dropbox |
 | `prisma.reasons` | Katalog der Ausschlussgründe und wer sie setzen darf | `VALIDITY_REASONS`, `REASON_*` (ADR 0018) |
+| `prisma.events` | PRISMA-Ereignisse: Modell `PrismaEvent` und reine Fabrikfunktionen (Import, Dedup je Quelle, Zusammenführung, globales Dedup, Gültigkeit, Vorfilter, Screening); Zeilenformat JSON | `PrismaEvent`, `source_imported`, `dedup_within_source`, `dedup_global`, `to_json_line` |
+| `prisma.flow` | Zahlen des PRISMA-2020-Flussdiagramms, **abgeleitet** aus den Ereignissen (Portierung von `to_prisma_flow` und `validate_rollup`, beide Berichtsmodi) | `build_flow`, `validate_flow`, `PrismaFlow` |
+| `services.events` | Ereignisdatei `data/events.jsonl` lesen und anhängen, die Ereignisse von Import, Dedup und Gültigkeit schreiben, Fluss eines Projekts | `append_events`, `read_events`, `project_flow`, `record_dedup` |
 | `prisma.validity` | Gültigkeit: fehlende Abstracts, Front-Matter, zurückgezogene Studien, Abstract-Qualität | `mark_validity`, `ValidityConfig`, `classify_abstract`, `is_not_screenable` |
 | `services.validity` | Gültigkeit im Projekt anwenden | `validate_project` |
 | `cost.tokenizers` | lokale Token-Zähler: `tiktoken` (OpenAI, genau) oder Zeichenzähler mit Sicherheitszuschlag; jeder Zähler meldet `name` und `exact` | `tokenizer_for`, `CharTokenizer`, `TiktokenTokenizer` |
@@ -107,6 +110,7 @@ mein-review/
 ├─ data/
 │  ├─ records.csv              ALLE Datensätze, 40 Spalten (Quelle der Wahrheit)
 │  ├─ records.import.jsonl     ein Eintrag je importierter Datei (Hash, Zahlen, Zuordnung)
+│  ├─ events.jsonl             PRISMA-Ereignisse (nur anhängen): Quelle der Flusszahlen
 │  └─ .backup/                 die letzten 5 Sicherungen von records.csv
 ├─ runs/                       [geplant] ein Ordner je Screening-Lauf
 ├─ human/  reports/  prompts/  [geplant/optional]
@@ -162,6 +166,7 @@ Umsetzungsentscheide, die im Code gefallen sind (auch in `docs/UMSETZUNGSPLAN_UN
 * Duplikate: Union-Find über Schlüssel (DOI, PMID, normalisierter Titel), im Zweifel **nicht** markieren (Titeltreffer mit verschiedenen DOIs werden verworfen); der behaltene Datensatz ist der vollständigste.
 * Ausschlussgründe: ein Grund je Datensatz, Besitz je Schritt, Rangfolge `NOT_SCREENABLE` > `RETRACTED` > `NO_ABSTRACT`; Duplikate ersetzen Gültigkeitsgründe (ADR 0018).
 * Preflight: `check_project` führt Dedup und Gültigkeit in der Reihenfolge Import, Dedup, Gültigkeit aus (`update=True`) und urteilt danach nur über gespeicherte Markierungen; Status `ERROR` nur, wenn nichts ans Modell gehen kann, sonst `WARNING` bei Hinweisen. Die Meldungen sind i18n-Schlüssel, keine Texte.
+* Ereignisse: Die Flusszahlen werden nie gespeichert, sondern bei jedem Aufruf aus `data/events.jsonl` berechnet. Import-Ereignisse zählen auf; Dedup-, Gültigkeits- und Vorfilter-Ereignisse sind **Momentaufnahmen** der ganzen Neuberechnung (das jeweils letzte gilt), damit wiederholtes `crapai dedup` nichts doppelt zählt. Kann ein Ereignis nicht geschrieben werden, bleibt die bereits erledigte Arbeit gültig (Warnung im Protokoll); die Ereignisse lassen sich durch erneutes Dedup und Prüfen wiederherstellen.
 * Import-Protokoll als letzter Schritt (macht den Import atomar im Sinne der Buchführung).
 * `Exit-Code 4` bei Warnungen (fehlende Abstracts, `EMPTY_RECORD`).
 

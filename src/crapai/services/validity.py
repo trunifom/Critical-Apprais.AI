@@ -19,6 +19,7 @@ from crapai.errors import SaraError
 from crapai.io.records_store import read_records, write_records
 from crapai.prisma.validity import ValidityConfig, mark_validity
 from crapai.project.workspace import Workspace
+from crapai.services.events import record_validity
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +80,7 @@ def validate_project(
         result = mark_validity(records, config)
         if result.records != records:
             write_records(workspace.records_csv, result.records, backup_dir=workspace.backup_dir)
+        record_validity(workspace, len(result.records), result.by_reason)
     return ValiditySummary(
         records=len(result.records),
         valid_for_model=result.valid_for_model,
