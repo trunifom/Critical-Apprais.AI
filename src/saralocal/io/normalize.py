@@ -10,6 +10,13 @@ from __future__ import annotations
 import html
 import re
 import unicodedata
+import uuid
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from typing import Any
+
+from saralocal.io.readers.base import RawRecord, ReadResult
+from saralocal.io.records_store import RECORD_TYPES, Record
 
 # Control characters that Excel/XML cannot hold: 0x00-0x08, 0x0b, 0x0c, 0x0e-0x1f (plan 25.9).
 # Tab (0x09), LF (0x0a) and CR (0x0d) are white space and handled separately.
@@ -77,3 +84,113 @@ def normalize_list(value: str, *, separator: str = ";") -> str:
         if entry:
             seen.setdefault(entry, None)
     return "; ".join(seen)
+
+
+# --- from a reader's RawRecord to a records.csv Record ---------------------------------------
+
+# Columns that hold plain single-line text. ``authors``-like lists are handled separately.
+_TEXT_COLUMNS = (
+    "title",
+    "abstract",
+    "abstract_source",
+    "abstract_quality",
+    "journal",
+    "volume",
+    "issue",
+    "pages",
+    "pmid",
+    "pmcid",
+    "accession_number",
+    "issn_isbn",
+    "url",
+    "language",
+)
+_LIST_COLUMNS = ("authors", "editors", "keywords", "keywords_mesh", "publication_types")
+# ReadResult formats -> the source_format values of records.csv (plan chapter 26.1).
+SOURCE_FORMAT_NAMES = {
+    "ris": "ris",
+    "nbib": "nbib",
+    "bibtex": "bib",
+    "csv": "csv",
+    "tsv": "csv",
+    "xlsx": "xlsx",
+    "pdf": "pdf",
+}
+
+
+@dataclass(frozen=True)
+class ImportContext:
+    """Facts about the source file that every record of one import shares.
+
+    Attributes:
+        source_label: The user's name for the source, for example ``PubMed``.
+        source_file: File name below ``sources/``.
+        source_format: A :class:`~saralocal.io.readers.detect.SourceFormat` value, for example
+            ``bibtex``; it is translated to the ``records.csv`` name (``bib``).
+        new_uid: Factory for ``study_uid`` values (UUID4 by default; injectable for tests).
+    """
+
+    source_label: str
+    source_file: str
+    source_format: str
+    new_uid: Callable[[], str] = field(default=lambda: str(uuid.uuid4()))
+
+
+def to_record(raw: RawRecord, context: ImportContext) -> Record:
+    """Turn a reader's :class:`RawRecord` into a normalised :class:`Record`.
+
+    Rules (plan chapters 8.3, 25 and 26): text is cleaned (NFC, control characters, white space,
+    HTML entities), the DOI is normalised (an invalid one is kept in ``extra_json`` as
+    ``doi_invalid``), lists are tidied, the year is coerced without placeholders, and a record
+    with neither title nor abstract is marked ``EMPTY_RECORD``. Every field without a column in
+    ``records.csv`` (for example ``notes``) and every reader ``extra`` entry goes to
+    ``extra_json``, so nothing is lost. The record gets a new ``study_uid``.
+    """
+    fields = dict(raw.fields)
+    extra: dict[str, Any] = {}
+    values: dict[str, Any] = {}
+
+    for column in _TEXT_COLUMNS:
+        values[column] = clean_text(str(fields.pop(column, "") or ""))
+    for column in _LIST_COLUMNS:
+        values[column] = normalize_list(str(fields.pop(column, "") or ""))
+    values["year"] = coerce_year(fields.pop("year", None))
+
+    raw_doi = clean_text(str(fields.pop("doi", "") or ""))
+    doi = normalize_doi(raw_doi)
+    values["doi"] = doi or ""
+    if raw_doi and doi is None:
+        extra["doi_invalid"] = raw_doi
+
+    record_type = str(fields.pop("record_type", "") or "other")
+    if record_type not in RECORD_TYPES:
+        extra["record_type_raw"] = record_type
+        record_type = "other"
+    values["record_type"] = record_type
+    values["is_retracted"] = bool(fields.pop("is_retracted", False))
+
+    # What is left has no column in records.csv: keep it, cleaned, in extra_json.
+    for name, value in fields.items():
+        extra[name] = clean_text(value, single_line=False) if isinstance(value, str) else value
+    extra.update(raw.extra)
+    values["extra_json"] = extra
+
+    values["has_abstract"] = bool(values["abstract"])
+    if not values["title"] and not values["abstract"]:
+        values["exclusion_reason"] = "EMPTY_RECORD"
+        values["exclusion_details"] = "neither title nor abstract"
+    values["import_notes"] = "; ".join(note for note in raw.notes if note)
+
+    return Record(
+        study_uid=context.new_uid(),
+        source_label=context.source_label,
+        source_file=context.source_file,
+        source_row=raw.source_row,
+        source_format=SOURCE_FORMAT_NAMES.get(context.source_format, context.source_format),
+        **values,
+    )
+
+
+def to_records(result: ReadResult, context: ImportContext) -> list[Record]:
+    """Normalise all records of one file, in file order."""
+    return [to_record(raw, context) for raw in result.records]
