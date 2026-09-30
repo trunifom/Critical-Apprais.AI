@@ -37,7 +37,7 @@ Commit-Schema: `type(scope): Zusammenfassung (Karten-ID)`; Ende der Nachricht: d
 | Punkt | Stand |
 |---|---|
 | Branch | Nur `main`. Die frühen Task-Branches wurden fast-forward nach `main` gemergt und gelöscht. Push: `git push origin main` durch den Projektleiter |
-| Tests | 439 passed (`python -m pytest -q`) |
+| Tests | 450 passed (`python -m pytest -q`) |
 | Lint / Typen | `ruff` sauber (ohne `reference/`), `mypy src` sauber |
 | CI | `.github/workflows/ci.yml` geschrieben (Linux/Windows/macOS x Python 3.11-3.13), noch nie auf GitHub gelaufen |
 | Extras in `pyproject.toml` | `import` (rispy, pybtex, openpyxl, pymupdf, pdfplumber, pylatexenc), `cli` (typer, rich), `dev`, u. a. Neue Abhängigkeiten ausserhalb der Extras: vorher fragen |
@@ -93,7 +93,7 @@ Reihenfolge = empfohlene Arbeitsreihenfolge. Aufwand in Stunden (Schätzung der 
 | [x] | T-M1-11 | `i18n/messages.py` + Texte `cli.*`/`errors.*` in `en.yaml` und neuer `de.yaml` | | 2026-09-30 16:03 | `a0b1e61` |
 | [x] | T-M1-11 | `cli.py`: `sara init`, `sara import`, `sara status` (Exit-Codes Kap. 15.1, `--json`, `--lang`) | | 2026-09-30 16:10 | `cb2fa2f` |
 | [x] | T-M1-11 | `tests/integration/test_milestone_a_import.py`: Abnahmetest Meilenstein A | | 2026-09-30 16:11 | `94b21db` |
-| [ ] | T-M1-12 | `i18n/texts/de.yaml` + neue Schlüssel (kann jederzeit parallel; auf Wunsch des Projektleiters) | 4 | | |
+| [x] | T-M1-12 | `i18n/texts/de.yaml` + neue Schlüssel (kann jederzeit parallel; auf Wunsch des Projektleiters) | 4 | 2026-09-30 16:23 | `e1dd6e5` |
 | [-] | T-M1-09 | PDF-ZIP-Reader (zurückgestellt, ADR 0015: kein Volltext in v1) | 4 | | |
 
 **Meilenstein A ist erreicht (2026-09-30 16:11, `94b21db`).** Bedingung war: alle Fixtures aus `tests/data/` importierbar sind, die Zahlen `tests/data/EXPECTED.json` entsprechen
@@ -108,7 +108,7 @@ M2: T-M2-01 Dedup, -02 Fuzzy (optional), -03 fehlende Abstracts/Flags, -04 Prefl
 
 ## 5. Nächster Schritt (bitte aktuell halten)
 
-**Meilenstein A ist erreicht.** Offen aus M1: nur T-M1-12 (`de.yaml` vollständig + Paritätstest über die ganze Datei; `de.yaml` enthält bisher nur `cli.*` und `errors.*`). Danach M2 (Karten `T-M2-01` bis `T-M2-08`): zuerst `T-M2-01` (Deduplizierung; markiert nur, löscht nie), `T-M2-03` (fehlende Abstracts/Flags), `T-M2-05` (Kosten, Tokenizer). Diese Reihenfolge ist nicht mit dem Projektleiter abgestimmt: bei der nächsten Sitzung kurz nachfragen, ob M2 und T-M1-12 beginnen sollen.
+**Meilenstein A ist erreicht und M1 ist vollständig** (T-M1-09 bleibt zurückgestellt). Als Nächstes M2 (Karten `T-M2-01` bis `T-M2-08`): zuerst `T-M2-01` (Deduplizierung; markiert nur, löscht nie), dann `T-M2-03` (fehlende Abstracts, Flags), `T-M2-04` (Preflight), `T-M2-05` (Kosten, Tokenizer). Pflege der Dokumentation: `docs/BENUTZERHANDBUCH.md`, `docs/ENTWICKLERDOKUMENTATION.md`, `docs/ARCHITEKTUR.md`, `README.md`, `CHANGELOG.md` nach jeder Aufgabe mitführen.
 
 ## 6. Abweichungen und offene Punkte
 
