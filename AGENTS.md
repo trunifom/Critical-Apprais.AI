@@ -48,6 +48,7 @@ decisions (with per-criterion verdicts and short justifications) into tables (CS
 
 ## 3. How to work
 
+0. Read `docs/UMSETZUNGSPLAN_UND_FORTSCHRITT.md` (progress log, next step) and keep it current: after each tested function commit, then tick the line with date, time and commit hash.
 1. Read `docs/INDEX.md`, then the task card in `tasks/` (it names the plan chapters and the files to reuse).
 2. Read only the plan chapters the card lists (the plan is large). Search with `grep -n "^## " docs/PROJEKTPLAN.md`.
 3. Look at `reference/` and `docs/MIGRATION.md` **before writing code**: part of the work may already be done or
