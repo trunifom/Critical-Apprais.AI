@@ -46,7 +46,10 @@ def test_paths_named_in_backticks_in_the_readme_table_exist() -> None:
         assert (ROOT / path).exists(), path
 
 
-@pytest.mark.parametrize("command", ["init", "import", "status"])
+COMMANDS = ("init", "import", "status", "dedup")
+
+
+@pytest.mark.parametrize("command", COMMANDS)
 def test_every_cli_option_is_documented_in_the_manual(command: str) -> None:
     result = CliRunner().invoke(app, [command, "--help"], terminal_width=200)
     assert result.exit_code == 0
@@ -58,7 +61,7 @@ def test_every_cli_option_is_documented_in_the_manual(command: str) -> None:
 
 def test_manual_does_not_document_options_the_cli_lacks() -> None:
     known: set[str] = {"--version"}
-    for command in ("init", "import", "status"):
+    for command in COMMANDS:
         output = CliRunner().invoke(app, [command, "--help"], terminal_width=200).output
         known |= set(re.findall(r"--[a-z][a-z-]*", output))
     mentioned = set(re.findall(r"`(--[a-z][a-z-]*)", MANUAL))

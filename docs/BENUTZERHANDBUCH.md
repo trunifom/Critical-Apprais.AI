@@ -88,7 +88,7 @@ Sie enthält, was Sie über Ihr Review festlegen. Die wichtigsten Abschnitte:
 | `project` | Titel, Beschreibung, Sprache (`de`/`en`), Modus (`abstract`) |
 | `objectives` | Ihre Fragestellungen, eine pro Zeile |
 | `criteria` | Rahmenwerk (`PICOS`, `SPIDER`, `PECO`, `PIRD`, `CUSTOM`) und **Einschlusskriterien** (mindestens eines) sowie Ausschlusskriterien |
-| `dedup` | Strategie der Duplikaterkennung *(geplant)* |
+| `dedup` | Strategie der Duplikaterkennung (`doi_or_title`, `strict_ids`, `title`, `title_authors`) |
 | `screening` | Umgang mit „unsicher“ (Standard: einschliessen), Prompt-Variante *(geplant)* |
 | `llm` | Anbieter und Modell *(geplant)*; `api_key_env` ist der **Name** der Umgebungsvariable mit Ihrem Schlüssel |
 | `limits` | Parallelität, Aufruflimits, Kostenlimit *(geplant)* |
@@ -159,6 +159,30 @@ Nach dem Import erscheinen bei Bedarf Warnungen, und der Rückgabecode ist **4**
 | 2 | Systemproblem (Datei gesperrt, Speicher voll, Projekt in Benutzung, unerwarteter Fehler) |
 | 4 | Ergebnis mit Warnungen |
 
+## 6a. Duplikate markieren: `crapai dedup`
+
+```powershell
+crapai dedup mein-review                      # Strategie aus der project.yaml
+crapai dedup mein-review --strategy title     # andere Strategie
+crapai dedup mein-review --keep first         # den ersten statt den vollständigsten behalten
+```
+
+Der Befehl **markiert** Duplikate und löscht nichts: Die Zeilenzahl von `records.csv` bleibt gleich. Ein Duplikat erhält `is_duplicate = true`, `duplicate_of` (ID des behaltenen
+Datensatzes), `dedup_method` (Grund) und, falls noch keiner gesetzt ist, `exclusion_reason = DUPLICATE`. Duplikate werden später nicht an das Sprachmodell geschickt, bleiben aber sichtbar.
+
+| Strategie | Zwei Datensätze sind Duplikate, wenn … |
+|---|---|
+| `doi_or_title` (Standard) | sie dieselbe DOI haben, **oder** denselben normalisierten Titel (Gross-/Kleinschreibung, Satzzeichen, Akzente egal). Haben die Titel gleichlautende, die DOIs aber verschiedene Werte, gelten sie **nicht** als Duplikate |
+| `strict_ids` | sie dieselbe DOI oder dieselbe PMID haben |
+| `title` | der normalisierte Titel gleich ist |
+| `title_authors` | normalisierter Titel und normalisierte Autoren gleich sind |
+
+* **Welcher Datensatz bleibt?** Standard `best`: der vollständigste (mit Abstract, dann mit DOI, dann mit PMID), bei Gleichstand der zuerst importierte. Mit `--keep first` oder `--keep last` bestimmen Sie es selbst.
+* **Im Zweifel wird nicht markiert.** Datensätze ohne Titel und ohne DOI werden nie als Duplikate erkannt; ein zu Unrecht markierter Datensatz würde eine Studie verstecken.
+* **Wiederholen ist gefahrlos.** Jeder Lauf berechnet die Markierungen neu (frühere Duplikat-Markierungen werden zuerst entfernt); andere Gründe wie `EMPTY_RECORD` bleiben.
+* Die Ausgabe nennt, wie viele Duplikate innerhalb derselben Quelle und wie viele zwischen verschiedenen Quellen gefunden wurden. Vor dem Schreiben wird eine Sicherung angelegt.
+* `--json` gibt das Ergebnis maschinenlesbar aus. Fehler: `E203` bei unbekannter Strategie, `E402` wenn das Projekt gerade benutzt wird, `E401` wenn `records.csv` in Excel geöffnet ist.
+
 ## 6. Stand ansehen: `crapai status`
 
 ```
@@ -184,7 +208,7 @@ Wichtigste Spalten:
 | `source_label`, `source_file`, `source_row` | woher der Datensatz stammt |
 | `title`, `abstract`, `authors`, `year`, `journal`, `doi`, `pmid` | bibliografische Angaben |
 | `has_abstract` | `true`/`false` |
-| `is_duplicate`, `duplicate_of` | Duplikat und Original *(werden mit der Duplikaterkennung befüllt, geplant)* |
+| `is_duplicate`, `duplicate_of`, `dedup_method` | Duplikat, Verweis auf den behaltenen Datensatz und Grund (`doi`, `pmid`, `title_norm`, `title_authors`); befüllt durch `crapai dedup` |
 | `exclusion_reason`, `exclusion_details` | Grund, warum ein Datensatz nicht ans Modell geht; heute nur `EMPTY_RECORD` |
 | `is_retracted` | „true“, wenn PubMed den Datensatz als zurückgezogen führt |
 | `import_notes` | Hinweise des Imports zu diesem Datensatz |
@@ -214,7 +238,7 @@ Weitere Codes (E202, E301-E307 Anbieter, E501/E502 Statistik) betreffen Funktion
 
 ## 9. Häufige Fragen
 
-**Kann ich dieselbe Datei aus zwei Datenbanken importieren?** Ja, wenn die Dateien verschieden sind. Doppelte Datensätze werden später markiert *(geplant)*, nie gelöscht.
+**Kann ich dieselbe Datei aus zwei Datenbanken importieren?** Ja, wenn die Dateien verschieden sind. Doppelte Datensätze markieren Sie mit `crapai dedup` (Abschnitt 6a); sie werden nie gelöscht.
 
 **Ich habe die falsche Datei importiert.** Die Originale in `sources/` und die Sicherungen in `data/.backup/` bleiben erhalten. Einen Import rückgängig machen
 kann die Software noch nicht; legen Sie in diesem Fall ein neues Projekt an. *(Eine Funktion dafür ist nicht geplant.)*
@@ -230,6 +254,6 @@ bestätigen *(geplant)*. Es gibt keine Telemetrie.
 
 ## 10. Was noch kommt
 
-Duplikate und fehlende Abstracts markieren, Vorfilter (Sprache, Jahr, Publikationstyp), Kosten- und Zeitschätzung, das eigentliche Screening mit Wiederaufnahme nach Unterbrechung,
+Fehlende Abstracts markieren, Vorfilter (Sprache, Jahr, Publikationstyp), Kosten- und Zeitschätzung, das eigentliche Screening mit Wiederaufnahme nach Unterbrechung,
 Ergebnistabelle (Excel/CSV), PRISMA-Fluss, Test-Retest und Vergleich mit menschlichen Entscheidungen, und eine grafische Oberfläche. Den Stand finden Sie in
 `docs/UMSETZUNGSPLAN_UND_FORTSCHRITT.md`; die Änderungen je Version in `CHANGELOG.md`.

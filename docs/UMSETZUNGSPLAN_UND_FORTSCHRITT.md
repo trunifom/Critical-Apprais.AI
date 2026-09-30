@@ -24,7 +24,7 @@ Git-Identität nur lokal im Repo: `trunidom <dominique.truninger@gmail.com>`.
 ```powershell
 Set-Location "C:\Users\trug\Documents\GitHub\Critical-Apprais.AI"
 git status ; git branch --show-current ; git log --oneline -10
-.\.venv\Scripts\Activate.ps1                      # falls .venv fehlt: py -3.11 -m venv .venv ; python -m pip install -e ".[dev]"
+.\.venv\Scripts\Activate.ps1                      # falls .venv fehlt: py -3.11 -m venv .venv ; python -m pip install -e ".[dev,import,cli]"
 python -m pytest -q ; python -m ruff check . ; python -m mypy src
 ```
 

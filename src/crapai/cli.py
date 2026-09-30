@@ -12,6 +12,7 @@ errors into exit codes:
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import logging
 import logging.handlers
@@ -26,6 +27,7 @@ from crapai.branding import CLI_NAME, PRODUCT_NAME, STATE_DIR_NAME
 from crapai.errors import UNEXPECTED_ERROR_CODE, ConfigError, SaraError
 from crapai.i18n.messages import Messages, resolve_language
 from crapai.project.workspace import Workspace
+from crapai.services.dedup import dedup_project
 from crapai.services.importing import ImportRequest, ImportSummary, import_source
 from crapai.services.project import DEFAULT_TEMPLATE, create_project, project_status
 
@@ -35,6 +37,9 @@ EXIT_OK = 0
 EXIT_USER_ERROR = 1
 EXIT_SYSTEM_ERROR = 2
 EXIT_WARNINGS = 4
+
+STRATEGIES = ("doi_or_title", "strict_ids", "title", "title_authors")
+KEEP_RULES = ("best", "first", "last")
 
 # Errors caused by the environment, not by the input (plan chapter 15.1: exit code 2).
 SYSTEM_ERROR_CODES = frozenset({"E401", "E402", "E403", UNEXPECTED_ERROR_CODE})
@@ -341,6 +346,66 @@ def status_command(
         typer.secho(messages.text("cli.status.config_problem", problem=first_line), fg="yellow")
     if status.in_use:
         typer.secho(messages.text("cli.status.in_use"), fg="yellow")
+
+
+@app.command("dedup")
+def dedup_command(
+    folder: Annotated[Path, typer.Argument(help="Project folder.")],
+    strategy: Annotated[
+        str | None,
+        typer.Option(help="doi_or_title, strict_ids, title, title_authors (default: project)."),
+    ] = None,
+    keep: Annotated[str, typer.Option(help="Record left unmarked: best, first, last.")] = "best",
+    as_json: JsonOption = False,
+    lang: LangOption = None,
+) -> None:
+    """Mark duplicate records (nothing is deleted; earlier marks are recomputed).
+
+    Example: crapai dedup my-review --strategy title
+    """
+    messages = Messages(resolve_language(lang, folder / "project.yaml"))
+    _setup_file_log(folder)
+    try:
+        if strategy is not None and strategy not in STRATEGIES:
+            raise ConfigError(
+                f"Unknown strategy '{strategy}' (valid: {', '.join(STRATEGIES)})", code="E203"
+            )
+        if keep not in KEEP_RULES:
+            raise ConfigError(
+                f"Unknown keep rule '{keep}' (valid: {', '.join(KEEP_RULES)})", code="E203"
+            )
+        summary = dedup_project(
+            Workspace(folder), strategy=strategy, keep=keep  # type: ignore[arg-type]
+        )
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        raise _fail(error, messages, json_mode=as_json) from error
+    if as_json:
+        typer.echo(json.dumps(dataclasses.asdict(summary), ensure_ascii=False, indent=2))
+        return
+    source = messages.text(f"cli.dedup.source.{summary.strategy_source}")
+    if summary.marked == 0:
+        typer.echo(messages.text("cli.dedup.none", strategy=summary.strategy, source=source))
+        return
+    typer.secho(
+        messages.text(
+            "cli.dedup.done",
+            marked=summary.marked,
+            records=summary.records,
+            groups=summary.groups,
+            strategy=summary.strategy,
+            source=source,
+        ),
+        fg="green",
+    )
+    methods = ", ".join(f"{name}: {count}" for name, count in sorted(summary.by_method.items()))
+    typer.echo(messages.text("cli.dedup.methods", methods=methods))
+    typer.echo(
+        messages.text(
+            "cli.dedup.sources",
+            within=sum(summary.within_source.values()),
+            across=summary.across_sources,
+        )
+    )
 
 
 def main() -> None:

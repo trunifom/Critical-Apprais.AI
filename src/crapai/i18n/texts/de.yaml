@@ -170,6 +170,15 @@ cli:
     no_abstracts: "Warnung: Keiner dieser Datensätze hat einen Abstract. Das Screening braucht Abstracts (oder die Option nur Titel)."
     low_abstract_ratio: "Warnung: Weniger als 60 % dieser Datensätze haben einen Abstract."
     empty_records: "Warnung: {count} Datensatz/Datensätze haben weder Titel noch Abstract und sind als EMPTY_RECORD markiert."
+  dedup:
+    done: "Duplikate markiert: {marked} von {records} Datensätzen in {groups} Gruppe(n). Strategie: {strategy} ({source}). Nichts wurde gelöscht."
+    none: "Mit der Strategie {strategy} ({source}) wurden keine Duplikate gefunden."
+    methods: "Nach Grund: {methods}"
+    sources: "Innerhalb einer Quelle: {within}. Über Quellen hinweg: {across}."
+    source:
+      cli: "Befehlszeile"
+      project: "project.yaml"
+      default: "Standard"
   status:
     title: "Projekt: {title}"
     folder: "Ordner: {path}"

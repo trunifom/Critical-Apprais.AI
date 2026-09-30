@@ -105,6 +105,8 @@ Einzelbausteine:
 | `io.normalize.to_records(result, ImportContext(...))` | `RawRecord` → `Record` |
 | `io.records_store.write_records / read_records` | `records.csv`; `backup_dir=` legt Sicherungen an |
 | `io.import_log.append_entry / ensure_not_imported` | Protokoll, E106 |
+| `prisma.dedup.mark_duplicates(records, DedupConfig(strategy, keep))` | markiert Duplikate; `DedupResult(records, marked, groups, by_method, within_source, across_sources)` |
+| `services.dedup.dedup_project(workspace, strategy=None, keep="best")` | liest `records.csv`, markiert, schreibt nach Sicherung; Strategie: Befehlszeile > `project.yaml` > Standard |
 
 `RawRecord.fields` benutzt die internen Spaltennamen; Felder ohne Spalte in `records.csv` (`notes`, `database_name`, `publisher`, `place`,
 `edition`, `short_title`, `title_translated` u. a.) landen in `extra_json`, ebenso alle `extra`-Einträge (`ris_<TAG>`, `nbib_<TAG>`, `bib_<name>`, `col_<Spalte>`).
@@ -131,7 +133,7 @@ fulltext_of, zip_member, import_notes, extra_json`
 
 * `source_format`: `ris, bib, nbib, csv, xlsx, pdf`. `record_type`: `journal_article, conference_paper, book, book_chapter, report, thesis, preprint, web, dataset, trial_registry, other`.
 * `exclusion_reason` (Plan Kap. 26.3): `DUPLICATE, NO_ABSTRACT, NO_TEXT, ENCRYPTED, EMPTY_RECORD, NOT_SCREENABLE, IMPORT_ERROR, RETRACTED` oder leer. Heute setzt der Import nur `EMPTY_RECORD`.
-* `is_duplicate`, `duplicate_of`, `dedup_method`, `abstract_quality`: vorhanden, aber noch nicht befüllt *(geplant: T-M2-01, T-M2-03)*.
+* `is_duplicate`, `duplicate_of`, `dedup_method` werden von `crapai dedup` gesetzt. `dedup_method`: `doi`, `pmid`, `title_norm`, `title_authors` (`fuzzy` folgt mit T-M2-02). **`pmid` ergänzt die Liste aus Plan Kap. 26.1 und ist von der Projektleitung zu bestätigen.** `abstract_quality` ist noch nicht befüllt *(geplant: T-M2-03)*.
 * Ein Datensatz mit Titel und Abstract leer bleibt in der Datei (Markierung, nie Löschen).
 
 ### 4.2 `data/records.import.jsonl`

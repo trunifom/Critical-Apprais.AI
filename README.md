@@ -17,7 +17,8 @@ bereitet sie auf und wird sie zusammen mit Ihren Ein- und Ausschlusskriterien ei
 | Projektordner, atomares Schreiben, Sperre, Sicherungen, Import-Protokoll mit Prüfsummen | **umgesetzt** |
 | Konfiguration `project.yaml` (geprüft, Rangfolge CLI > Umgebung > Projekt > Benutzer) | **umgesetzt** |
 | Meldungen und Fehlertexte Deutsch/Englisch | **umgesetzt** |
-| Duplikate, fehlende Abstracts, Vorfilter, Kostenschätzung (M2) | in Planung |
+| Duplikate markieren (`crapai dedup`) | **umgesetzt** |
+| Fehlende Abstracts, Vorfilter, Kostenschätzung (M2) | in Planung |
 | Screening mit Sprachmodell, Wiederaufnahme, Ergebnisse, PRISMA (M3-M4) | in Planung |
 | Statistik (Test-Retest, Vergleich mit Menschen), Oberfläche (Streamlit) | in Planung |
 

@@ -178,6 +178,15 @@ cli:
     no_abstracts: "Warning: none of these records has an abstract. Screening needs abstracts (or the title-only option)."
     low_abstract_ratio: "Warning: fewer than 60 % of these records have an abstract."
     empty_records: "Warning: {count} record(s) have neither title nor abstract and are marked EMPTY_RECORD."
+  dedup:
+    done: "Duplicates marked: {marked} of {records} records in {groups} group(s). Strategy: {strategy} ({source}). Nothing was deleted."
+    none: "No duplicates found with strategy {strategy} ({source})."
+    methods: "By reason: {methods}"
+    sources: "Within one source: {within}. Across sources: {across}."
+    source:
+      cli: "command line"
+      project: "project.yaml"
+      default: "default"
   status:
     title: "Project: {title}"
     folder: "Folder: {path}"

@@ -19,7 +19,7 @@ One file per task. Pick the first task whose dependencies are done. Update the `
 | [T-M1-10](T-M1-10.md) | M1 | Normalisation and records.csv writer/reader, source hashes, import log | 5 | T-M1-05, T-M1-06, T-M1-07, T-M1-08 | done |
 | [T-M1-11](T-M1-11.md) | M1 | CLI: init, import, status | 3 | T-M1-02, T-M1-03, T-M1-10 | done |
 | [T-M1-12](T-M1-12.md) | M1 | German UI texts (de.yaml) and new i18n keys | 4 | T-M1-01 | done (review) |
-| [T-M2-01](T-M2-01.md) | M2 | Deduplication strategies with normalised titles and review list | 6 | T-M1-10 | todo |
+| [T-M2-01](T-M2-01.md) | M2 | Deduplication strategies with normalised titles and review list | 6 | T-M1-10 | done |
 | [T-M2-02](T-M2-02.md) | M2 | Optional fuzzy duplicate detection | 4 | T-M2-01 | todo |
 | [T-M2-03](T-M2-03.md) | M2 | Missing abstract, NOT_SCREENABLE, retracted and quality flags | 3 | T-M1-10 | todo |
 | [T-M2-04](T-M2-04.md) | M2 | Preflight service (codes) and CLI output | 4 | T-M2-03 | todo |

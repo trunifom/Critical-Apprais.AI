@@ -22,12 +22,12 @@ und kennzeichnet Geplantes ausdrücklich. Bedienung: `docs/BENUTZERHANDBUCH.md`.
 ```
 Bedienung        cli.py (typer)                      [geplant: ui/ (Streamlit)]
                     │  ruft
-Dienste          services/importing.py   services/project.py       [geplant: screening, export, evaluation]
+Dienste          services/importing.py   services/project.py   services/dedup.py   [geplant: screening, export, evaluation]
                     │  ruft
 Fachkern         io/ (readers, normalize, records_store, import_log)
                  config/ (Modelle, Loader)   project/ (Workspace, Lock, atomares Schreiben)
                  i18n/ (Texte, Meldungen)    errors.py   criteria/  cost/  enums.py  legacy.py
-                                                          [geplant: prisma/, screening/, llm/, prompts/, stats/]
+                 prisma/ (dedup)            [geplant: prisma/ Rest, screening/, llm/, prompts/, stats/]
                     │  spricht mit der Aussenwelt nur über
 Ports/Adapter    [geplant: LLMProvider, FileStore, Clock, SecretStore, EventSink]
 ```
@@ -51,6 +51,8 @@ So bleibt der Kern ohne Oberfläche testbar und später von Streamlit und CLI ge
 | `project.atomic` | Sicheres Schreiben | `atomic_write`: Temp-Datei, `fsync`, `os.replace`, Wiederholung bei Sperre, Ausweichdatei |
 | `project.lock` | Ein Schreiber je Projekt | `ProjectLock` mit Herzschlag, Übernahme veralteter Sperren |
 | `project.workspace` | Ordnerstruktur | `Workspace.create/open`, Schema-Version, Warnung bei OneDrive/Dropbox |
+| `prisma.dedup` | Duplikate markieren (nicht löschend) | `mark_duplicates`, `DedupConfig`, `DedupResult`, `normalize_title`; Strategien `doi_or_title`, `strict_ids`, `title`, `title_authors` |
+| `services.dedup` | Duplikate im Projekt markieren | `dedup_project` (Sperre, Sicherung, atomares Schreiben) |
 | `io.readers.detect` | Formaterkennung | `detect_format` (Inhalt vor Endung), `SourceFormat` |
 | `io.readers.ris` / `nbib` / `bibtex` / `tabular` | Reader | liefern `ReadResult` mit `RawRecord`-Objekten |
 | `io.readers.base` | gemeinsame Typen | `RawRecord`, `ReadResult`, `decode_text` (Kodierungskette) |
@@ -146,6 +148,7 @@ Umsetzungsentscheide, die im Code gefallen sind (auch in `docs/UMSETZUNGSPLAN_UN
 
 * Schichtentest mit `ast` statt `import-linter` (keine neue Abhängigkeit).
 * BibTeX: eigener toleranter Scanner statt `pybtex` (Cochrane-Dateien sind kein gültiges BibTeX; ein Codepfad).
+* Duplikate: Union-Find über Schlüssel (DOI, PMID, normalisierter Titel), im Zweifel **nicht** markieren (Titeltreffer mit verschiedenen DOIs werden verworfen); der behaltene Datensatz ist der vollständigste.
 * Import-Protokoll als letzter Schritt (macht den Import atomar im Sinne der Buchführung).
 * `Exit-Code 4` bei Warnungen (fehlende Abstracts, `EMPTY_RECORD`).
 
