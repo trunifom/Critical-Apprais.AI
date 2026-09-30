@@ -36,8 +36,8 @@ Commit-Schema: `type(scope): Zusammenfassung (Karten-ID)`; Ende der Nachricht: d
 
 | Punkt | Stand |
 |---|---|
-| Aktueller Branch-Stapel | `main` (Erst-Commit) <- `task/T-M0-02-ci` (Arbeitsstand). Folgeaufgaben bauen auf dem letzten Task-Branch auf, bis der Projektleiter mergt |
-| Tests | 49 passed (`python -m pytest -q`) |
+| Aktueller Branch-Stapel | `main` (Erst-Commit) <- `task/T-M0-02-ci` <- `task/T-M1-01-skeleton` (Arbeitsstand). Folgeaufgaben bauen auf dem letzten Task-Branch auf, bis der Projektleiter mergt |
+| Tests | 61 passed (`python -m pytest -q`) |
 | Lint / Typen | `ruff` sauber (ohne `reference/`), `mypy src` sauber |
 | CI | `.github/workflows/ci.yml` geschrieben (Linux/Windows/macOS x Python 3.11-3.13), noch nie auf GitHub gelaufen |
 | Extras in `pyproject.toml` | `import` (rispy, pybtex, openpyxl, pymupdf, pdfplumber, pylatexenc), `cli` (typer, rich), `dev`, u. a. Neue Abhängigkeiten ausserhalb der Extras: vorher fragen |
@@ -69,7 +69,7 @@ Reihenfolge = empfohlene Arbeitsreihenfolge. Aufwand in Stunden (Schätzung der 
 
 | Status | Karte | Inhalt (Datei, Kernfunktion) | h | Datum / Uhrzeit | Commit |
 |---|---|---|---|---|---|
-| [ ] | T-M1-01 | Paketskelett: `__init__.py` in `project, io, prisma, screening, llm, prompts, stats, services`; README-Schnellstart | 4 | | |
+| [x] | T-M1-01 | Paketskelett: `__init__.py` in `project, io, io.readers, prisma, screening, llm, prompts, stats, services`; README-Schnellstart | 4 | 2026-09-30 15:05 | `a4a1756` |
 | [ ] | T-M1-02 | `config/models.py`: Pydantic-Modelle für `project.yaml` (kein API-Schlüssel speicherbar) | 6 | | |
 | [ ] | T-M1-02 | `config/loader.py`: Laden mit präzisen Fehlern (Code E2xx), Rangfolge CLI > env > project.yaml > user > Standard | | | |
 | [ ] | T-M1-03 | `project/atomic.py`: atomares Schreiben (`os.replace`, Wiederholung, Ausweichname) | 6 | | |
@@ -98,8 +98,7 @@ M2: T-M2-01 Dedup, -02 Fuzzy (optional), -03 fehlende Abstracts/Flags, -04 Prefl
 
 ## 5. Nächster Schritt (bitte aktuell halten)
 
-**T-M1-01 (Paketskelett)** ist die nächste Aufgabe: sie hat nur die Abhängigkeit T-M0-02 (erledigt) und schafft die Ordner, in denen
-alle folgenden Karten ihre Module ablegen. Danach parallelisierbar: T-M1-02, T-M1-03, T-M1-04 (unabhängig voneinander), dann die Reader.
+**T-M1-02 (Konfigurationsmodelle)**; das Paketskelett (T-M1-01) steht. Unabhängig davon, und daher in beliebiger Reihenfolge möglich: T-M1-03 (Workspace/Lock) und T-M1-04 (Formaterkennung); danach die Reader.
 
 ## 6. Abweichungen und offene Punkte
 
