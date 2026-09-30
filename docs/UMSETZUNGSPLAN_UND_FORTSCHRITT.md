@@ -37,7 +37,7 @@ Commit-Schema: `type(scope): Zusammenfassung (Karten-ID)`; Ende der Nachricht: d
 | Punkt | Stand |
 |---|---|
 | Branch | Nur `main`. Die frühen Task-Branches wurden fast-forward nach `main` gemergt und gelöscht. Push: `git push origin main` durch den Projektleiter |
-| Tests | 117 passed (`python -m pytest -q`) |
+| Tests | 153 passed (`python -m pytest -q`) |
 | Lint / Typen | `ruff` sauber (ohne `reference/`), `mypy src` sauber |
 | CI | `.github/workflows/ci.yml` geschrieben (Linux/Windows/macOS x Python 3.11-3.13), noch nie auf GitHub gelaufen |
 | Extras in `pyproject.toml` | `import` (rispy, pybtex, openpyxl, pymupdf, pdfplumber, pylatexenc), `cli` (typer, rich), `dev`, u. a. Neue Abhängigkeiten ausserhalb der Extras: vorher fragen |
@@ -74,8 +74,8 @@ Reihenfolge = empfohlene Arbeitsreihenfolge. Aufwand in Stunden (Schätzung der 
 | [x] | T-M1-02 | `config/models.py`: Pydantic-Modelle für `project.yaml` (kein API-Schlüssel speicherbar) | 6 | 2026-09-30 15:11 | `fcfb8f7` |
 | [x] | T-M1-02 | `config/loader.py`: Laden mit präzisen Fehlern (E201/E203, Pfad + Grund) | | 2026-09-30 15:12 | `2c3a108` |
 | [x] | T-M1-02 | `config/loader.py`: Rangfolge CLI > env (`SARA_ABSCHNITT__SCHLUESSEL`) > project.yaml > user > Standard | | 2026-09-30 15:14 | `e5403cc` |
-| [ ] | T-M1-03 | `project/atomic.py`: atomares Schreiben (`os.replace`, Wiederholung, Ausweichname) | 6 | | |
-| [ ] | T-M1-03 | `project/lock.py`: Lock mit Heartbeat, Übernahme veralteter Locks | | | |
+| [x] | T-M1-03 | `project/atomic.py`: atomares Schreiben (`os.replace`, Wiederholung, Ausweichname) | 6 | 2026-09-30 15:15 | `4cacadf` |
+| [x] | T-M1-03 | `project/lock.py`: Lock mit Heartbeat, Übernahme veralteter Locks | 2026-09-30 15:17 | `17d426d` | |
 | [ ] | T-M1-03 | `project/workspace.py`: Ordnerstruktur Kap. 6, Schema-Version | | | |
 | [ ] | T-M1-04 | `io/readers/detect.py`: Formaterkennung (Inhalt vor Endung; Typ, Konfidenz, Grund) | 4 | | |
 | [ ] | T-M1-05 | `io/readers/ris.py`: RIS-Reader (Fortsetzungszeilen, L15 beheben; 706/156, 6, 46 laut EXPECTED.json) | 5 | | |
