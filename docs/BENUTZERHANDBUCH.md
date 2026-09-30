@@ -240,7 +240,9 @@ anthropic,claude-sonnet-5-5,0.003,0.015,USD,2026-09-30,Preisseite des Anbieters
 * Zeilen mit fehlendem oder ungültigem Preis werden übersprungen (Hinweis im Protokoll `.crapai/app.log`). Fehlt eine Pflichtspalte, meldet das Programm `E203`.
 * **So wird gezählt:** Jeder Datensatz, der ans Modell geht, wird mit seinem echten Titel und Abstract gezählt, dazu der gemeinsame Anteil (Kriterien, Ziele) einmal je Datensatz. Für OpenAI-Modelle zählt das Programm genau (Paket `tiktoken`, Extra `llm-openai`); für alle anderen Anbieter näherungsweise mit einem Zuschlag von 10 %, damit die Kosten eher zu hoch als zu tief geschätzt werden. Die Ausgabelänge ist unbekannt: Erwartet wird ein Wert pro Antwort, als Obergrenze gilt `llm.max_output_tokens` (Worst Case), der mit `limits.max_cost` verglichen wird.
 
-Die Ausgabe der Schätzung in `crapai check` folgt mit T-M2-06.
+**Ausgabe in `crapai check`:** Nach dem Bericht zeigt `check` (wenn mindestens ein Datensatz ans Modell geht) Modell, Tokens (genau gezählt oder näherungsweise), das Kostenband mit dem schlimmsten Fall und die geschätzte Dauer. Die Dauer ist die langsamste von drei Grenzen: Anfragen pro Minute (`limits.rpm`), Tokens pro Minute (`limits.tpm`) oder die Zeit einer Anfrage geteilt durch die Parallelität (`limits.max_concurrency`). Für die Zeit einer Anfrage nimmt das Programm **3 Sekunden** an; das ist eine Annahme, die Dauer ist ein Anhaltspunkt und keine Zusage. Liegt der schlimmste Fall über `limits.max_cost`, meldet `check` eine Warnung (Rückgabecode 4), weil ein Lauf vorzeitig stoppen würde. Ist `pricing.csv` unbrauchbar, erscheint eine Warnung statt der Kosten (Rückgabecode 4); die Tokens werden trotzdem gezählt.
+
+**Bestätigung vor dem Lauf:** Der spätere Befehl `crapai screen` startet erst nach einer ausdrücklichen Bestätigung (Kommandozeilen-Option oder Antwort am Terminal); ohne Terminal und ohne Bestätigung startet er nicht (Regel in `cost/duration.py`, getestet).
 
 ## 6. Stand ansehen: `crapai status`
 

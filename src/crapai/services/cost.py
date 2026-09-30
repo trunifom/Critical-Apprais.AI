@@ -12,6 +12,7 @@ from dataclasses import dataclass
 
 from crapai.config.loader import load_project_config
 from crapai.config.models import ProjectConfig
+from crapai.cost.duration import DurationEstimate, estimate_duration
 from crapai.cost.estimator import EstimatorConfig, RunEstimate, build_shared_payload, estimate_run
 from crapai.cost.pricing import CsvPriceSource, Price
 from crapai.cost.tokenizers import tokenizer_for
@@ -30,6 +31,8 @@ class ProjectEstimate:
         max_cost: ``limits.max_cost`` (None = no limit).
         over_limit: True if the worst case exceeds ``max_cost`` (the run would stop early).
         price_file_found: Whether the project has a ``pricing.csv``.
+        duration: Estimated wall-clock time from ``limits.rpm``, ``limits.tpm`` and
+            ``limits.max_concurrency``.
     """
 
     estimate: RunEstimate
@@ -38,6 +41,7 @@ class ProjectEstimate:
     max_cost: float | None
     over_limit: bool
     price_file_found: bool
+    duration: DurationEstimate
 
 
 def criteria_text(config: ProjectConfig) -> str:
@@ -98,4 +102,12 @@ def estimate_project(workspace: Workspace, *, instructions: str = "") -> Project
     )
     limit = config.limits.max_cost
     over = limit is not None and estimate.cost_max is not None and estimate.cost_max > limit
-    return ProjectEstimate(estimate, provider, model, limit, over, found)
+    limits = config.limits
+    duration = estimate_duration(
+        estimate.n_items,
+        estimate.total_tokens,
+        rpm=limits.rpm,
+        tpm=limits.tpm,
+        max_concurrency=limits.max_concurrency,
+    )
+    return ProjectEstimate(estimate, provider, model, limit, over, found, duration)

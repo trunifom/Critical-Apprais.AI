@@ -16,6 +16,7 @@ import dataclasses
 import json
 import logging
 import logging.handlers
+import math
 import sys
 from pathlib import Path
 from typing import Annotated, Any
@@ -24,9 +25,11 @@ import typer
 
 from crapai import __version__
 from crapai.branding import CLI_NAME, PRODUCT_NAME, STATE_DIR_NAME
+from crapai.cost.duration import format_duration
 from crapai.errors import UNEXPECTED_ERROR_CODE, ConfigError, SaraError
 from crapai.i18n.messages import Messages, resolve_language
 from crapai.project.workspace import Workspace
+from crapai.services.cost import ProjectEstimate, estimate_project
 from crapai.services.dedup import dedup_project
 from crapai.services.importing import ImportRequest, ImportSummary, import_source
 from crapai.services.preflight import ProjectReport, check_project
@@ -182,9 +185,7 @@ def init_command(
     folder: Annotated[Path, typer.Argument(help="New project folder (must be new or empty).")],
     from_template: Annotated[
         str,
-        typer.Option(
-            "--from-template", help="Template name (blank, demo) or path of a YAML file."
-        ),
+        typer.Option("--from-template", help="Template name (blank, demo) or path of a YAML file."),
     ] = DEFAULT_TEMPLATE,
     title: Annotated[str | None, typer.Option(help="Project title (default: folder name).")] = None,
     lang: LangOption = None,
@@ -381,7 +382,9 @@ def dedup_command(
                 f"Unknown keep rule '{keep}' (valid: {', '.join(KEEP_RULES)})", code="E203"
             )
         summary = dedup_project(
-            Workspace(folder), strategy=strategy, keep=keep  # type: ignore[arg-type]
+            Workspace(folder),
+            strategy=strategy,  # type: ignore[arg-type]
+            keep=keep,  # type: ignore[arg-type]
         )
     except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
         raise _fail(error, messages, json_mode=as_json) from error
@@ -435,12 +438,97 @@ def check_command(
         report = check_project(Workspace(folder), update=not read_only)
     except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
         raise _fail(error, messages, json_mode=as_json) from error
+    estimate, estimate_problem = _estimate_for(folder, report)
     if as_json:
-        typer.echo(json.dumps(_report_json(report), ensure_ascii=False, indent=2))
+        data = _report_json(report)
+        data["estimate"] = _estimate_json(estimate)
+        data["estimate_problem"] = estimate_problem
+        typer.echo(json.dumps(data, ensure_ascii=False, indent=2))
     else:
         _print_report(report, messages)
+        _print_estimate(estimate, estimate_problem, messages)
     status = report.status.value
+    if status == "ok" and (estimate_problem or (estimate and estimate.over_limit)):
+        status = "warning"
     raise typer.Exit({"ok": EXIT_OK, "warning": EXIT_WARNINGS, "error": EXIT_USER_ERROR}[status])
+
+
+def _estimate_for(folder: Path, report: ProjectReport) -> tuple[ProjectEstimate | None, str | None]:
+    """The cost estimate, or ``(None, problem)`` if it cannot be made; none if nothing is sent."""
+    if report.valid_for_model == 0:
+        return None, None
+    try:
+        return estimate_project(Workspace(folder)), None
+    except SaraError as error:
+        return None, f"{error.code}: {error.user_message}"
+
+
+def _estimate_json(estimate: ProjectEstimate | None) -> dict[str, Any] | None:
+    if estimate is None:
+        return None
+    run = estimate.estimate
+    return {
+        "provider": estimate.provider,
+        "model": estimate.model,
+        "records": run.n_items,
+        "input_tokens": run.input_tokens,
+        "output_tokens": run.output_tokens,
+        "tokenizer": run.tokenizer,
+        "tokens_exact": run.exact,
+        "currency": run.currency,
+        "cost": run.cost,
+        "cost_low": run.cost_low,
+        "cost_high": run.cost_high,
+        "cost_max": run.cost_max,
+        "price_valid_from": run.price.valid_from if run.price else None,
+        "max_cost": estimate.max_cost,
+        "over_limit": estimate.over_limit,
+        "duration_seconds": math.ceil(estimate.duration.seconds),
+        "duration_limited_by": estimate.duration.limited_by,
+    }
+
+
+def _print_estimate(
+    estimate: ProjectEstimate | None, problem: str | None, messages: Messages
+) -> None:
+    if problem:
+        typer.secho(messages.text("cli.check.cost.error", problem=problem), fg="yellow")
+    if estimate is None:
+        return
+    run = estimate.estimate
+    typer.echo(
+        messages.text("cli.check.cost.model", provider=estimate.provider, model=estimate.model)
+    )
+    kind = messages.text("cli.check.cost.exact" if run.exact else "cli.check.cost.approximate")
+    typer.echo(
+        messages.text(
+            "cli.check.cost.tokens", input=run.input_tokens, output=run.output_tokens, kind=kind
+        )
+    )
+    if run.cost is None:
+        typer.echo(messages.text("cli.check.cost.no_price"))
+    else:
+        typer.echo(
+            messages.text(
+                "cli.check.cost.cost",
+                low=f"{run.cost_low:.4f}",
+                high=f"{run.cost_high:.4f}",
+                worst=f"{run.cost_max:.4f}",
+                currency=run.currency,
+                valid=(run.price.valid_from if run.price and run.price.valid_from else "?"),
+            )
+        )
+    typer.echo(
+        messages.text(
+            "cli.check.cost.duration",
+            duration=format_duration(estimate.duration.seconds),
+            limit=messages.text(f"cli.check.cost.limit.{estimate.duration.limited_by}"),
+        )
+    )
+    if estimate.over_limit:
+        typer.secho(
+            messages.text("cli.check.cost.over_limit", max_cost=estimate.max_cost), fg="yellow"
+        )
 
 
 def _report_json(report: ProjectReport) -> dict[str, Any]:
@@ -523,7 +611,6 @@ def _print_report(report: ProjectReport, messages: Messages) -> None:
             fg="red" if report.status.value == "error" and issue.value in BLOCKING else "yellow",
         )
     typer.echo(messages.text("cli.check.updated" if report.updated else "cli.check.read_only"))
-
 
 
 def main() -> None:

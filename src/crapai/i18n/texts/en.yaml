@@ -211,6 +211,21 @@ cli:
       config_invalid: "project.yaml needs attention: {problem}"
     updated: "Duplicates and validity were recalculated just now."
     read_only: "Read only: duplicates and validity were not recalculated."
+    cost:
+      model: "Model: {provider} / {model}"
+      tokens: "Tokens: input about {input}, output about {output} ({kind})"
+      exact: "counted exactly"
+      approximate: "approximate, with a 10 % safety margin"
+      cost: "Cost: about {low} to {high} {currency} (worst case {worst} {currency}; prices valid from {valid})"
+      no_price: "Cost: no price for this model. Add it to pricing.csv in the project folder."
+      duration: "Duration: about {duration} (limited by {limit})"
+      limit:
+        rpm: "requests per minute"
+        tpm: "tokens per minute"
+        latency: "the time a request takes"
+        none: "nothing to send"
+      over_limit: "The worst case is above limits.max_cost ({max_cost}); the run would stop early."
+      error: "The cost estimate is not available: {problem}"
   dedup:
     done: "Duplicates marked: {marked} of {records} records in {groups} group(s). Strategy: {strategy} ({source}). Nothing was deleted."
     none: "No duplicates found with strategy {strategy} ({source})."

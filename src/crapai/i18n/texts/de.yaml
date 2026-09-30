@@ -203,6 +203,21 @@ cli:
       config_invalid: "Die project.yaml braucht Aufmerksamkeit: {problem}"
     updated: "Duplikate und Gültigkeit wurden soeben neu berechnet."
     read_only: "Nur gelesen: Duplikate und Gültigkeit wurden nicht neu berechnet."
+    cost:
+      model: "Modell: {provider} / {model}"
+      tokens: "Tokens: Eingabe etwa {input}, Ausgabe etwa {output} ({kind})"
+      exact: "genau gezählt"
+      approximate: "näherungsweise, mit 10 % Sicherheitszuschlag"
+      cost: "Kosten: etwa {low} bis {high} {currency} (schlimmster Fall {worst} {currency}; Preise gültig ab {valid})"
+      no_price: "Kosten: kein Preis für dieses Modell. Tragen Sie es in pricing.csv im Projektordner ein."
+      duration: "Dauer: etwa {duration} (begrenzt durch {limit})"
+      limit:
+        rpm: "Anfragen pro Minute"
+        tpm: "Tokens pro Minute"
+        latency: "die Dauer einer Anfrage"
+        none: "nichts zu senden"
+      over_limit: "Der schlimmste Fall liegt über limits.max_cost ({max_cost}); der Lauf würde vorzeitig stoppen."
+      error: "Die Kostenschätzung ist nicht verfügbar: {problem}"
   dedup:
     done: "Duplikate markiert: {marked} von {records} Datensätzen in {groups} Gruppe(n). Strategie: {strategy} ({source}). Nichts wurde gelöscht."
     none: "Mit der Strategie {strategy} ({source}) wurden keine Duplikate gefunden."
