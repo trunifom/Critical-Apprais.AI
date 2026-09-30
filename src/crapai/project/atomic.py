@@ -13,8 +13,10 @@ locked, the content is written to a timestamped alternative file so nothing is l
 from __future__ import annotations
 
 import contextlib
+import itertools
 import logging
 import os
+import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -50,8 +52,24 @@ def alternative_path(target: Path, now: datetime) -> Path:
     return target.with_name(f"{target.stem}.{stamp}{target.suffix}")
 
 
+_temp_counter = itertools.count()
+
+
 def _temp_path(target: Path) -> Path:
-    return target.with_name(f".{target.name}.{os.getpid()}.tmp")
+    """A temp name that is unique per process, thread and call (two writers never share one)."""
+    unique = f"{os.getpid()}.{threading.get_ident()}.{next(_temp_counter)}"
+    return target.with_name(f".{target.name}.{unique}.tmp")
+
+
+def _free_alternative(target: Path, now: datetime) -> Path:
+    """The alternative name, made unique if a file of that name (same second) already exists."""
+    candidate = alternative_path(target, now)
+    counter = 2
+    while candidate.exists():
+        stamp = now.strftime("%Y%m%d-%H%M%S")
+        candidate = target.with_name(f"{target.stem}.{stamp}-{counter}{target.suffix}")
+        counter += 1
+    return candidate
 
 
 def _replace_with_retry(
@@ -112,10 +130,11 @@ def atomic_write(
             os.fsync(handle.fileno())
         if _replace_with_retry(tmp, target, retries=retries, delay_s=delay_s, sleep=sleep):
             return WriteResult(target)
-        alternative = alternative_path(target, now())
+        alternative = _free_alternative(target, now())
         if _replace_with_retry(tmp, alternative, retries=0, delay_s=0.0, sleep=sleep):
             logger.warning("%s is locked; wrote %s instead", target.name, alternative.name)
             return WriteResult(alternative, used_alternative=True)
+        logger.error("Cannot write %s: the file stays locked and no alternative works", target.name)
         raise StorageError(
             f"Cannot write {target.name}: the file is locked",
             code="E401",
@@ -124,6 +143,7 @@ def atomic_write(
         )
     except OSError as exc:
         code = "E403" if getattr(exc, "errno", None) == 28 else "E401"  # 28 = ENOSPC
+        logger.error("Cannot write %s (%s, %s)", target.name, type(exc).__name__, code)
         raise StorageError(
             f"Cannot write {target.name} ({type(exc).__name__})",
             code=code,
@@ -135,6 +155,50 @@ def atomic_write(
     finally:
         with contextlib.suppress(OSError):
             tmp.unlink()
+
+
+def append_lines(path: Path, lines: list[str]) -> None:
+    """Append text lines to an append-only JSON-lines file and flush them to disk.
+
+    A crash while writing can leave a last line without its newline. Appending straight after it
+    would glue the new line onto the torn one and make the file unreadable, so the torn tail is
+    cut off first (it was never a complete record; readers ignore it as well).
+
+    Raises:
+        OSError: If the file cannot be written; the caller decides how to report it.
+    """
+    if not lines:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "ab+") as handle:
+        _cut_torn_tail(handle, path)
+        handle.write("".join(f"{line}\n" for line in lines).encode("utf-8"))
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def _cut_torn_tail(handle: BinaryIO, path: Path) -> None:
+    """Truncate everything after the last newline if the file does not end with one."""
+    handle.seek(0, os.SEEK_END)
+    size = handle.tell()
+    if size == 0:
+        return
+    handle.seek(size - 1)
+    if handle.read(1) == b"\n":
+        return
+    cut, position = 0, size
+    while position > 0:  # find the last newline, reading backwards in blocks
+        start = max(0, position - 4096)
+        handle.seek(start)
+        block = handle.read(position - start)
+        found = block.rfind(b"\n")
+        if found != -1:
+            cut = start + found + 1
+            break
+        position = start
+    logger.warning("Cutting %d torn byte(s) from the end of %s", size - cut, path.name)
+    handle.truncate(cut)
+    handle.seek(0, os.SEEK_END)
 
 
 def atomic_write_bytes(target: Path, data: bytes, **options: object) -> WriteResult:

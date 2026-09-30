@@ -14,7 +14,6 @@ rebuilt by running dedup and the validity check again.
 from __future__ import annotations
 
 import logging
-import os
 from collections import Counter
 from collections.abc import Iterable, Mapping
 from pathlib import Path
@@ -28,6 +27,7 @@ from crapai.io.records_store import Record
 from crapai.prisma import events as ev
 from crapai.prisma.events import PrismaEvent, from_json_line, to_json_line
 from crapai.prisma.flow import FlowWarning, PrismaFlow, build_flow, validate_flow
+from crapai.project.atomic import append_lines
 from crapai.project.workspace import Workspace
 
 logger = logging.getLogger(__name__)
@@ -43,13 +43,7 @@ def append_events(path: Path, events: Iterable[PrismaEvent]) -> int:
         OSError: If the file cannot be written.
     """
     lines = [to_json_line(event) for event in events]
-    if not lines:
-        return 0
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "a", encoding="utf-8", newline="\n") as handle:
-        handle.write("\n".join(lines) + "\n")
-        handle.flush()
-        os.fsync(handle.fileno())
+    append_lines(path, lines)
     return len(lines)
 
 

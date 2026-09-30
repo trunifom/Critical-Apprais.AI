@@ -16,6 +16,7 @@ import logging
 import os
 import secrets
 import sys
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -30,6 +31,8 @@ logger = logging.getLogger(__name__)
 
 HEARTBEAT_INTERVAL_S = 10.0
 STALE_AFTER_S = 60.0
+READ_RETRIES = 4  # a heartbeat rewrite or a virus scanner can block a read for a moment
+READ_RETRY_DELAY_S = 0.05
 
 
 def _utc_now() -> datetime:
@@ -54,16 +57,24 @@ def pid_alive(pid: int) -> bool:
 def _pid_alive_windows(pid: int) -> bool:
     # os.kill would terminate the process on Windows, so ask the Win32 API instead.
     import ctypes
+    from ctypes import wintypes
 
     process_query_limited_information = 0x1000
     still_active = 259
-    kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined,unused-ignore]
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined,unused-ignore]
+    # Declare the signatures: without them a 64-bit HANDLE would be truncated to 32 bits.
+    kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    kernel32.OpenProcess.restype = wintypes.HANDLE
+    kernel32.GetExitCodeProcess.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+    kernel32.GetExitCodeProcess.restype = wintypes.BOOL
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel32.CloseHandle.restype = wintypes.BOOL
     handle = kernel32.OpenProcess(process_query_limited_information, False, pid)
     if not handle:
         # ERROR_ACCESS_DENIED (5) means the process exists but we may not query it.
-        return bool(ctypes.GetLastError() == 5)  # type: ignore[attr-defined,unused-ignore]
+        return bool(ctypes.get_last_error() == 5)  # type: ignore[attr-defined,unused-ignore]
     try:
-        code = ctypes.c_ulong()
+        code = wintypes.DWORD()
         if not kernel32.GetExitCodeProcess(handle, ctypes.byref(code)):
             return True
         return bool(code.value == still_active)
@@ -114,20 +125,36 @@ class ProjectLock:
     def inspect(self) -> LockInfo | None:
         """Read the current lock, or None if there is none.
 
-        An unreadable or malformed lock file is reported as stale (owner unknown, PID 0), because
-        no live process can refresh it.
+        A malformed lock file is reported as stale (owner unknown, PID 0), because no live process
+        can refresh it. A file that cannot be *read* (a virus scanner or the owner's heartbeat
+        rewrite holds it for a moment) is retried and, if it stays unreadable, reported as **not**
+        stale: an unknown state must never allow a takeover of a lock that may be alive.
         """
-        try:
-            raw = self.path.read_text(encoding="utf-8")
-        except FileNotFoundError:
-            return None
-        except OSError:
-            return LockInfo(0, "", self._now(), self._now(), stale=True)
+        raw = ""
+        for attempt in range(READ_RETRIES + 1):
+            try:
+                raw = self.path.read_text(encoding="utf-8")
+                break
+            except FileNotFoundError:
+                return None
+            except UnicodeDecodeError:
+                logger.warning("Lock file %s is not valid UTF-8; treating it as stale", self.path)
+                return LockInfo(0, "", self._now(), self._now(), stale=True)
+            except OSError as exc:
+                if attempt < READ_RETRIES:
+                    time.sleep(READ_RETRY_DELAY_S)
+                    continue
+                logger.warning(
+                    "Lock file %s cannot be read (%s); assuming it is in use",
+                    self.path,
+                    type(exc).__name__,
+                )
+                return LockInfo(0, "", self._now(), self._now(), stale=False)
         try:
             data: dict[str, Any] = json.loads(raw)
             pid = int(data["pid"])
-            started = datetime.fromisoformat(data["started"])
-            heartbeat = datetime.fromisoformat(data["heartbeat"])
+            started = self._aware(datetime.fromisoformat(data["started"]))
+            heartbeat = self._aware(datetime.fromisoformat(data["heartbeat"]))
             token = str(data["token"])
         except (ValueError, KeyError, TypeError):
             logger.warning("Lock file %s is malformed; treating it as stale", self.path)
@@ -135,6 +162,11 @@ class ProjectLock:
         age = (self._now() - heartbeat).total_seconds()
         stale = age > self._stale_after_s and not self._is_alive(pid)
         return LockInfo(pid, token, started, heartbeat, stale)
+
+    @staticmethod
+    def _aware(value: datetime) -> datetime:
+        """Treat a timestamp without time zone (hand-edited file, old writer) as UTC."""
+        return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
 
     @property
     def held(self) -> bool:
@@ -155,7 +187,10 @@ class ProjectLock:
                 and ``take_over_stale`` is False (``details["stale"]`` is True so that the caller
                 can ask the user and retry).
         """
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            raise self._io_error("create the folder of the project lock", exc) from exc
         if self._try_create():
             return
         info = self.inspect()
@@ -163,13 +198,43 @@ class ProjectLock:
             if self._try_create():
                 return
             info = self.inspect()
-        if info is not None and info.stale and take_over_stale:
-            logger.warning("Taking over stale lock of PID %d", info.pid)
-            with contextlib.suppress(FileNotFoundError):
-                self.path.unlink()
+        if info is not None and info.stale and take_over_stale and self.remove_stale(info):
             if self._try_create():
                 return
+            info = self.inspect()
         raise self._refusal(info)
+
+    def remove_stale(self, info: LockInfo | None = None) -> bool:
+        """Remove a stale lock without touching a live one.
+
+        The file is first *renamed* to a unique name (an atomic step), then its token is compared
+        with the stale one that was inspected. If another process has replaced the stale lock in
+        the meantime, the fresh lock is put back and nothing is removed.
+
+        Returns:
+            True if a stale lock was removed, False if there was none or it is alive.
+        """
+        info = info or self.inspect()
+        if info is None or not info.stale:
+            return False
+        parked = self.path.with_name(f"{self.path.name}.stale-{secrets.token_hex(4)}")
+        try:
+            os.replace(self.path, parked)
+        except FileNotFoundError:
+            return True  # somebody else removed it: the way is free
+        except OSError as exc:
+            raise self._io_error("remove the stale project lock", exc) from exc
+        moved = ProjectLock(parked, now=self._now, is_alive=self._is_alive).inspect()
+        same = moved is not None and moved.token == info.token
+        if same:
+            logger.warning("Removed stale project lock of PID %d", info.pid)
+        else:
+            logger.warning("The project lock changed hands during the takeover; keeping it")
+            with contextlib.suppress(OSError):
+                os.link(parked, self.path)  # put the fresh lock back (fails if re-created)
+        with contextlib.suppress(OSError):
+            parked.unlink()
+        return same
 
     def _try_create(self) -> bool:
         """Create the lock file exclusively; False if it already exists."""
@@ -178,11 +243,27 @@ class ProjectLock:
             fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
         except FileExistsError:
             return False
+        except OSError as exc:
+            raise self._io_error("create the project lock", exc) from exc
         now = self._now()
-        with os.fdopen(fd, "w", encoding="utf-8") as handle:
-            handle.write(self._payload(token, now, now))
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                handle.write(self._payload(token, now, now))
+        except OSError as exc:
+            with contextlib.suppress(OSError):
+                self.path.unlink()  # never leave an empty file that later looks stale
+            raise self._io_error("write the project lock", exc) from exc
         self._token = token
         return True
+
+    def _io_error(self, action: str, exc: OSError) -> StorageError:
+        logger.error("Cannot %s at %s: %s", action, self.path, type(exc).__name__)
+        return StorageError(
+            f"Cannot {action} ({type(exc).__name__})",
+            code="E401",
+            hint="Check that the project folder exists, is writable and not read-only.",
+            details={"path": str(self.path)},
+        )
 
     def _payload(self, token: str, started: datetime, heartbeat: datetime) -> str:
         return json.dumps(
@@ -200,7 +281,7 @@ class ProjectLock:
             return StorageError(
                 "The project lock is stale (its owner is no longer running)",
                 code="E402",
-                hint="Confirm to take over the stale lock.",
+                hint="Run 'crapai unlock <folder>' to remove the stale lock.",
                 details={"path": str(self.path), "stale": True, "pid": info.pid if info else 0},
             )
         return StorageError(

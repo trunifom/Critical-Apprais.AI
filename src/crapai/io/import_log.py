@@ -12,7 +12,6 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -20,6 +19,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from crapai.errors import ImportFailed, StorageError
+from crapai.project.atomic import append_lines
 
 logger = logging.getLogger(__name__)
 
@@ -61,11 +61,7 @@ def append_entry(log_path: Path, entry: ImportLogEntry) -> None:
     line = json.dumps(
         entry.model_dump(mode="json", by_alias=True), ensure_ascii=False, separators=(",", ":")
     )
-    log_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(log_path, "a", encoding="utf-8", newline="\n") as handle:
-        handle.write(line + "\n")
-        handle.flush()
-        os.fsync(handle.fileno())
+    append_lines(log_path, [line])
 
 
 def read_entries(log_path: Path) -> list[ImportLogEntry]:

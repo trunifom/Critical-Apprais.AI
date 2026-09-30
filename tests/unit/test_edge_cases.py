@@ -412,33 +412,132 @@ def test_windows_pid_check_handles_access_denied_and_query_failure(
 ) -> None:
     import ctypes
 
-    class Kernel32:
-        opened = 0
+    class Function:
+        """A Win32 function stand-in that accepts the argtypes/restype declarations."""
 
-        def OpenProcess(self, *args: Any) -> int:  # noqa: N802 - mirrors the Win32 name
-            return self.opened
+        def __init__(self, result: int) -> None:
+            self.result = result
+            self.argtypes: Any = None
+            self.restype: Any = None
 
-        def GetExitCodeProcess(self, *args: Any) -> int:  # noqa: N802
-            return 0  # the query fails
+        def __call__(self, *args: Any) -> int:
+            return self.result
 
-        def CloseHandle(self, handle: int) -> None:  # noqa: N802
-            pass
-
-    fake = Kernel32()
-    monkeypatch.setattr(ctypes, "windll", types.SimpleNamespace(kernel32=fake), raising=False)
-    monkeypatch.setattr(ctypes, "GetLastError", lambda: 5, raising=False)
+    fake = types.SimpleNamespace(
+        OpenProcess=Function(0),  # no handle
+        GetExitCodeProcess=Function(0),  # the query fails
+        CloseHandle=Function(1),
+    )
+    monkeypatch.setattr(ctypes, "WinDLL", lambda *a, **k: fake, raising=False)
+    monkeypatch.setattr(ctypes, "get_last_error", lambda: 5, raising=False)
     assert lock_module.pid_alive(1234) is True  # access denied: the process exists
-    monkeypatch.setattr(ctypes, "GetLastError", lambda: 87, raising=False)
+    monkeypatch.setattr(ctypes, "get_last_error", lambda: 87, raising=False)
     assert lock_module.pid_alive(1234) is False  # invalid parameter: no such process
-    fake.opened = 99
+    fake.OpenProcess.result = 99
     assert lock_module.pid_alive(1234) is True  # handle opened but query failed: assume alive
+    assert fake.OpenProcess.restype is not None  # 64-bit handles are declared, not truncated
 
 
-def test_unreadable_lock_file_counts_as_stale(tmp_path: Path) -> None:
+def test_unreadable_lock_file_is_assumed_to_be_in_use(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     path = tmp_path / "lock"
     path.mkdir()  # reading a directory as a file raises an OSError
+    monkeypatch.setattr(lock_module, "READ_RETRY_DELAY_S", 0.0)
+    with caplog.at_level("WARNING"):
+        info = ProjectLock(path).inspect()
+    # an unknown state must never allow a takeover of a lock that may be alive
+    assert info is not None and not info.stale and info.pid == 0
+    assert "assuming it is in use" in caplog.text
+
+
+def test_a_short_read_error_is_retried_and_then_succeeds(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    lock = ProjectLock(tmp_path / "lock", pid=7)
+    lock.acquire()
+    real = Path.read_text
+    calls = {"n": 0}
+
+    def flaky(self: Path, *args: Any, **kwargs: Any) -> str:
+        calls["n"] += 1
+        if calls["n"] <= 2:
+            raise PermissionError("held by a virus scanner")
+        return real(self, *args, **kwargs)
+
+    monkeypatch.setattr(lock_module, "READ_RETRY_DELAY_S", 0.0)
+    monkeypatch.setattr(Path, "read_text", flaky)
+    info = lock.inspect()
+    assert info is not None and info.pid == 7 and not info.stale and calls["n"] == 3
+
+
+def test_lock_file_that_is_not_utf8_is_stale(tmp_path: Path) -> None:
+    path = tmp_path / "lock"
+    path.write_bytes(b"\xff\xfe\x00garbage")
     info = ProjectLock(path).inspect()
-    assert info is not None and info.stale and info.pid == 0
+    assert info is not None and info.stale
+
+
+def test_timestamps_without_time_zone_are_read_as_utc(tmp_path: Path) -> None:
+    path = tmp_path / "lock"
+    path.write_text(
+        '{"pid": 1, "token": "t", "started": "2026-01-01T00:00:00",'
+        ' "heartbeat": "2026-01-01T00:00:00"}',
+        encoding="utf-8",
+    )
+    info = ProjectLock(path, is_alive=lambda pid: False).inspect()  # used to raise TypeError
+    assert info is not None and info.stale and info.heartbeat.tzinfo is not None
+
+
+def test_remove_stale_leaves_a_live_lock_alone(tmp_path: Path) -> None:
+    path = tmp_path / "lock"
+    ProjectLock(path, pid=1).acquire()
+    assert ProjectLock(path, pid=2).remove_stale() is False
+    assert path.exists()
+
+
+def test_remove_stale_removes_a_dead_owners_lock(tmp_path: Path) -> None:
+    path = tmp_path / "lock"
+    ProjectLock(path, pid=1).acquire()
+    later = ProjectLock(
+        path,
+        pid=2,
+        is_alive=lambda pid: False,
+        now=lambda: dt.datetime.now(dt.UTC) + dt.timedelta(seconds=120),
+    )
+    assert later.remove_stale() is True
+    assert not path.exists() and list(tmp_path.iterdir()) == []  # no parked file is left behind
+
+
+def test_remove_stale_puts_back_a_lock_that_changed_hands(tmp_path: Path) -> None:
+    path = tmp_path / "lock"
+    ProjectLock(path, pid=1).acquire()
+    stale_view = ProjectLock(
+        path,
+        pid=2,
+        is_alive=lambda pid: False,
+        now=lambda: dt.datetime.now(dt.UTC) + dt.timedelta(seconds=120),
+    ).inspect()
+    assert stale_view is not None and stale_view.stale
+    path.unlink()
+    fresh = ProjectLock(path, pid=3)
+    fresh.acquire()  # another process re-created the lock after our inspection
+    other = ProjectLock(path, pid=2, is_alive=lambda pid: False)
+    assert other.remove_stale(stale_view) is False
+    assert fresh.held  # the fresh lock was put back
+
+
+def test_lock_errors_become_storage_errors(tmp_path: Path) -> None:
+    blocker = tmp_path / "file"
+    blocker.write_text("x", encoding="utf-8")
+    with pytest.raises(StorageError) as info:
+        ProjectLock(blocker / "sub" / "lock").acquire()  # the folder cannot be created
+    assert info.value.code == "E401"
+    directory = tmp_path / "dir"
+    directory.mkdir()
+    with pytest.raises(StorageError) as again:
+        ProjectLock(directory).acquire()  # the lock path is a directory
+    assert again.value.code in {"E401", "E402"}
 
 
 def test_lock_that_vanishes_between_two_checks_is_still_acquired(
