@@ -62,7 +62,7 @@ Reihenfolge = empfohlene Arbeitsreihenfolge. Aufwand in Stunden (Schätzung der 
 | [x] | T-M0-02 | ruff sauber (ohne `reference/`) | 4 | 2026-09-30 14:59 | `ab687e1` |
 | [x] | T-M0-02 | Layer-Test (`tests/unit/test_layering.py`, ohne import-linter) | | 2026-09-30 15:00 | `38d230a` |
 | [x] | T-M0-02 | CI-Workflow `.github/workflows/ci.yml`, Kartenstatus | | 2026-09-30 15:01 | `58472eb` |
-| [ ] | T-M0-01 | Rest: Lizenz des Codes, Ablage (nur nach Entscheid des Projektleiters) | 2 | | |
+| [x] | T-M0-01 | Lizenz des Codes: PolyForm Noncommercial 1.0.0 (`LICENSE`, ADR 0016). **Offen bleiben:** Rechteinhaber klären, Fremdmaterial vor Veröffentlichung prüfen | 2 | 2026-09-30 17:0x | siehe Commit "feat(licence)" |
 | [ ] | T-M0-03 | Umbenennung technischer Namen (nur nach Entscheid des Projektleiters) | 3 | | |
 
 ### M1 - Import steht (Meilenstein A)

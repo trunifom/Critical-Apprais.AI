@@ -94,7 +94,10 @@ python -m mypy src          # Typen
 
 ## Lizenz und Veröffentlichung
 
-* Die **Lizenz des Codes ist noch nicht festgelegt** (Aufgabe T-M0-01); es gibt bewusst keine `LICENSE`-Datei.
+* **Lizenz des Codes: [PolyForm Noncommercial 1.0.0](LICENSE)** (ADR 0016). Nutzen, Verändern und Weitergeben sind für **nicht kommerzielle Zwecke** erlaubt, ausdrücklich auch für
+  Forschung, Lehre, Hochschulen, öffentliche Einrichtungen und Behörden. Die kommerzielle Nutzung ist ausgeschlossen. Das ist "source available", **keine Open-Source-Lizenz im Sinn der OSI**
+  (diese verbietet Nutzungseinschränkungen); im Projektantrag deshalb besser von "frei zugänglich" sprechen. Die Lizenz gilt nur für den eigenen Code und die eigene Dokumentation, nicht für Fremdmaterial
+  (`docs/literature/`, `docs/guidelines/`, `docs/reports/`, `docs/swissgpt/`, `reference/`, `tests/data*/`). Wer als Rechteinhaber genannt wird, ist noch mit der Hochschule zu klären (ADR 0016).
 * Vor einer öffentlichen Veröffentlichung prüfen: `docs/literature/`, `docs/guidelines/`, `docs/reports/` und `tests/data_large/test.zip` enthalten fremde bzw. interne Dokumente
   (Lizenz/Vertraulichkeit prüfen oder ausschliessen; `.gitignore` schliesst nur `tests/data_large/` aus). Die PubMed-Beispieldateien enthalten öffentliche Korrespondenzadressen von Autor:innen.
 * `reference/sara-app/sara_statistics/src/inter_rater_reliability.py` enthält einen persönlichen Pfad; nur Referenz.

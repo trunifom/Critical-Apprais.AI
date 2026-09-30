@@ -17,3 +17,4 @@ Kurze Entscheidungsprotokolle. Neue Datei `NNNN-titel.md` mit *Entscheidung / Al
 - 0013 - GUI-Framework Streamlit
 - 0014 - SwissGPT als voraussichtlicher Hauptanbieter
 - 0015 - Volltext-Screening nicht in Version 1
+- 0016 - Lizenz des Codes: PolyForm Noncommercial 1.0.0

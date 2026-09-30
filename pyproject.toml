@@ -7,6 +7,8 @@ name = "sara-local"
 version = "0.0.1"
 description = "Critical Apprais.AI: local, database-free LLM screening assistant for systematic reviews"
 readme = "README.md"
+license = "PolyForm-Noncommercial-1.0.0"  # source available, no commercial use (docs/adr/0016)
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [
     "pandas>=2.0",

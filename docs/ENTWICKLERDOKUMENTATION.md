@@ -25,6 +25,12 @@ python -m mypy src             # Typen
 
 Neue Abhängigkeiten ausserhalb dieser Extras nur nach Rückfrage. CI: `.github/workflows/ci.yml` (Ruff, mypy, pytest auf Windows/Linux/macOS, Python 3.11-3.13, ohne `live`-Tests).
 
+## 1a. Lizenz
+
+Der Code steht unter der **PolyForm Noncommercial 1.0.0** (`LICENSE`, ADR 0016): nicht kommerziell frei nutzbar, kommerziell ausgeschlossen. Der Lizenztext darf nicht verändert werden
+(`tests/unit/test_license.py` prüft den Hash). Beiträge stehen unter derselben Lizenz. Fremdmaterial im Repository ist nicht von ihr erfasst. Neue Abhängigkeiten müssen mit dieser Lizenz
+verträglich sein; im Zweifel nachfragen.
+
 ## 2. Verzeichnisse
 
 | Pfad | Inhalt |

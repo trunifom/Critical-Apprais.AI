@@ -23,6 +23,11 @@ Grundsätze:
 * **Sensitivität zuerst.** Eine übersehene relevante Studie wiegt schwerer als eine überflüssig eingeschlossene; unklare Fälle bleiben deshalb zur Prüfung erhalten.
 * Version 1 arbeitet nur mit **Titeln und Abstracts**, nicht mit Volltexten.
 
+## 1a. Lizenz
+
+Die Software darf für **nicht kommerzielle Zwecke** frei genutzt, verändert und weitergegeben werden, ausdrücklich auch in Forschung, Lehre, an Hochschulen, in öffentlichen Einrichtungen und Behörden
+(PolyForm Noncommercial 1.0.0, Datei `LICENSE`). Die kommerzielle Nutzung ist ausgeschlossen. Wer die Software kommerziell einsetzen möchte, muss eine Vereinbarung mit den Rechteinhabern treffen.
+
 ## 2. Voraussetzungen und Installation
 
 * Windows 11 (macOS und Linux sind vorgesehen), **Python 3.11 oder neuer** (`py -3.11 --version`).

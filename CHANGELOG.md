@@ -22,6 +22,7 @@ Jeder Eintrag verweist auf die Aufgabenkarte; die genauen Commits stehen in `doc
   verlustfreie Rundreise (Eigenschaftstest), Sicherungen in `data/.backup/`, Import-Protokoll mit SHA-256 und Erkennung erneuter Importe (`E106`) (T-M1-10).
 * **Befehle** `sara init`, `sara import`, `sara status` mit Rückgabecodes 0/1/2/4, `--json`, `--lang` (T-M1-11); Import-Dienst und Projektdienst; Vorlagen `blank` und `demo`.
 * **Texte** Deutsch und Englisch für Befehlszeile, Oberfläche und alle Fehlercodes (Was ist passiert - Warum - Was tun), Paritätstest (T-M1-12).
+* **Lizenz:** PolyForm Noncommercial 1.0.0 (`LICENSE`, ADR 0016, `license` in `pyproject.toml`): nicht kommerzielle Nutzung erlaubt, kommerzielle ausgeschlossen (T-M0-01).
 * **Dokumentation:** Benutzerhandbuch, Entwicklerdokumentation, Architektur, ausführliches README, dieses Änderungsprotokoll, Umsetzungsplan mit Fortschrittsliste.
 
 ### Geändert
@@ -36,5 +37,5 @@ Jeder Eintrag verweist auf die Aufgabenkarte; die genauen Commits stehen in `doc
 
 * Kein Screening, keine Duplikaterkennung, keine grafische Oberfläche (siehe Umsetzungsplan).
 * `import.mappings` aus Plan Kap. 25.5 steht noch nicht in `project.yaml`; die Spaltenzuordnung liegt im Import-Protokoll.
-* Technische Namen (`saralocal`, `sara`, `.sara/`) sind vorläufig (T-M0-03); die Lizenz des Codes ist offen (T-M0-01).
+* Technische Namen (`saralocal`, `sara`, `.sara/`) sind vorläufig (T-M0-03). Der Rechteinhaber in der Zeile `Required Notice` ist mit der Hochschule zu klären.
 * Die CI-Matrix ist noch nicht auf GitHub gelaufen.
