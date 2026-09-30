@@ -1,0 +1,1584 @@
+TY  - CONF
+TI  - Students' Attention Classification During Class Lecture Using BCI and Machine Learning: A Pathway Towards Neurofeedback-Based Learning
+T2  - 2023 15th International Conference on Software, Knowledge, Information Management and Applications (SKIMA)
+SP  - 1
+EP  - 6
+AU  - F. Ishtiaque
+AU  - E. B. Motahar
+AU  - M. S. R. Sajal
+AU  - M. A. Amin
+AU  - F. Sarker
+AU  - K. A. Mamun
+PY  - 2023
+KW  - Support vector machines
+KW  - Learning systems
+KW  - Machine learning
+KW  - Feature extraction
+KW  - Brain-computer interfaces
+KW  - Electroencephalography
+KW  - Software
+KW  - Brain Computer Interface
+KW  - Attention
+KW  - EEG
+KW  - Signal Processing
+KW  - Machine Learning
+KW  - Brain-to-Brain Synchrony
+DO  - 10.1109/SKIMA59232.2023.10387369
+JO  - 2023 15th International Conference on Software, Knowledge, Information Management and Applications (SKIMA)
+IS  - 
+SN  - 2573-3214
+VO  - 
+VL  - 
+JA  - 2023 15th International Conference on Software, Knowledge, Information Management and Applications (SKIMA)
+Y1  - 8-10 Dec. 2023
+AB  - Students' effective learning during a class depends on their level of attention to the lecture. Students who tend to be more attentive during class lectures are more likely to perform better. However, day-by-day more and more students are failing to be attentive in class and their attention span has become lower than ever before. By using students' attention in class an automatic Brain Computer Interface (BCI) based self-feedback system might become revolutionary in education and learning. But separating inattentive students from attentive students using BCI is a problem in itself. In this study, we designed an experiment to classify between attentive students and inattentive students using BCI with machine learning and utilizing brain-to-brain synchronization theory. We designed an experiment where we collected EEG data from 9 students and 1 teacher during a class lecture. During the lecture, the students were asked to fill out three types of questionnaires which separated them into three attention groups. After pre-processing the data, 473 features were extracted and 50 were selected using recursive feature elimination (SVM-RFE). Finally, the data were classified using SVM and 80.64% accuracy was achieved between the attentive and inattentive groups. The outcome is a huge leap forward to build the world's first neurofeedback-based learning system.
+ER  - 
+
+TY  - CONF
+TI  - Detecting the Attention Span of Autistic Children
+T2  - 2023 11th International Conference on Emerging Trends in Engineering & Technology - Signal and Information Processing (ICETET - SIP)
+SP  - 1
+EP  - 5
+AU  - D. Kalbande
+AU  - S. S. Rathod
+AU  - R. D. Oza
+AU  - S. Dhamane
+PY  - 2023
+KW  - Information processing
+KW  - Games
+KW  - Software
+KW  - Real-time systems
+KW  - Sensors
+KW  - Monitoring
+KW  - autism
+KW  - attention span
+KW  - real-time monitoring
+DO  - 10.1109/ICETET-SIP58143.2023.10151461
+JO  - 2023 11th International Conference on Emerging Trends in Engineering & Technology - Signal and Information Processing (ICETET - SIP)
+IS  - 
+SN  - 2157-0485
+VO  - 
+VL  - 
+JA  - 2023 11th International Conference on Emerging Trends in Engineering & Technology - Signal and Information Processing (ICETET - SIP)
+Y1  - 28-29 April 2023
+AB  - This study investigates methods for detecting and monitoring the attention span of autistic children in real-time, with the goal of improving learning outcomes. The study involved monitoring the movements and reactions of a group of autistic children during various activities, using specialized sensors and software to capture and analyze data related to their attention span. The results showed that the attention span of autistic children varied significantly across different activities and stimuli, and certain types of games and learning exercises were more effective at capturing and maintaining their attention than others. The attention span of autistic children also tended to improve gradually over time, particularly when they were engaged in activities that were interesting and stimulating. These findings have important implications for the design of effective interventions and learning activities for autistic children, and highlight the importance of personalized and evidence-based approaches for improving attention span and learning outcomes.
+ER  - 
+
+TY  - CONF
+TI  - Toward Digital Phenotypes of Early Childhood Mental Health via Unsupervised and Supervised Machine Learning
+T2  - 2023 45th Annual International Conference of the IEEE Engineering in Medicine & Biology Society (EMBC)
+SP  - 1
+EP  - 4
+AU  - B. C. Loftness
+AU  - D. M. Rizzo
+AU  - J. Halvorson-Phelan
+AU  - A. O’Leary
+AU  - S. Prytherch
+AU  - C. Bradshaw
+AU  - A. J. Brown
+AU  - N. Cheney
+AU  - E. W. McGinnis
+AU  - R. S. McGinnis
+PY  - 2023
+KW  - Self-organizing feature maps
+KW  - Pediatrics
+KW  - Analytical models
+KW  - Wearable computers
+KW  - Anxiety disorders
+KW  - Mental health
+KW  - Depression
+KW  - digital medicine
+KW  - anxiety
+KW  - depression
+KW  - ADHD
+KW  - mHealth
+KW  - pediatric mental health
+KW  - artificial neural networks
+DO  - 10.1109/EMBC40787.2023.10340806
+JO  - 2023 45th Annual International Conference of the IEEE Engineering in Medicine & Biology Society (EMBC)
+IS  - 
+SN  - 2694-0604
+VO  - 
+VL  - 
+JA  - 2023 45th Annual International Conference of the IEEE Engineering in Medicine & Biology Society (EMBC)
+Y1  - 24-27 July 2023
+AB  - Childhood mental health disorders such as anxiety, depression, and ADHD are commonly-occurring and often go undetected into adolescence or adulthood. This can lead to detrimental impacts on long-term wellbeing and quality of life. Current parent-report assessments for pre-school aged children are often biased, and thus increase the need for objective mental health screening tools. Leveraging digital tools to identify the behavioral signature of childhood mental disorders may enable increased intervention at the time with the highest chance of long-term impact. We present data from 84 participants (4-8 years old, 50% diagnosed with anxiety, depression, and/or ADHD) collected during a battery of mood induction tasks using the ChAMP System. Unsupervised Kohonen Self-Organizing Maps (SOM) constructed from movement and audio features indicate that age did not tend to explain clusters as consistently as gender within task-specific and cross-task SOMs. Symptom prevalence and diagnostic status also showed some evidence of clustering. Case studies suggest that high impairment (>80th percentile symptom counts) and diagnostic subtypes (ADHD-Combined) may account for most behaviorally distinct children. Based on this same dataset, we also present results from supervised modeling for the binary classification of diagnoses. Our top performing models yield moderate but promising results (ROC AUC .6-.82, TPR .36-.71, Accuracy .62-.86) on par with our previous efforts for isolated behavioral tasks. Enhancing features, tuning model parameters, and incorporating additional wearable sensor data will continue to enable the rapid progression towards the discovery of digital phenotypes of childhood mental health.Clinical Relevance— This work advances the use of wearables for detecting childhood mental health disorders.
+ER  - 
+
+TY  - CONF
+TI  - A machine learning technique for device non-wear detection in children with ADHD
+T2  - 2023 20th ACS/IEEE International Conference on Computer Systems and Applications (AICCSA)
+SP  - 1
+EP  - 6
+AU  - I. Traore
+AU  - I. Megdiche
+AU  - J. Marquet-Doléac
+AU  - L. Chaari
+PY  - 2023
+KW  - Accelerometers
+KW  - Support vector machines
+KW  - Wrist
+KW  - Performance evaluation
+KW  - Pediatrics
+KW  - Machine learning algorithms
+KW  - Machine learning
+KW  - Raw Accelerometer Data
+KW  - Machine Learning
+KW  - Non-Wear Time
+KW  - Physical activity
+KW  - Hyperactivity
+KW  - ADHD
+DO  - 10.1109/AICCSA59173.2023.10479273
+JO  - 2023 20th ACS/IEEE International Conference on Computer Systems and Applications (AICCSA)
+IS  - 
+SN  - 2161-5330
+VO  - 
+VL  - 
+JA  - 2023 20th ACS/IEEE International Conference on Computer Systems and Applications (AICCSA)
+Y1  - 4-7 Dec. 2023
+AB  - Wearable devices dotted with accelerometers are widely used to study motor overflow in children with attention deficit/hyperactivity disorder (ADHD), as they provide accurate and reliable measurements of physical activity. To accurately determine the time spent in different intensities of physical activity (sedentary, light, moderate or vigorous), it is necessary to identify periods when devices are worn or not. However, this can be problematic because children’s sedentary activities may be mistaken for periods when devices are not worn.In this paper we propose a machine learning approach to detect non-wear periods using data collected from 18 children with ADHD and 18 healthy children using the triaxial accelerometer Actigraph GT9X worn on the non-dominant wrist for one week. The objective is to reduce the overestimation of time spent in activities obtained after data reduction with algorithms using long non-wear time detection periods.The agreement between real data and the classification performed by SVM model (Concordance Correlation Coefficient > 0.95) supported the use of reduced time intervals for detecting non-wear periods.
+ER  - 
+
+TY  - CONF
+TI  - Task-Related and Resting-State EEG Classification of Adult Patients with ADHD Using Machine Learning
+T2  - 2023 IEEE 19th International Conference on Body Sensor Networks (BSN)
+SP  - 1
+EP  - 4
+AU  - N. Trinh
+AU  - R. Whelan
+AU  - T. Ward
+AU  - G. Derosiere
+PY  - 2023
+KW  - Pediatrics
+KW  - Body sensor networks
+KW  - Machine learning algorithms
+KW  - Psychology
+KW  - Machine learning
+KW  - Artificial neural networks
+KW  - Biomarkers
+KW  - Electroencephalography
+KW  - Classification algorithms
+KW  - Task analysis
+KW  - ADHD
+KW  - classification
+KW  - machine learning
+KW  - electroencephalogram
+DO  - 10.1109/BSN58485.2023.10331185
+JO  - 2023 IEEE 19th International Conference on Body Sensor Networks (BSN)
+IS  - 
+SN  - 2376-8894
+VO  - 
+VL  - 
+JA  - 2023 IEEE 19th International Conference on Body Sensor Networks (BSN)
+Y1  - 9-11 Oct. 2023
+AB  - Attention-deficit hyperactivity disorder (ADHD) is a prevalent psychological disorder characterized by attention deficits and high impulsivity, impacting both adults and children. This study aims to assess the effectiveness of task-related electroencephalography (EEG) and resting-state EEG in distinguishing adult patients with ADHD from healthy controls. Machine learning techniques are employed to classify the patients’ status based on EEG features. The primary objective of this investigation is to determine whether the classification performance of task-based EEG data recorded during a stop-signal task recruiting inhibitory processes outperforms that of resting-state EEG data. We hypothesize that task-based EEG data contains valuable biomarkers related to inhibitory control that can be utilized to detect ADHD, whereas resting-state EEG data does not possess such useful biomarkers.
+ER  - 
+
+TY  - JOUR
+TI  - Development of a Computer-Aided Education System Inspired by Face-to-Face Learning by Incorporating EEG-Based Neurofeedback Into Online Video Lectures
+T2  - IEEE Transactions on Learning Technologies
+SP  - 78
+EP  - 91
+AU  - H. Kim
+AU  - Y. Chae
+AU  - S. Kim
+AU  - C. -H. Im
+PY  - 2023
+KW  - Electroencephalography
+KW  - Adaptive learning
+KW  - Monitoring
+KW  - Indexes
+KW  - State estimation
+KW  - Neurofeedback
+KW  - Adaptive systems
+KW  - Adaptive learning
+KW  - electroencephalography (EEG)
+KW  - intelligent tutoring systems
+KW  - mental states
+KW  - neurofeedback
+KW  - online learning
+KW  - passive brain-computer interface
+DO  - 10.1109/TLT.2022.3200394
+JO  - IEEE Transactions on Learning Technologies
+IS  - 1
+SN  - 1939-1382
+VO  - 16
+VL  - 16
+JA  - IEEE Transactions on Learning Technologies
+Y1  - 1 Feb. 2023
+AB  - Owing to the rapid development of information and communication technologies, online or mobile learning content is widely available on the Internet. Unlike traditional face-to-face learning, online learning exhibits a critical limitation: real-time interactions between learners and teachers are generally not feasible in online learning. To overcome this issue, we implemented an online learning system based on electroencephalography (EEG)-based passive brain-computer interface technology referred to as the “adaptive neuro-learning system (ANLS).” It monitors the current mental states of learners seamlessly using EEG signals. Then, it adaptively provides natural and interactive video feedback rather than simple alarms or pop quizzes following the current mental conditions of a learner. In this article, a total of 60 university students were assigned randomly to one of four groups: two experimental groups, for which either ANLS based on attention state estimation or ANLS based on both attention and comprehension states estimation was tested, and two control groups, the students in which were taught using either the conventional online lecture without feedback or an online course with randomized video feedbacks. Each member of these groups attended a 53 min open courseware video lecture. Then, the educational effects of the proposed system were evaluated quantitatively via a written examination. Our results revealed a significantly higher learning performance for the experimental group (average test score of the experimental groups = 83.83 and that of the control groups = 56.67), demonstrating the feasibility of the proposed education strategy.
+ER  - 
+
+TY  - JOUR
+TI  - Inferring Students’ Self-Assessed Concentration Levels in Daily Life Using Biosignal Data From Wearables
+T2  - IEEE Access
+SP  - 30308
+EP  - 30323
+AU  - C. Södergård
+AU  - T. Laakko
+PY  - 2023
+KW  - Affective computing
+KW  - Artificial intelligence
+KW  - Convolutional neural networks
+KW  - Educational courses
+KW  - Educational programs
+KW  - Wearable sensors
+KW  - Semi-supervised learning
+KW  - Machine learning
+KW  - Learning systems
+KW  - Affective computing
+KW  - affective learning
+KW  - artificial intelligence
+KW  - biosignals
+KW  - convolutional neural networks
+KW  - educational technology
+KW  - machine learning
+KW  - mental concentration
+KW  - semi-supervised learning
+KW  - wearable sensors
+DO  - 10.1109/ACCESS.2023.3260061
+JO  - IEEE Access
+IS  - 
+SN  - 2169-3536
+VO  - 11
+VL  - 11
+JA  - IEEE Access
+Y1  - 2023
+AB  - The ability to concentrate well is an important determinant of students’ learning outcomes but remains poorly understood. In this work we investigated whether there exists a mapping between students’ biosignals and perceived concentration levels. If we succeed in this mapping, a wearable can function as a Concentration Tracker, a novel feature that is missing from current wearables. For this, a wearable wristband was used to record students’ heart rate, heart rate variability, skin temperature, skin conductivity and acceleration from body changes. Additionally, students self-assessed their concentration levels using a smartphone application. We improved the accuracy by utilizing a big amount of unlabelled biodata from outside the study sessions. Our best boosted regression tree model predicted students’ concentration level with only 1.7% NMAE error. The predictions for a user not in the training set were much weaker; the best model, a convolutional neural network, achieved a prediction NMAE error of 30.7%. This implies that the users generated biosignals highly individually. Thus, models are not well transferable from one user to another without rooting them in user-specific data. Contrary to stress research, our results showed that skin conductivity had mostly a negative correlation with students’ concentration levels. Also diverging from stress reactions, skin temperature had mainly a positive correlation. Conductivity and temperature were the two dominant predictors. Further, the results suggest that an element of deep, effortless concentration was present in the learning experience of the subjects. Altogether, our work demonstrates that a concentration tracking wearable for improving learning is technically achievable.
+ER  - 
+
+TY  - CONF
+TI  - Developing Frugal Internet of Things From Artificial Neural Network to Predict Student Mindfulness Concentration and Relaxation Levels
+T2  - 2024 IEEE 4th International Conference on Electronic Communications, Internet of Things and Big Data (ICEIB)
+SP  - 27
+EP  - 30
+AU  - H. -Y. Tsai
+AU  - L. -S. Lin
+AU  - Y. -X. Wang
+AU  - Y. -Y. Tsai
+AU  - Y. -J. Li
+PY  - 2024
+KW  - Temperature measurement
+KW  - Temperature sensors
+KW  - Humidity measurement
+KW  - Artificial neural networks
+KW  - Electroencephalography
+KW  - Skin
+KW  - Temperature control
+KW  - CCT
+KW  - EEG
+KW  - GSR
+DO  - 10.1109/ICEIB61477.2024.10602583
+JO  - 2024 IEEE 4th International Conference on Electronic Communications, Internet of Things and Big Data (ICEIB)
+IS  - 
+SN  - 
+VO  - 
+VL  - 
+JA  - 2024 IEEE 4th International Conference on Electronic Communications, Internet of Things and Big Data (ICEIB)
+Y1  - 19-21 April 2024
+AB  - Indoor environmental quality significantly impacts student learning performance and efficiency. Studies indicate that indoor lighting highly affects student learning performance. Electroencephalography (EEG) is used to analyze the influence of correlated color temperature (CCT) on student learning performance. We developed a frugal Internet of Things (IoT) system to monitor student mindfulness concentration and relaxation levels at different CCTs. The proposed IoT system includes a DHT11 sensor for detecting indoor temperature and humidity, a WS2812B sensor for CCT controlling, a galvanic skin response (GSR) sensor for measuring student stress levels, and a TGAM brainwave module measuring real-time concentration and relaxation levels. An artificial neural network (ANN) model was built using data from multiple sensors to predict student mindfulness levels.
+ER  - 
+
+TY  - CONF
+TI  - KinderEye: Kindergarten Child Performance Monitoring System
+T2  - 2023 9th International Conference on Computer and Communication Engineering (ICCCE)
+SP  - 52
+EP  - 57
+AU  - B. Rathnayaka
+AU  - W. T. S. Rabel
+AU  - C. N. W. Namasingha
+AU  - H. D. Hettiarachchi
+AU  - M. M. D. J. T. Hansika
+AU  - S. N. Wellalage
+PY  - 2023
+KW  - Pediatrics
+KW  - Decision making
+KW  - Robot vision systems
+KW  - Games
+KW  - Writing
+KW  - Sensor systems
+KW  - Behavioral sciences
+KW  - Early childhood
+KW  - Kindergarten Monitoring
+KW  - Working memory
+KW  - Cognitive development
+KW  - Decision-making ability
+KW  - Language skills
+KW  - ADHD
+DO  - 10.1109/ICCCE58854.2023.10246076
+JO  - 2023 9th International Conference on Computer and Communication Engineering (ICCCE)
+IS  - 
+SN  - 2836-1911
+VO  - 
+VL  - 
+JA  - 2023 9th International Conference on Computer and Communication Engineering (ICCCE)
+Y1  - 15-16 Aug. 2023
+AB  - Kindergarten is the most important beginning of a child’s formal education. Since the brain is rapidly developing in early childhood, a lack of brain development at kindergarten can create a weak foundation for learning, health, and behavioral problems throughout life. Digital learning and monitoring applications for young children are widely available but often lack opportunities for physical engagement, which can negatively impact executive function development. In this paper, we introduce a system for continuously monitoring mental development in terms of working memory, decision-making ability, language skills, and likelihood of having ADHD. The system consists of three physically playable games that collect performance data from digital sensors and encourage children to be involved in physical activities while increasing enthusiasm for evaluations. Continuous performance measurement allows teachers and parents to know the development of children and guide them or direct them to have suitable medical treatments. Memory development evaluation is done from the button-pressing game which allows giving inputs according to a pattern previously indicated. For decision-making ability measurement, we are using a remote controllable robot and maze in which children navigate the robot toward the winning point of the maze. Language development is measured by giving several activities through an attractive device that measures listening, speaking, reading, and writing. Furthermore, checking ADHD is done by lively tracking child behavior from a camera while playing a game and invalid game inputs.
+ER  - 
+
+TY  - CONF
+TI  - Electroencephalography (EEG) Based Prediction of Learning and Responsiveness Among Students
+T2  - 2023 7th International Conference on Electronics, Communication and Aerospace Technology (ICECA)
+SP  - 259
+EP  - 264
+AU  - A. K. Agrawal
+AU  - B. Ahmed
+AU  - Y. K. Jakhar
+AU  - K. Bajaj
+AU  - G. Kumar
+AU  - M. Kumar
+PY  - 2023
+KW  - Surveys
+KW  - Support vector machines
+KW  - Data integrity
+KW  - Education
+KW  - Electroencephalography
+KW  - Real-time systems
+KW  - Sensors
+KW  - Electroencephalography Prediction
+KW  - constructivism
+KW  - Learning
+KW  - Responsiveness
+DO  - 10.1109/ICECA58529.2023.10395623
+JO  - 2023 7th International Conference on Electronics, Communication and Aerospace Technology (ICECA)
+IS  - 
+SN  - 
+VO  - 
+VL  - 
+JA  - 2023 7th International Conference on Electronics, Communication and Aerospace Technology (ICECA)
+Y1  - 22-24 Nov. 2023
+AB  - The constructivist method of teaching has been shown to have a major influence on the learning outcomes of students. In order to improve classroom instruction, it is essential to evaluate students' levels of involvement and attentiveness while they are being taught. Electroencephalography (EEG) can now be used to assess students' attentiveness in real time thanks to recent neuro-engineering breakthroughs and mobile brainwave sensors' availability. The purpose of this study is to provide an overview of EEG-based techniques with the intention of predicting constructivism and engagement among students of varying levels. The purpose of this study is to evaluate the efficacy of these approaches and to determine the extent to which they have the potential to enhance the design of future learning systems. This survey analyzes whether or not approaches based on EEG may be used to determine the level of constructivism and involvement displayed by pupils. The findings provide helpful insights that can be used to develop tailored teaching strategies and improve education's overall efficiency. However, some obstacles need to be overcome in order for EEG-based predictions to be accurate. Some of these obstacles include data quality and variability, individual differences, interpretability, generalization, and ethical considerations.
+ER  - 
+
+TY  - CONF
+TI  - Internet of Things and Artificial Intelligence Enabled Smart Classroom
+T2  - 2023 6th International Conference on Electrical Information and Communication Technology (EICT)
+SP  - 1
+EP  - 6
+AU  - S. Akter
+AU  - A. Asaduzzaman
+PY  - 2023
+KW  - Temperature sensors
+KW  - Temperature measurement
+KW  - Temperature distribution
+KW  - Mobile handsets
+KW  - Wireless fidelity
+KW  - Monitoring
+KW  - Testing
+KW  - Smart Classroom
+KW  - IoT
+KW  - AI
+KW  - Machine learning
+KW  - Sensors
+KW  - Attentiveness
+KW  - Geolocation
+DO  - 10.1109/EICT61409.2023.10427809
+JO  - 2023 6th International Conference on Electrical Information and Communication Technology (EICT)
+IS  - 
+SN  - 
+VO  - 
+VL  - 
+JA  - 2023 6th International Conference on Electrical Information and Communication Technology (EICT)
+Y1  - 7-9 Dec. 2023
+AB  - Smart classrooms are now a buzzword in the field of education, both at home and abroad. With the advancement of technology, everything is getting automated and faster. Classrooms are not stepping behind either. In this work, a smart classroom is developed with several important features, like the total number of students in the classroom, a geolocation-based individual students’ attendance system, and student attentiveness detection using eye blink rate.The prediction of the number of students is done using Machine Learning-based techniques based on environmental sensor data. The data collection module is designed using CO2, temperature, and humidity sensors. A dataset is prepared by collecting real-time data and building a multiclass prediction model based on sensor data to predict the number of students. The individual students’ attendance system is developed using the existing WiFi system around the classroom, where students are connected to the WiFi network from their registered mobile devices. The geographical location of their devices is compared with the classroom location. A noble approach is also proposed to monitor the attentiveness of students by their eye blink rate, which is also monitored on the mobile device available to them. The results are shown to validate the effectiveness of the proposed systems. Finally, all the features are integrated into a graphical user interface.
+ER  - 
+
+TY  - CONF
+TI  - Virtual Reality Based Attention Simulator using EEG Signals
+T2  - 2023 2nd Edition of IEEE Delhi Section Flagship Conference (DELCON)
+SP  - 1
+EP  - 6
+AU  - V. Khemchandani
+AU  - K. Goswani
+AU  - M. P. Teotia
+AU  - S. Chandra
+AU  - N. M. Wadalkar
+PY  - 2023
+KW  - Training
+KW  - Solid modeling
+KW  - Pediatrics
+KW  - IEEE Sections
+KW  - Scalp
+KW  - Psychology
+KW  - Virtual reality
+KW  - attention
+KW  - brain computer interface
+KW  - EEG Signal
+KW  - virtual reality
+DO  - 10.1109/DELCON57910.2023.10127358
+JO  - 2023 2nd Edition of IEEE Delhi Section Flagship Conference (DELCON)
+IS  - 
+SN  - 
+VO  - 
+VL  - 
+JA  - 2023 2nd Edition of IEEE Delhi Section Flagship Conference (DELCON)
+Y1  - 24-26 Feb. 2023
+AB  - Attention is seen as the capacity of a person to focus on and persevere in a specific endeavor. Children's attention has long been a major worry for academics because it is crucial to learning. As a result, parents and teachers are concerned about how to increase children's attention. Virtual reality has been widely applied in education to enhance students’ motivation with prolonged attention spans. According to the experts, cognitive training combined with immersive VR improves attention. Additionally, they verified that it might lengthen the attention span of young people with behavioral issues. In this paper, we evolved VR surroundings to demonstrate how toddlers behave in attention seeking tasks. We also advanced a new interest - primarily based on taking neurofeedback using non-invasive brainwave signals. During sustained attention duties, scalp electroencephalography (EEG) signals were collected in actual time at periodic intervals of time. The attentional states and stages of the difficulty can be identified using collected EEG neurofeedback signals.
+ER  - 
+
+TY  - CONF
+TI  - A Multi-Objective Multi-Agent RL-Based Approach for Task Offloading in IoT-Enabled Classrooms
+T2  - 2023 IEEE International Conference on High Performance Computing & Communications, Data Science & Systems, Smart City & Dependability in Sensor, Cloud & Big Data Systems & Application (HPCC/DSS/SmartCity/DependSys)
+SP  - 631
+EP  - 638
+AU  - J. Zhang
+AU  - S. Huang
+AU  - Z. Niu
+AU  - Y. Lin
+AU  - Q. Wang
+PY  - 2023
+KW  - Training
+KW  - Energy consumption
+KW  - Electronic learning
+KW  - Reinforcement learning
+KW  - Quality of service
+KW  - Real-time systems
+KW  - Delays
+KW  - IoT
+KW  - E-learning
+KW  - Edge computing
+KW  - Task offloading
+KW  - Reinforcement learning
+DO  - 10.1109/HPCC-DSS-SmartCity-DependSys60770.2023.00091
+JO  - 2023 IEEE International Conference on High Performance Computing & Communications, Data Science & Systems, Smart City & Dependability in Sensor, Cloud & Big Data Systems & Application (HPCC/DSS/SmartCity/DependSys)
+IS  - 
+SN  - 
+VO  - 
+VL  - 
+JA  - 2023 IEEE International Conference on High Performance Computing & Communications, Data Science & Systems, Smart City & Dependability in Sensor, Cloud & Big Data Systems & Application (HPCC/DSS/SmartCity/DependSys)
+Y1  - 17-21 Dec. 2023
+AB  - With the widespread deployment of smart sensors and edge computing, Internet of Things (IoT) has become an im-portant enabler to facilitate many conventional systems, such as e-learning, e-health, and assisted driving. Among these systems, one of the most impactful, IoT-enabled practices is e-learning systems, which aim to capture real-time behaviors of students via a multitude of sensors in accordance with course materials, and to further provide adaptive teaching effectiveness. However, e-learning system, specifically an IoT-enabled classroom, faces three important challenges: (1) how to capture the real-time sensing information; (2) how to collect and differentiate jobs with delay constraints, such as face recognition, multi-modal attention detection, etc; and (3) how to allocate computing resources of edge nodes to satisfy the delay requirements of jobs that consist of multiple tasks. To tackle the first two challenges, we design and implement a novel IoT-enabled, e-learning system, named Yo-Yo, with edge computing to collect real-time jobs and tasks for further data analysis. In Yo-Yo system, both job completion rate and energy consumption are considered as quality-of-service (QoS) metrics. Therefore, for the third challenge, we propose a new multi-objective, multi-agent reinforcement learning method to jointly optimize these two objectives. Experiments results indicate that for each device, around 4,200 jobs are generated, with varying tasks associated with each job. The average job completion rate can achieve up to 94% over 10 devices; for dealing with complex task dependency, our approach can improve by 24 %, while reducing the ineffective energy consumption by 70 % against to single-agent based methods.
+ER  - 
+
+TY  - CONF
+TI  - Design & Implementation of a Smart Learning Robot for Teaching Pre-Schoolers Using a Recognition Prediction Model
+T2  - 2023 International Conference on Emerging Trends in Networks and Computer Communications (ETNCC)
+SP  - 1
+EP  - 7
+AU  - N. Suresh
+AU  - A. K. Hauwanga
+PY  - 2023
+KW  - Tensors
+KW  - Navigation
+KW  - Microcontrollers
+KW  - Text recognition
+KW  - Optical character recognition
+KW  - Classification algorithms
+KW  - Sensors
+KW  - Artificial Intelligence
+KW  - Machine Learning
+KW  - CNN
+KW  - EMNIST
+KW  - NLP
+DO  - 10.1109/ETNCC59188.2023.10284946
+JO  - 2023 International Conference on Emerging Trends in Networks and Computer Communications (ETNCC)
+IS  - 
+SN  - 
+VO  - 
+VL  - 
+JA  - 2023 International Conference on Emerging Trends in Networks and Computer Communications (ETNCC)
+Y1  - 16-18 Aug. 2023
+AB  - Communication is critical in today's world, especially in education, academics have been interested in the methods used to communicate knowledge to students and the educational processes are both heading toward digitalization. The study aims to provide innovative learning method that makes pre-school children's learning more interactive. The system integrated an object recognition-based learning instructional robot thereby making learning Alphabets and numbers more interesting with projected Text-to-Speech (TTS) to attract children's attention. In this work, we present preprocessing of images and classification algorithms which are pretrained with a standard dataset intended for Letters and numbers. Tensor flow was used to train, test, and validate the Convolution Neural network (CNN) model against the pretrain real-world image data. Optical Character Recognition (OCR) converts the detected object into text and fed to the Text-to-Speech algorithm which vocals out the name of the recognized object. Experimental Design Science Research (E-DSR) approach was employed in this study which consists of six steps viz: Identifying the problem, Defining Objectives, Designing and developing, Demonstrating and Evaluating the artifact, and communicating the results. A phone camera attached on an Arduino microcontroller that has few sensors incorporated in it serves as the prototype's eye for the obstacle avoidance robot system. The findings demonstrated that a robot could navigate a classroom while avoiding obstacles, and that it was possible to develop application that could categorize images based on a set of objects it was trained on. An experiment was carried out to gauge the system's efficacy. The finding that children were interacting with a robot and imitating the sound made by TTS led to the conclusion that an interactive system could increase preschoolers' learning effectiveness.
+ER  - 
+
+TY  - CONF
+TI  - Evaluation of Feature Extraction Methods Using Portable Biometric Sensors in Entrepreneurial Activities
+T2  - 2023 World Engineering Education Forum - Global Engineering Deans Council (WEEF-GEDC)
+SP  - 1
+EP  - 7
+AU  - D. Ponce-Naranjo
+AU  - J. E. Calderón-Gurubel
+AU  - K. A. González-Díaz
+AU  - A. D. López-Andrade
+AU  - J. E. Martínez-Giorgetti
+AU  - E. A. Rivera-Cerros
+AU  - M. A. R. Moreno
+AU  - J. A. Ruiz-Ramirez
+PY  - 2023
+KW  - Heart rate
+KW  - Machine learning algorithms
+KW  - Biometrics (access control)
+KW  - Anxiety disorders
+KW  - Entrepreneurship
+KW  - Feature extraction
+KW  - Brain modeling
+KW  - Professional Education
+KW  - Signal Processing
+KW  - Education
+KW  - Entrepreneurship
+KW  - Feature Extraction
+KW  - Neuroeducation
+KW  - Biometrics Sensor
+KW  - Biometric Data
+KW  - Educational Innovation
+DO  - 10.1109/WEEF-GEDC59520.2023.10398282
+JO  - 2023 World Engineering Education Forum - Global Engineering Deans Council (WEEF-GEDC)
+IS  - 
+SN  - 2837-5025
+VO  - 
+VL  - 
+JA  - 2023 World Engineering Education Forum - Global Engineering Deans Council (WEEF-GEDC)
+Y1  - 23-27 Oct. 2023
+AB  - A diverse range of data acquisition techniques is employed by educational researchers, and in recent times, the incorporation of contemporary methods, including biometric technology, has garnered substantial attention. This technology assumes a pivotal role in discerning pertinent biosignal patterns and their ramifications on cognitive and emotional states. Such integration has facilitated the emergence of novel approaches within the realm of educational neuroscience. The primary goal of the present study is to explore how the utilization of machine learning algorithms facilitates the identification of students' cognitive and emotional states throughout the implementation of a pedagogical activity within the entrepreneurship domain. This research embraces a mixed-method approach, entailing the convergence of an electroencephalogram and a smart wristband to amass biometric data during the pedagogical activity, complemented by a self-reporting tool. The outcomes align cohesively with the “fight or flight” response concept, underscoring the significance of variables like heart rate (HR), temperature (TEMP), and electrodermal activity (EDA) as pivotal stress indicators. Moreover, such indicators could be linked in this case to the nervousness students might experience during oral presentations of their pitches. The findings illuminate a direct correlation between physiological parameters and stress levels, culminating in the creation of machine learning algorithms. Various machine learning models and algorithms employed to solve classification problems. These include well-known techniques such as K-Nearest Neighbors, Decision Tree, Naive Bayes. Furthermore, there are more intricate methods like the Multilayer Perceptron which introduces the concept of an Artificial Neural Network and the Random Forest model which combines multiple decision trees; in the present paper this algorithm emerges as the most accurate and the most effective method predictor of stress for all the evaluated classifiers, achieving a high accuracy score of 1.0, which makes a good indicator with valuable implications for entrepreneurship education.
+ER  - 
+
+TY  - JOUR
+TI  - Two-Domain Joint Attention Mechanism Based on Sensor Data for Group Activity Recognition
+T2  - IEEE Transactions on Instrumentation and Measurement
+SP  - 1
+EP  - 15
+AU  - R. Huan
+AU  - A. Bo
+AU  - J. Shu
+AU  - P. Chen
+AU  - R. Liang
+PY  - 2023
+KW  - Semantics
+KW  - Feature extraction
+KW  - Convolutional neural networks
+KW  - Data models
+KW  - Interference
+KW  - Bluetooth
+KW  - Smart homes
+KW  - Attention
+KW  - data domain
+KW  - group activity recognition (GAR)
+KW  - semantic domain
+KW  - sensor data
+DO  - 10.1109/TIM.2023.3246469
+JO  - IEEE Transactions on Instrumentation and Measurement
+IS  - 
+SN  - 1557-9662
+VO  - 72
+VL  - 72
+JA  - IEEE Transactions on Instrumentation and Measurement
+Y1  - 2023
+AB  - In this article, a two-domain joint attention mechanism based on sensor data (TJAMSD) for group activity recognition (GAR) is proposed. We build two networks in the semantic domain and data domain as the teacher network and student network. In the data domain, a GAR network based on graph convolutional network (GCN) with group relation graph (GRG) is proposed. In this network, in order to reflect the relationship between individuals, the individual action feature correlation and position correlation in a group are calculated to construct two relation graphs. Then, the two relation graphs are fused to obtain the final GRG. Finally, the GRG and the individual action features obtained by a hybrid convolutional neural network (CNN) and bi-directional long short-term memory (BLSTM) network are used as the input of the GCN to infer the group activity. Besides, a semantic-domain network is constructed by the known individual action semantics and the group activity semantics. A joint attention mechanism based on the data-domain network and semantic-domain network is proposed. The attention weights learned in the semantic-domain network are used to guide the learning of attention weights in the data-domain network, which allocates attention to different individuals. In this way, TJAMSD makes the networks pay more attention to the key individual actions in the group and overcome the interference caused by noncritical individual actions in GAR. Experiments are conducted on two constructed datasets, the Garsensors dataset and the UT-Data-gar dataset. Different group cases are considered in the experiments and the experimental results show that in all cases, GCN with GRG can better express the interaction features of groups and improve the recognition performance. Furthermore, the TJAMSD can effectively suppress the interference of noncritical actions to advance the model robustness.
+ER  - 
+
+TY  - JOUR
+TI  - MAWKDN: A Multimodal Fusion Wavelet Knowledge Distillation Approach Based on Cross-View Attention for Action Recognition
+T2  - IEEE Transactions on Circuits and Systems for Video Technology
+SP  - 5734
+EP  - 5749
+AU  - Z. Quan
+AU  - Q. Chen
+AU  - M. Zhang
+AU  - W. Hu
+AU  - Q. Zhao
+AU  - J. Hou
+AU  - Y. Li
+AU  - Z. Liu
+PY  - 2023
+KW  - Feature extraction
+KW  - Discrete wavelet transforms
+KW  - Semantics
+KW  - Convolution
+KW  - Knowledge engineering
+KW  - Wearable sensors
+KW  - Kernel
+KW  - Human action recognition
+KW  - multimodal
+KW  - wavelet knowledge distillation
+KW  - wearable sensor
+KW  - attention mechanism
+DO  - 10.1109/TCSVT.2023.3255832
+JO  - IEEE Transactions on Circuits and Systems for Video Technology
+IS  - 10
+SN  - 1558-2205
+VO  - 33
+VL  - 33
+JA  - IEEE Transactions on Circuits and Systems for Video Technology
+Y1  - Oct. 2023
+AB  - The recognition performance of existing vision-based human action recognition (HAR) methods is greatly reduced in the case of low camera resolution or occlusion. Wearable sensors can provide complementary information to alleviate this problem. It is challenging to construct a robust HAR model using multimodal wearable-sensor data. In this paper, we propose a cross-Attention-based Multimodal fusion Wavelet Knowledge Distillation Network (MAWKDN) method to guide recognition from video data by acquiring complementary information from wearable sensors and reduce the noise effects through wavelet knowledge distillation, which improves the robustness of the model. A multi-attention dilated convolution kernel residual network including dilated convolution and an attention mechanism is constructed to extract features from various sensor modalities and fuse the various modal data through the cross-view attention method to acquire additional information from different modalities. To reduce the modal differences between different modalities of the teacher and student networks and acquire similar semantic knowledge, we learn the information between different modalities by constructing a graph structure of convolutional layer features, and computing the semantic preservation loss between the teacher and student networks. To reduce the influence of noise in the input data, we construct the loss of wavelet knowledge distillation, which transforms the image through the discrete wavelet transform and only retains the low frequency features to extract the useful information. The top-1 accuracy achieved on the UTD-MHAD (99.31%), Berkeley-MHAD (99.40%) and the F1-score on the MMAct (85.26% based on cross-session) dataset prove the superior performance of MAWKDN compared with the state-of-the-art HAR methods. Moreover, we demonstrate the robustness of the MAWKDN approach on the noise-added UTD-MHAD dataset.
+ER  - 
+
+TY  - CONF
+TI  - Boosting the Performance of Lightweight HAR Models with Attention and Knowledge Distillation
+T2  - 2024 International Conference on Intelligent Environments (IE)
+SP  - 1
+EP  - 8
+AU  - S. Agac
+AU  - O. D. Incel
+PY  - 2024
+KW  - Performance evaluation
+KW  - Degradation
+KW  - Deep learning
+KW  - Attention mechanisms
+KW  - Quantization (signal)
+KW  - Computational modeling
+KW  - Sensors
+KW  - attention mechanism
+KW  - human activity recognition
+KW  - deep learning
+KW  - knowledge distillation
+DO  - 10.1109/IE61493.2024.10599908
+JO  - 2024 International Conference on Intelligent Environments (IE)
+IS  - 
+SN  - 2472-7571
+VO  - 
+VL  - 
+JA  - 2024 International Conference on Intelligent Environments (IE)
+Y1  - 17-20 June 2024
+AB  - While applying deep learning models has significantly enhanced the performance of sensor-based human activity recognition (HAR), their deployment on resource-limited mobile and wearable devices presents challenges. While reducing model size is an alternative, it often leads to performance degradation. This study introduces the integration of attention mechanisms and knowledge distillation techniques to enhance the recognition performance of lightweight sensor-based human activity recognition models. Employing three activity recognition datasets (Opportunity, Wisdm, and Sensors), initial experiments investigate the individual effects of response-based knowledge distillation and attention mechanisms on the performance of the lightweight model. Results demonstrate that attention surpasses distillation in recognition success. To further improve performance, we introduce two combined approaches: response and attention-based distillation and response-based distillation with attention directly applied to the lightweight model. Both approaches outperform attention alone, while the latter, by directly incorporating attention into the student without requiring an attention-based teacher, eliminates the need for a pre-trained attention-based teacher. Evaluating resource consumption, the performance-boosted lightweight model is compared to a moderate-size model, requiring approximately 3-4 times more flops and parameters. The improved lightweight model outperformed the moderate-size model across all datasets regarding recognition performance.
+ER  - 
+
+TY  - JOUR
+TI  - Soft Sensor Model for Billet Temperature in Multiple Heating Furnaces Based on Transfer Learning
+T2  - IEEE Transactions on Instrumentation and Measurement
+SP  - 1
+EP  - 13
+AU  - N. Zhai
+AU  - X. Zhou
+AU  - S. Li
+AU  - H. Shi
+PY  - 2023
+KW  - Furnaces
+KW  - Heating systems
+KW  - Predictive models
+KW  - Data models
+KW  - Temperature sensors
+KW  - Computational modeling
+KW  - Heat transfer
+KW  - Furnace temperature prediction
+KW  - knowledge distillation
+KW  - multitask learning (MTL)
+KW  - transfer learning
+DO  - 10.1109/TIM.2023.3267520
+JO  - IEEE Transactions on Instrumentation and Measurement
+IS  - 
+SN  - 1557-9662
+VO  - 72
+VL  - 72
+JA  - IEEE Transactions on Instrumentation and Measurement
+Y1  - 2023
+AB  - Billet heating temperature directly affects the quality of the billet, but the existing technology cannot measure the billet surface temperature. Therefore, we accurately predict the temperature of the furnace by a soft sensor to approximate the billet temperature. Limited by the complexity of the heating process and the lack of computing resources in factories, the existing research pays little attention to or even cannot meet the temperature prediction requirements of multiple heating zones in multiple heating furnaces. To address the above problems, we propose a temperature prediction method for multiheating furnaces based on transfer learning and knowledge distillation. The method establishes a multisource domain model of a source domain furnace on a cloud platform. Then, the multisource knowledge is transferred to the target domain heating furnace, and the target domain teacher model is established by fine-tuning the source domain model through the target domain data. Next, to efficiently predict the furnace temperature, a shallow multitask student model is established at the edge server to predict multiple heating zones in the target furnace. Furthermore, a knowledge distillation method for regression prediction is proposed so that the student model can improve the prediction accuracy under the guidance of the cloud teacher model. The effectiveness of the method is verified by experiments on 20 different heating zone datasets in two heating furnaces and two wind turbine datasets. The consistency of multiple experiments shows that this method cannot only improve the accuracy by transferring the source domain knowledge but also reduce the size of model parameters by knowledge distillation on the premise of meeting the requirements of prediction error.
+ER  - 
+
+TY  - JOUR
+TI  - LAFD-Net: Learning With Noisy Pseudo-Labels for Semisupervised Bearing Fault Diagnosis
+T2  - IEEE Sensors Journal
+SP  - 3911
+EP  - 3923
+AU  - Y. Jian
+AU  - Z. Chen
+AU  - Y. Lei
+AU  - Z. He
+AU  - Y. Zhao
+AU  - L. He
+AU  - W. Luo
+AU  - X. Chen
+PY  - 2023
+KW  - Fault diagnosis
+KW  - Noise measurement
+KW  - Feature extraction
+KW  - Data models
+KW  - Training
+KW  - Deep learning
+KW  - Sensors
+KW  - Bearing fault
+KW  - learning with noisy data
+KW  - semisupervised learning (SSL)
+KW  - student–teacher model
+DO  - 10.1109/JSEN.2023.3233957
+JO  - IEEE Sensors Journal
+IS  - 4
+SN  - 1558-1748
+VO  - 23
+VL  - 23
+JA  - IEEE Sensors Journal
+Y1  - 15 Feb.15, 2023
+AB  - Fault diagnosis for the rolling bearing is an important field that has received increasing attention in recent years. The main challenge for this task is the lack of labeled data. Existing works circumvent this problem with pseudo-labels generated from labeled data. However, these pseudo-labels are noisy even with consistency checks or confidence-based filtering due to the minimal amount of training data. To solve this problem, a novel label-level antinoise fault diagnosis network (LAFD-Net) is proposed in this article. Specifically, we propose an online asymptotic label updating (OALU) strategy that contains two updating stages: self-correction stage and cross-correction stage. The proposed OALU can stably and reliably generate new corrected pseudo-labels, gradually replacing the old noisy ones. The LAFD-Net adopts a student–teacher architecture. For such a student–teacher model, we propose a consistency enhancement (CE) loss to strengthen the feature consistency between the student and teacher networks, aiming to achieve more efficient use of plentiful unlabeled data via feature regularization. Finally, a series of experiments were conducted using the University of Cincinnati Intelligent Maintenance System (IMS) Center dataset and the Case Western Reserve University (CWRU) bearing dataset. The experimental results demonstrate that the proposed semisupervised learning (SSL) schemes outperformed existing state-of-the-art methods with the same percentage of labeled data samples.
+ER  - 
+
+TY  - CONF
+TI  - Energy Expenditure Estimation for Schoolchildren Using Accelerometers
+T2  - 2023 Cross Strait Radio Science and Wireless Technology Conference (CSRSWTC)
+SP  - 1
+EP  - 3
+AU  - Q. Zhao
+AU  - W. Gao
+AU  - K. Zhang
+AU  - B. Lv
+PY  - 2023
+KW  - Accelerometers
+KW  - Wireless communication
+KW  - Energy consumption
+KW  - Wireless sensor networks
+KW  - Magnetic sensors
+KW  - Estimation
+KW  - Sports
+KW  - Energy Expenditure (EE)
+KW  - Activity Recognition
+KW  - Body Placement
+DO  - 10.1109/CSRSWTC60855.2023.10427140
+JO  - 2023 Cross Strait Radio Science and Wireless Technology Conference (CSRSWTC)
+IS  - 
+SN  - 2377-8512
+VO  - 
+VL  - 
+JA  - 2023 Cross Strait Radio Science and Wireless Technology Conference (CSRSWTC)
+Y1  - 10-13 Nov. 2023
+AB  - As societal emphasis on health intensifies, the accurate estimation of energy expenditure (EE) has become crucial in countering obesity, monitoring activity levels, and fostering improved lifestyle habits, particularly amongst adolescents and the elderly. Extant literature presents several limitations: 1) Predominant focus on adults, leaving a research void concerning middle school students. 2) Concentration on everyday activities, largely overlooking typical school-based physical exercises that students regularly engage in. 3) Limited use of sensors, thereby often failing to accurately capture and delineate energy expenditure and movement across varied body parts. This study seeks to bridge these gaps by focusing on the EE assessment during common physical activities performed by middle school students. We employed seven distinct sensors, strategically positioned on various body parts, to record accelerometer, gyroscope, and magnetometer data from 120 middle school students participating in 10 activities, such as dribbling around poles in soccer, basketball shooting, and badminton. This comprehensive approach ensured a more precise capture and estimation of activity dynamics. Utilizing an Enhanced-GRU network structure, we processed the heterogeneous data from multiple sensor locations, achieving a commendable activity classification accuracy of 98.8% and a mean squared error (MSE) of 0.51 METs in EE prediction. Furthermore, an evaluative comparison of single sensor location revealed that the chest, along with left and right hips, yielded the most optimal results.
+ER  - 
+
+TY  - JOUR
+TI  - Big Data-Based Smart Health Monitoring System: Using Deep Ensemble Learning
+T2  - IEEE Access
+SP  - 114880
+EP  - 114903
+AU  - M. H. Abidi
+AU  - U. Umer
+AU  - S. H. Mian
+AU  - A. Al-Ahmari
+PY  - 2023
+KW  - Monitoring
+KW  - Medical services
+KW  - Diseases
+KW  - Big Data
+KW  - Deep learning
+KW  - Convolutional neural networks
+KW  - Medical diagnostic imaging
+KW  - Smart healthcare
+KW  - Electronic healthcare
+KW  - Ensemble learning
+KW  - Extreme learning machines
+KW  - Internet of Medical Things
+KW  - Smart health monitoring system
+KW  - eHealth
+KW  - health care 40
+KW  - big data processing
+KW  - deep ensemble learning
+KW  - extreme learning machine
+KW  - convolutional neural network
+KW  - Internet of Medical Things
+KW  - deep belief network
+DO  - 10.1109/ACCESS.2023.3325323
+JO  - IEEE Access
+IS  - 
+SN  - 2169-3536
+VO  - 11
+VL  - 11
+JA  - IEEE Access
+Y1  - 2023
+AB  - Human life has become smarter by utilizing big data, telecommunication technologies, and wearable sensors over pervasive computing to give better healthcare services. Big data is built with the possibility to improve the healthcare industry. Big data makes the interconnection between patients, wearable sensors, healthcare caregivers, and providers through the utilization of Information and Communication Technology (ICT) and software. Most of the economic challenges in developing countries are caused by the healthcare sector, which occurs predominantly due to the increasing population requiring more quality of care concerning older people. Older people need great attention and care as they lead with irreparable damages when a minor accident or insignificant disease occurs. Therefore, the necessity of implementing new technologies and tools has arisen to support senior citizens regarding their healthcare. Various advancements in wireless technology, miniaturization, computing power, and processing made diverse healthcare innovations that led to developing the connected medical devices. Hence, this proposal develops a new healthcare monitoring system for tracking the activities of elderly people, where the Hadoop MapReduce technique for parallel processing the large-sized data. The data collected as mentioned in the available datasets is performed by using the numerous wearable sensors fixed on the “subject’s left ankle, right arm, and chest” that are transformed to the cloud platform and also to the data analytics layer according to the Internet of Medical Things (IoMT) devices. The given input undergoes data splitting to produce tiny chunks. These small chunks of the input files are then considered as Map tasks. Here, in the map phase, the features are optimally selected by the Hybrid Dingo Coyote Optimization (HDCO). The combiner phase classifies the physical activities using the developed Deep Ensemble Learning (DEL) consisting of classifiers such as “Extreme Learning Machine (ELM), deep Convolutional Neural Network (CNN), Long short-term memory (LSTM), Deep Belief Network (DBN), and Deep Neural Network (DNN)”. The parameter tuning in these classifiers is done by the same HDCO. The reducer phase extracts data from different chunks by merging the same classes. The developed HDCO-DEL has secured 13.66%, 16.01%, 17.33%, 13.6%, and 14.01% better accuracy than ELM, CNN, LSTM, DBN, DNN, and HealthFog, respectively on second dataset. The comparison with existing methods shows its better performance and also predicts physical activities with overall high accuracy.
+ER  - 
+
+TY  - CONF
+TI  - Integration of Wireless Sensor Network and IoT for Enhanced Broiler Closed-House Monitoring: A Case Study at Broiler Teaching Farm
+T2  - 2023 9th International Conference on Signal Processing and Intelligent Systems (ICSPIS)
+SP  - 1
+EP  - 8
+AU  - M. A. A. Fathurohman
+AU  - I. D. Sumitra
+AU  - A. R. Daud
+PY  - 2023
+KW  - Temperature sensors
+KW  - Wireless sensor networks
+KW  - Wind speed
+KW  - Education
+KW  - Real-time systems
+KW  - Monitoring
+KW  - Farming
+KW  - Monitoring System
+KW  - Wireless Sensor Network (WSN)
+KW  - Internet of Things (IoT)
+KW  - Poultry farming
+KW  - Broiler closed-house monitoring
+DO  - 10.1109/ICSPIS59665.2023.10402746
+JO  - 2023 9th International Conference on Signal Processing and Intelligent Systems (ICSPIS)
+IS  - 
+SN  - 
+VO  - 
+VL  - 
+JA  - 2023 9th International Conference on Signal Processing and Intelligent Systems (ICSPIS)
+Y1  - 14-15 Dec. 2023
+AB  - The monitoring system is an essential component for broiler closed-house farmers. This design aims to implement an efficient monitoring system using Wireless Sensor Network (WSN) technology and the Internet of Things (IoT). This system system enhances chicken coop monitoring and supports online learning at Broiler Teaching Farm. It comprises six sensor nodes and one controller node (gateway). Each sensor node is equipped with a DHT22 sensor for temperature and humidity, an MQ-135 sensor for NH3 gas concentration, and anemometers for wind speed monitoring. Communication between nodes is facilitated by NRF24L01 modules, with the primary node employing an ESP32 and each sensor node using an ATmega328P. The data collected, including temperature, humidity, NH3 gas levels, and wind speed, is wirelessly transmitted to the controller node via the WSN. The controller node then forwards this data to a web-based service using the HTTP protocol. The information is presented in a user-friendly, real-time web platform, offering valuable insights. Moreover, the system can maintain weekly performance records and coop administration records. Furthermore, this implementation represents a significant contribution to the field of animal farming and serves as a foundation for future research and development of livestock monitoring systems. The system offers operators real-time data for prompt decisions on the chicken coop’s status. It’s integrated with an online poultry farming course at Broiler Teaching Farm, allowing students to gain insights into the latest technology in broiler chicken farming. This integration should improve broiler closed-house monitoring, enhancing education quality and environmental management for students and instructors.
+ER  - 
+
+TY  - JOUR
+TI  - Considering Wearable Health Tracking Devices and Pandemic Preparedness for Universities
+T2  - IEEE Pervasive Computing
+SP  - 35
+EP  - 44
+AU  - A. Vargo
+AU  - P. Neigel
+AU  - K. Kise
+PY  - 2023
+KW  - COVID-19
+KW  - Pandemics
+KW  - Surveys
+KW  - Biomedical monitoring
+KW  - Wearable computers
+KW  - Heart rate variability
+KW  - Monitoring
+KW  - Management
+KW  - Wearable sensors
+KW  - Educational institutions
+DO  - 10.1109/MPRV.2023.3322460
+JO  - IEEE Pervasive Computing
+IS  - 4
+SN  - 1558-2590
+VO  - 22
+VL  - 22
+JA  - IEEE Pervasive Computing
+Y1  - Oct.-Dec. 2023
+AB  - In the future, it is possible that universities could use sensing devices to help manage students and classroom disruptions during pandemics. Wearable sensing devices have shown the capability to identify oncoming illnesses. In particular, the Oura Ring, a smart-ring with sleep-tracking features, can detect cases of COVID-19 before users are aware of it. While these devices show promise, they are only effective for pandemic preparedness and response if users pay attention to the outputs of the devices and consistently use them. In this article, we discuss the results of a year-long in-the-wild study with 35 participants at a university who wore Oura Rings. After an orientation, the participants wore their rings with no restrictions or minimum wearing requirements. By retroactively looking at how participants used the rings for monitoring their health, we identify strategies and potential problems with employing wearables for health monitoring in universities.
+ER  - 
+
+TY  - CONF
+TI  - PBE-Plan: Periodic Backdoor Erasing Plan for Trustworthy Federated Learning
+T2  - 2023 IEEE International Conference on High Performance Computing & Communications, Data Science & Systems, Smart City & Dependability in Sensor, Cloud & Big Data Systems & Application (HPCC/DSS/SmartCity/DependSys)
+SP  - 41
+EP  - 48
+AU  - B. Chen
+AU  - G. Li
+AU  - M. Chen
+AU  - Y. Liu
+AU  - X. Yi
+AU  - J. Li
+PY  - 2023
+KW  - Training
+KW  - Visualization
+KW  - Data privacy
+KW  - Federated learning
+KW  - Semantics
+KW  - Pipelines
+KW  - Timing
+KW  - Federated Learning
+KW  - Backdoor Erasing
+KW  - Knowledge Distillation
+KW  - Backdoor Response Suppression
+KW  - Attention Map Alignment
+DO  - 10.1109/HPCC-DSS-SmartCity-DependSys60770.2023.00016
+JO  - 2023 IEEE International Conference on High Performance Computing & Communications, Data Science & Systems, Smart City & Dependability in Sensor, Cloud & Big Data Systems & Application (HPCC/DSS/SmartCity/DependSys)
+IS  - 
+SN  - 
+VO  - 
+VL  - 
+JA  - 2023 IEEE International Conference on High Performance Computing & Communications, Data Science & Systems, Smart City & Dependability in Sensor, Cloud & Big Data Systems & Application (HPCC/DSS/SmartCity/DependSys)
+Y1  - 17-21 Dec. 2023
+AB  - Backdoor attacks against Federated Learning (FL) are highly disguised, persistent and mutable because the openness of participants increases the attacker's configurable space. Existing backdoor erasing strategies encounter numerous challenges in FL: 1) Erasing backdoor in a single round does not guarantee the trustworthiness of FL due to the unknown timing of incorporating poisoned samples into the training; 2) Merely suppressing the backdoor response in the pre-softmax layer is insufficient to achieve stable erasing effects in complex FL tasks; 3) Accuracy of the aggregated model deteriorates significantly without clean samples. In this paper, we propose a novel Periodic Backdoor Erasing Plan (PBE-Plan) for trustworthy FL, which enables the server to periodically erase the hidden backdoors in the global model without clean samples while minimizing the detriment of model accuracy. A task pipeline in PBE-Plan involves distilling a clean model from the backdoored global model and then distributing it to participants for local updates. The PBE-Plan uses data-free distillation to transfer knowledge without privacy infringement and prompts the student model's attention to the normal features of inputs while ignoring any potential backdoors by two-stage joint regularization (i.e., backdoor response suppression and attention map alignment). Experiments on CIFAR10 and CIFAR100 demonstrate that our approach can successfully reduce the attack success rate of 3 state-of-the-art backdoor attacks in FL from over 97% to less than 5 % with an accuracy loss of no more than 2 %. Meanwhile, our experiments also demonstrate that good defense results can be achieved without performing backdoor erasing at every round.
+ER  - 
+
+TY  - JOUR
+TI  - OODT: LOS Signal Identification for Acoustic Indoor Localization From Stream Perspective
+T2  - IEEE Sensors Journal
+SP  - 24729
+EP  - 24743
+AU  - B. Qu
+AU  - L. Zhang
+AU  - T. Zhang
+AU  - X. Feng
+AU  - X. Wang
+AU  - W. He
+PY  - 2023
+KW  - Acoustics
+KW  - Location awareness
+KW  - Training
+KW  - Feature extraction
+KW  - Sensors
+KW  - Supervised learning
+KW  - Time series analysis
+KW  - Acoustic feature stream
+KW  - concept drift adaption
+KW  - line-of-sight (LOS) identification
+KW  - the dynamic online training
+KW  - the off-online retraining
+DO  - 10.1109/JSEN.2023.3274637
+JO  - IEEE Sensors Journal
+IS  - 20
+SN  - 1558-1748
+VO  - 23
+VL  - 23
+JA  - IEEE Sensors Journal
+Y1  - 15 Oct.15, 2023
+AB  - Acoustic-based technologies have attracted more attention in indoor ranging-based localization and tracking applications. To achieve high-accuracy ranging measurements, the precise identification of line-of-sight (LOS) acoustic signals is essential. This article proposes a novel off-online dynamic training (OODT) method to identify LOS acoustic signals from stream perspective based on a few training data in dynamic indoor environment. The dynamic online training method is proposed to identify the unlabeled acoustic feature stream by the parent–child model, utilizing the dynamic prior probability from time series information and a selection strategy based on the prediction risk. Then, the trustworthy pseudo-labeled streaming samples are accumulated into the child-models by online learning in real time. To reduce the impact of discarding the untrustworthy LOS signals, the off-online retraining method is proposed to incorporate the spatial information into the parent-models, which uses the category distribution of all pseudo-labeled streaming samples as the prior probability for iterative retraining. Subsequently, a new round of the dynamic online training is conducted to update the pseudo-labels of feature stream. Experiments demonstrate that the dynamic online training method has a higher identification precision of LOS acoustic signals from stream perspective, reaching 98% and more than 93.06% in above-ground and underground experimental scenarios. Moreover, the adaption for the concept drift is also verified with identification precision of 97.98% and 98.23%, respectively. The off-online retraining method further optimize the performance of the parent–child models in a single scenario. In conclusion, the proposed OODT method can autonomously identify dynamic acoustic signals with strong robustness and scenario drift adaptability.
+ER  - 
+
+TY  - CONF
+TI  - Smart Jacket for Health Monitoring of Climbers Using LoRaWAN Technology
+T2  - 2024 2nd International Conference on Artificial Intelligence and Machine Learning Applications Theme: Healthcare and Internet of Things (AIMLA)
+SP  - 1
+EP  - 7
+AU  - N. P
+AU  - G. T
+AU  - D. R
+AU  - G. T
+PY  - 2024
+KW  - Temperature sensors
+KW  - Wide area networks
+KW  - Temperature distribution
+KW  - Prototypes
+KW  - Health and safety
+KW  - Servers
+KW  - Monitoring
+KW  - Climbers
+KW  - hypothermia
+KW  - bradycardia
+KW  - health monitoring
+KW  - LoRa
+KW  - wireless communication
+DO  - 10.1109/AIMLA59606.2024.10531599
+JO  - 2024 2nd International Conference on Artificial Intelligence and Machine Learning Applications Theme: Healthcare and Internet of Things (AIMLA)
+IS  - 
+SN  - 
+VO  - 
+VL  - 
+JA  - 2024 2nd International Conference on Artificial Intelligence and Machine Learning Applications Theme: Healthcare and Internet of Things (AIMLA)
+Y1  - 15-16 March 2024
+AB  - Climbing, including rock climbing, ice climbing, mountaineering, and indoor climbing, is a physically demanding and fascinating sport. Climbers are attracted to the adventure, physical fitness, and personal growth it offers. However, climbers must be aware of and prepared for various medical challenges specific to climbing, such as Altitude Sickness, Hypothermia, Dehydration, and Bradycardia. These challenges can range from minor discomforts to life-threatening conditions. Hypothermia and bradycardia frequently occur together and present complex challenges, particularly in activities like mountaineering or extreme cold sports. This paper provides a comprehensive examination of hypothermia and bradycardia in cold and high-altitude environments, including their plummet detection. Hypothermia is characterized by a dangerously low body temperature, usually caused by cold temperatures, wet conditions, and high altitudes. It poses significant risks to individuals engaged in outdoor activities and requires immediate attention. The paper also explores bradycardia, which refers to a slow heart rate, often influenced by factors like altitude, physical fitness, and underlying medical conditions. At high altitudes, lower oxygen levels can trigger bradycardia, posing challenges for climbers and mountaineers. Additionally, the paper introduces a device that utilizes temperature and pulse sensors, ESP 8266 for control, and LoRa for data communication. This device is worn as a jacket and transmits the user's body condition to a base station for monitoring. The experiment results demonstrate that the device can detect symptoms of hypothermia and bradycardia, enabling users and climbers to respond more vigilantly and reduce mortality caused by these conditions.
+ER  - 
+
+TY  - CONF
+TI  - Recognition of Pediatric Congenital Heart Diseases by Using Phonocardiogram Signals and Transformer-Based Neural Networks
+T2  - 2023 45th Annual International Conference of the IEEE Engineering in Medicine & Biology Society (EMBC)
+SP  - 1
+EP  - 4
+AU  - M. Hassanuzzaman
+AU  - N. A. Hasan
+AU  - M. A. A. Mamun
+AU  - M. Alkhodari
+AU  - K. I. Ahmed
+AU  - A. H. Khandoker
+AU  - R. Mostafa
+PY  - 2023
+KW  - Heart
+KW  - Training
+KW  - Sensitivity
+KW  - Sociology
+KW  - Receivers
+KW  - Transformers
+KW  - Real-time systems
+DO  - 10.1109/EMBC40787.2023.10340370
+JO  - 2023 45th Annual International Conference of the IEEE Engineering in Medicine & Biology Society (EMBC)
+IS  - 
+SN  - 2694-0604
+VO  - 
+VL  - 
+JA  - 2023 45th Annual International Conference of the IEEE Engineering in Medicine & Biology Society (EMBC)
+Y1  - 24-27 July 2023
+AB  - The phonocardiogram (PCG) or heart sound auscultation is a low-cost and non-invasive method to diagnose Congenital Heart Disease (CHD). However, recognizing CHD in the pediatric population based on heart sounds is difficult because it requires high medical training and skills. Also, the dependency of PCG signal quality on sensor location and developing heart in children are challenging. This study proposed a deep learning model that classifies unprocessed or raw PCG signals to diagnose CHD using a one-dimensional Convolution Neural Network (1D-CNN) with an attention transformer. The model was built on the raw PCG data of 484 patients. The results showed that the attention transformer model had a good balance of accuracy of 0.923, a sensitivity of 0.973, and a specificity of 0.833. The Receiver Operating Characteristic (ROC) plot generated an Area Under Curve (AUC) value of 0.964, and the F1-score was 0.939. The suggested model could provide quick and appropriate real-time remote diagnosis application in classifying PCG of CHD from non-CHD subjects.Clinical Relevance— The suggested methodology can be utilized to analyze PCG signals more quickly and affordably for rural doctors as a first screening tool before sending the cases to experts.
+ER  - 
+
+TY  - CONF
+TI  - Human Stress Detection in and through Sleep using Machine Learning
+T2  - 2024 International Conference on Recent Advances in Electrical, Electronics, Ubiquitous Communication, and Computational Intelligence (RAEEUCCI)
+SP  - 1
+EP  - 7
+AU  - H. V
+AU  - H. Kuresan
+AU  - O. Kancharlawar
+AU  - V. M. Madhan
+AU  - S. Balamithra
+PY  - 2024
+KW  - Support vector machines
+KW  - Training
+KW  - Machine learning algorithms
+KW  - Computational modeling
+KW  - Human factors
+KW  - Machine learning
+KW  - Vectors
+KW  - Machine Learning model
+KW  - Stress Detection
+KW  - Classification
+KW  - Support Vector Machine
+KW  - Feature Selection
+KW  - Ada Boost
+KW  - Multilayer Perceptron
+DO  - 10.1109/RAEEUCCI61380.2024.10547796
+JO  - 2024 International Conference on Recent Advances in Electrical, Electronics, Ubiquitous Communication, and Computational Intelligence (RAEEUCCI)
+IS  - 
+SN  - 
+VO  - 
+VL  - 
+JA  - 2024 International Conference on Recent Advances in Electrical, Electronics, Ubiquitous Communication, and Computational Intelligence (RAEEUCCI)
+Y1  - 17-18 April 2024
+AB  - The effects of stress on the body and mind may be devastating, and it is a prevalent health problem. The quality of one's sleep is an important health indicator, and stress is a known disruptor of that quality. As a result, gauging a person's stress levels and health risks based on their sleep patterns may be quite informative. One's capacity for making decisions, paying attention, learning, and solving problems are all significantly impacted by stress. Both the disciplines of psychology and computer science have recently dedicated significant resources to the study of stress detection and modelling. Affective states, or the actual experience of having that emotion, are the measuring stick that psychologists use to assess the magnitude of stress. The majority of the progress in stress classification has been made using user-dependent models that cannot generalize to a new user. This results in substantial time investment from new users in training the algorithm to forecast their emotional states. Common mental health issues in children need to be addressed immediately since they may escalate into more serious issues if left untreated. The analysis and diagnosis of medical data are areas where machine learning techniques now excel. Different machine learning algorithms have had their accuracy across the chosen attribute set compared. Data on sleep-related factors, such as heart rate variability and sleep architecture, will be collected by wearable devices and analyzed using machine learning methods such support vector machine (SVM), decision tree (DT), MLP, and Ada Boost classifier. By analyzing a person's sleep patterns with the help of a machine learning model, researchers have shown they can effectively identify signs of stress in people.
+ER  - 
+
+TY  - CONF
+TI  - enVolve+: Inertial Sensing to Reinforce Involvement of Silent Listeners during an Online Interaction
+T2  - 2023 15th International Conference on COMmunication Systems & NETworkS (COMSNETS)
+SP  - 378
+EP  - 381
+AU  - G. Chugh
+AU  - S. Chakraborty
+AU  - S. Chakraborty
+PY  - 2023
+KW  - Vibrations
+KW  - Wearable Health Monitoring Systems
+KW  - Microwave integrated circuits
+KW  - Smart cities
+KW  - Machine learning
+KW  - Sensors
+KW  - Behavioral sciences
+KW  - online meeting
+KW  - earables
+KW  - inertial sensing
+DO  - 10.1109/COMSNETS56262.2023.10041409
+JO  - 2023 15th International Conference on COMmunication Systems & NETworkS (COMSNETS)
+IS  - 
+SN  - 2155-2509
+VO  - 
+VL  - 
+JA  - 2023 15th International Conference on COMmunication Systems & NETworkS (COMSNETS)
+Y1  - 3-8 Jan. 2023
+AB  - Learning how engaged a remote participant is in an online meeting can lead to more productive discussions. If online meeting attendees turn off their mics and cameras, the presenter can't tell if they're paying attention. The research in [1] shows how earables could help remedy the issue at hand. While the prior study focused on offering speakers feedback of the classroom, the same results may be utilized to help students with their attention spans and bring back their attention to the screen during a lecture. Therefore, the proposed study adds a listener interface to previous work. The premise is, that if listeners start to doze off or drift away in an interaction, vibrations from the smartwatch might wake them up. Wearable IMU data from an in-lab user study was utilized to train machine learning models that obtained an F1 Score of 80% or above across the board. Additionally, we give persuasive evidence for the adoption of earables over other sensory modalities by analyzing experimental findings, user analysis, and current research needs in this field.
+ER  - 
+
+TY  - JOUR
+TI  - Engineering and Technology Education in University Studies: Driving Digital, Sustainable, and Resilient Development—A Case Study in Andalusia, Spain
+T2  - IEEE Access
+SP  - 108967
+EP  - 108981
+AU  - Á. Verdejo Espinosa
+AU  - A. M. Lendínez
+AU  - F. J. Melguizo
+AU  - M. E. Estévez
+PY  - 2023
+KW  - Education
+KW  - Market research
+KW  - Training
+KW  - Intelligent systems
+KW  - Sustainable development
+KW  - Industries
+KW  - Artificial intelligence
+KW  - Educational institutions
+KW  - engineering education
+KW  - intelligent systems
+KW  - business trends
+KW  - smart systems
+KW  - sustainable development goals (SDGs)
+DO  - 10.1109/ACCESS.2023.3321135
+JO  - IEEE Access
+IS  - 
+SN  - 2169-3536
+VO  - 11
+VL  - 11
+JA  - IEEE Access
+Y1  - 2023
+AB  - An investigation was conducted to examine the impact of training in intelligent systems within engineering courses at the university level, considering the parameters and reports on business trends for 2030, as well as the Sustainable Development Goals (SDGs). The study analyzed 2309 subjects across 66 undergraduate degrees offered at nine universities in the Andalusia region, which is the most populous region in Spain. The objective of this research is to assess whether the training in intelligent systems, specifically in the fields of electrical engineering, electronics, computer science, and telecommunications, adequately prepares students in their final years of study to meet the demands of the labor and business market. Reports and trend studies have identified the urgent areas that require attention, including training in sensors, smart grids, smart cities, IoT, artificial intelligence, embedded systems, among others. The investigation provides insights into the current state of training in intelligent systems within the final years of engineering programs. These findings will inform future curriculum development and teaching guidelines, with the goal of enhancing students’ knowledge and skills in line with technological and engineering trends. The study will analyze subjects across various Spanish universities in Andalusia, considering their rankings. Based on the analysis of the results, recommendations for improvement actions and strategies to strengthen the curriculum will be proposed.
+ER  - 
+
+TY  - JOUR
+TI  - Single/Multi-Source Black-Box Domain Adaption for Sensor Time Series Data
+T2  - IEEE Transactions on Cybernetics
+SP  - 4712
+EP  - 4723
+AU  - L. Ren
+AU  - X. Cheng
+PY  - 2024
+KW  - Time series analysis
+KW  - Adaptation models
+KW  - Data models
+KW  - Closed box
+KW  - Predictive models
+KW  - Adversarial machine learning
+KW  - Training
+KW  - Activity recognition
+KW  - gesture recognition
+KW  - multisource transfer learning
+KW  - time series
+KW  - unsupervised domain adaptation
+DO  - 10.1109/TCYB.2023.3300832
+JO  - IEEE Transactions on Cybernetics
+IS  - 8
+SN  - 2168-2275
+VO  - 54
+VL  - 54
+JA  - IEEE Transactions on Cybernetics
+Y1  - Aug. 2024
+AB  - Unsupervised domain adaption (UDA), which transfers knowledge from a labeled source domain to an unlabeled target domain, has attracted tremendous attention in many machine learning applications. Recently, there have been attempts to apply domain adaption for sensor time series data, such as human activity recognition and gesture recognition. However, existing methods suffer from some drawbacks that hinder further performance improvement. They often require access to source data or source models during training, which is unavailable in some fields because of privacy protection and storage limit. Typically, the source domains may only provide an application programming interface (API) for the target domain to call. On the other hand, current UDA methods have not considered the temporal consistency and low-signal-to-noise ratio (SNR) of sensor time series. To address the challenges, this article presents a black-box domain adaption framework for sensor time series data (B2TSDA). First, we propose a single/multi-source teacher–student learning framework to distill the knowledge from the source domains to a customized target model. Then we design a new temporal consistency loss by combining an adaptive mask method and dynamic threshold method to maintain consistent temporal information and balance the learning difficulties of different classes. For the multisource black-box domain adaption, we further propose a Shapley-enhanced method to determine the contribution of each source domain. Experimental results on both single-source and multisource domain adaption show that our framework has superior performance compared to other black-box UDA methods.
+ER  - 
+
+TY  - JOUR
+TI  - A Novel Small-Sample Dense Teacher Assistant Knowledge Distillation Method for Bearing Fault Diagnosis
+T2  - IEEE Sensors Journal
+SP  - 24279
+EP  - 24291
+AU  - H. Zhong
+AU  - S. Yu
+AU  - H. Trinh
+AU  - Y. Lv
+AU  - R. Yuan
+AU  - Y. Wang
+PY  - 2023
+KW  - Generative adversarial networks
+KW  - Knowledge engineering
+KW  - Fault diagnosis
+KW  - Generators
+KW  - Convolutional neural networks
+KW  - Training
+KW  - Data models
+KW  - Dense connection
+KW  - generative adversarial network (GAN)
+KW  - intelligent fault diagnosis
+KW  - knowledge distillation
+DO  - 10.1109/JSEN.2023.3307425
+JO  - IEEE Sensors Journal
+IS  - 20
+SN  - 1558-1748
+VO  - 23
+VL  - 23
+JA  - IEEE Sensors Journal
+Y1  - 15 Oct.15, 2023
+AB  - Recently, deep learning models have been widely studied and applied in fault diagnosis. However, two common drawbacks are: 1) they usually require a large amount of storage resources, making it difficult to run them on embedded devices and 2) there is usually no access to sufficient reliable training data to train a comprehensive diagnosis model. In this study, a fusion approach is proposed based on knowledge distillation and generative adversarial network (GAN). This approach is named small-sample dense teacher assistant knowledge distillation (SS-DTAKD), which aims to enable bearing fault diagnosis with small samples and limited on-board storage resources. First, the proposed self-attention GAN (SGAN) is used to expand the training data for the diagnostic model. The advantage is that the generator and discriminator embedded with the self-attention module can help improve the quality of the generated data. Then, the DTAKD method is proposed to compress the model parameter, where the dense distillation of multiple teacher-assistant networks helps the student network learn correct knowledge without requiring additional data and storage resources. Additionally, the dual-type data hierarchical training (DDHT) method is applied to train the student network, which is designed to utilize actual data to improve the student network’s performance. Extensive experiments on two bearing fault datasets demonstrate that the data generated by the SGAN has high similarity and robustness. Furthermore, compared to other existing knowledge distillation methods, the proposed SS-DTAKD method can obtain higher fault diagnosis accuracy with small samples and limited on-board storage resources.
+ER  - 
+
+TY  - CONF
+TI  - Clinical Analysis of EEG for Cognitive Activation Using MATLAB Applications
+T2  - 2023 3rd International Conference on Advance Computing and Innovative Technologies in Engineering (ICACITE)
+SP  - 2604
+EP  - 2608
+AU  - R. K. Kanna
+AU  - U. Mutheeswaran
+AU  - K. A. Jabbar
+AU  - A. A. Ftaiet
+AU  - R. Khalid
+AU  - H. Al-Chlidi
+PY  - 2023
+KW  - Time-frequency analysis
+KW  - Transforms
+KW  - Sensor phenomena and characterization
+KW  - Feature extraction
+KW  - Electroencephalography
+KW  - Data mining
+KW  - Task analysis
+KW  - Clinical EEG
+KW  - Cognitive
+KW  - MATLAB
+KW  - Neural Activity
+KW  - Mental Health
+DO  - 10.1109/ICACITE57410.2023.10182561
+JO  - 2023 3rd International Conference on Advance Computing and Innovative Technologies in Engineering (ICACITE)
+IS  - 
+SN  - 
+VO  - 
+VL  - 
+JA  - 2023 3rd International Conference on Advance Computing and Innovative Technologies in Engineering (ICACITE)
+Y1  - 12-13 May 2023
+AB  - The pomodoro technique is a helpful study method for managing time. The technique, developed by Francesco Cirillo in the late 1980s, is an attempt to cram as much learning as possible into as little time as possible. The system is based on a study session of 25 minutes followed by a 5-minute break, during which time no electronic devices (such as phones or TVs) may be used. After four hours of work, you may use your computers for an unstructured 15–20-minute break. The use of electroencephalogram (EEG) sensors or smartphone sensors to identify lapses in attention is therefore the subject of current research. By analysing these signals, I may get a better understanding of attention and the point at which a person becomes distracted and thereby use this research to alter our preconceptions about this characteristic of human beings. Teachers might use this instead of reading their students' faces to know when to give them a break if the statistics reveal that the average student needs one after a certain period of time. The first step is to locate an archive of electroencephalogram (EEG) recordings of people engaged in focused attention tasks. After this, the data is processed in MATLAB by extracting features from it. Bandpass filters allow me to transform my time-domain data into the frequency domain, from which I can extract the frequencies I'm interested in. This study seeks to improve our understanding of people’s attention spans in order to tailor the Pomodoro technique to each individual. Its goal is to let people know when they're being distracted so they can decide whether to keep working or take a break. Since people’s attention levels and the amplitude before and during the state of concentration vary, the results indicate that the Pomodoro method has to be modified for each person’s attention span in order to be considered the most effective approach to study.
+ER  - 
+
+TY  - CONF
+TI  - Predict Food Recipe from Image Using CNN/Transformer & Knowledge Distillation for Portability
+T2  - 2023 IEEE International Conference on Sensors, Electronics and Computer Engineering (ICSECE)
+SP  - 852
+EP  - 859
+AU  - Z. B. Li
+PY  - 2023
+KW  - Knowledge engineering
+KW  - Training
+KW  - Taste buds
+KW  - Neural networks
+KW  - Production
+KW  - Transformers
+KW  - Complexity theory
+KW  - Neural networks
+KW  - Ingredient detection
+KW  - Convolution&max pooling
+KW  - Recipe creation
+KW  - Practice developmental
+KW  - Knowledge Distillation
+DO  - 10.1109/ICSECE58870.2023.10263583
+JO  - 2023 IEEE International Conference on Sensors, Electronics and Computer Engineering (ICSECE)
+IS  - 
+SN  - 
+VO  - 
+VL  - 
+JA  - 2023 IEEE International Conference on Sensors, Electronics and Computer Engineering (ICSECE)
+Y1  - 18-20 Aug. 2023
+AB  - Without a doubt, Food is a vital part of any Human's life, not only because of the nutrients provided but also the excellent taste. Subsequently, countless great people have invested their life in exchange for this enjoyment upon Human taste buds. However, even a three-Michelin-starred chef cannot remember the detailed steps to all the dishes, and ordinary citizens do not have the time or energy to create their recipes. This paper proposes an aid system that uses neural networks to achieve accurate recipe projections to facilitate life. A deep learning system based on Decoder and Encoder is implemented using CNN and Transformer. The CNN reduces the memory cost by transforming the image to a vector, achieving faster processing. The Transformer is used to determine ingredients' presence and combine the information of existing dishes to construct an instruction. Such a network can facilitate food production and research. It is making the creation of unique dishes convenient by revolutionizing the method of recording. After the model is created, the backbone network of CNN layers are manipulated to test for the best result. Backbone network tests include ResNet50, ResNet152 without attention, ResNet152 with attention, Vgg16, and AlexNet. Out of all tested, ResNet152 is resulted with the highest iou (Intersection over Union), and without-attention is chosen as it possesses less complexity than its counterpart. Then, knowledge distillation is applied to decrease the complexity and size of the model. This process used the complex model as a trainer to the student model by basing the student training on the result of the teacher model, achieving a similar level of accuracy with a significantly lower complexity and size. This decrease in complexity increases the portable capability of the model, potentially applying into applications and websites on devices in the future without consuming much memory.
+ER  - 
+
+TY  - CONF
+TI  - A Semi-Supervised Learning and Knowledge Distillation Based Method for Annotation of LIDAR Point Cloud Data
+T2  - 2023 4th International Conference on Big Data & Artificial Intelligence & Software Engineering (ICBASE)
+SP  - 14
+EP  - 22
+AU  - C. Yu
+AU  - F. Liu
+AU  - J. Chen
+AU  - T. Zheng
+AU  - W. Feng
+PY  - 2023
+KW  - Point cloud compression
+KW  - Training
+KW  - Adaptation models
+KW  - Three-dimensional displays
+KW  - Laser radar
+KW  - Filtering
+KW  - Semantic segmentation
+KW  - 3D point cloud
+KW  - 3D guided filtering
+KW  - point cloud semantic segmentation
+KW  - semi-supervised learning
+KW  - knowledge distillation
+DO  - 10.1109/ICBASE59196.2023.10303071
+JO  - 2023 4th International Conference on Big Data & Artificial Intelligence & Software Engineering (ICBASE)
+IS  - 
+SN  - 
+VO  - 
+VL  - 
+JA  - 2023 4th International Conference on Big Data & Artificial Intelligence & Software Engineering (ICBASE)
+Y1  - 25-27 Aug. 2023
+AB  - Lidar is a typical sensor in the fields of autonomous driving, environment-aware robots, and industrial automation. The 3D point cloud data collected by it contains rich 3D spatial information, and the surface description of objects is also close to reality, which helps people perceive complex scenes. In recent years, the deep learning-based lidar 3D point cloud data processing method has received widespread attention, realizing automatic feature learning from large amounts of data and realizing target detection and semantic segmentation of complex scenes. Among them, most methods need to learn model parameters based on a large amount of labeled data. However, the annotation of 3D point cloud data is more time-consuming and laborious than that of 2D images. Aiming at the above problems, this paper proposes a point cloud data labeling method based on the combination of semi-supervised learning and knowledge distillation. Firstly, the existing point cloud data is denoised by the improved three-dimensional guided filtering method to remove useless noise. Then, the classic Bilateral Augmentation and Adaptive Fusion (BAAF) point cloud semantic segmentation model is used as the teacher model. Moreover, to enhance the point cloud data, the local semantic context of the pyramid is introduced. We further generate high-quality pseudo-labels through the class range balance module. Finally, the rapid training of the student model is completed through the teacher averaging method in knowledge distillation and the obtained pseudo-labels. During the experiment, we discuss the labeling effect on the point cloud data of the public SemanticKITTI dataset and compare it with the scribble-annotated ScribbleKITTI data, to verify the ability of the proposed method.
+ER  - 
+
+TY  - CONF
+TI  - Non-Invasive Blood Parameters Detection for Healthcare Applications using IOT
+T2  - 2023 Third International Conference on Smart Technologies, Communication and Robotics (STCR)
+SP  - 1
+EP  - 4
+AU  - M. Jayasheela
+AU  - A. Anusha
+AU  - R. Hariharan
+AU  - A. Santhoshkumar
+AU  - N. Yasvanthkumar
+PY  - 2023
+KW  - Thermometers
+KW  - Sodium
+KW  - Robot sensing systems
+KW  - Photoplethysmography
+KW  - Sensor systems
+KW  - Real-time systems
+KW  - Sensors
+KW  - PPG Sensor
+KW  - IR sensor
+KW  - ISEs Sensor
+KW  - thermistor sensor hemoglobin level
+KW  - Glucose level
+KW  - sodium level
+KW  - breath per minute
+DO  - 10.1109/STCR59085.2023.10396890
+JO  - 2023 Third International Conference on Smart Technologies, Communication and Robotics (STCR)
+IS  - 
+SN  - 
+VO  - 1
+VL  - 1
+JA  - 2023 Third International Conference on Smart Technologies, Communication and Robotics (STCR)
+Y1  - 9-10 Dec. 2023
+AB  - The conventional technique involves taking human blood samples in an intrusive way in order to measure the salt level, hemoglobin, and glucose rate. These methods may be painful and put the patient at risk for infection. These procedures may cause fear in the children. In order to address this issue, we suggest a non-invasive method that combines ISEs, PPG, and infrared (IR) sensors to measure salt, glucose, and hemoglobin levels. By studying the absorption and reflection of infrared light by blood vessels in the subcutaneous tissue, the IR sensor will be used to detect the amount of glucose in the body. PPG operates by measuring the pulsatile blood flow through the arteries, which will reveal information about hemoglobin levels. Lastly, an ISEs sensor will be used to measure sweat pH, which is correlated with sodium concentration, in order to monitor salt levels. Advanced machine learning techniques will be used to interpret the data from these sensors and deliver precise, real-time measures of sodium, hemoglobin, and glucose. To further assess the patient’s breathing condition, we have added a breathe analyzer. The IR sensor yields the breathing analyzer output. By using a thermometer, we may analyze the patient’s breaths per minute using a graphical waveform, with the breaths taken in a minute being represented by the peak value.
+ER  - 
+
+TY  - CONF
+TI  - Examining Social Media Posts for Identification of Anxiety and Depression Utilizing Machine Learning Techniques
+T2  - 2023 3rd International Conference on Technological Advancements in Computational Sciences (ICTACS)
+SP  - 295
+EP  - 300
+AU  - B. S. Satpute
+AU  - W. P. Rahane
+AU  - R. Bharati
+PY  - 2023
+KW  - Social networking (online)
+KW  - Anxiety disorders
+KW  - Mental health
+KW  - Depression
+KW  - Feature extraction
+KW  - Software
+KW  - Monitoring
+KW  - Social media
+KW  - artificial intelligence
+KW  - machine learning
+KW  - mental health
+KW  - depression and anxiety
+DO  - 10.1109/ICTACS59847.2023.10390499
+JO  - 2023 3rd International Conference on Technological Advancements in Computational Sciences (ICTACS)
+IS  - 
+SN  - 
+VO  - 
+VL  - 
+JA  - 2023 3rd International Conference on Technological Advancements in Computational Sciences (ICTACS)
+Y1  - 1-3 Nov. 2023
+AB  - The prevalence of mental diseases like depression and anxiety among students has become a growing concern in recent years. With the widespread use of social media platforms, individuals often express their emotions, thoughts, and experiences through posts and interactions. This paper investigates the feasibility of classifying students' anxiety and depression based on the content of their social media posts. Recently, some research communities in various domains have shown enthusiasm for investigating the potential of leveraging social media platforms for extracting valuable insights for decision-making and creative knowledge. Social media has been utilized to aid software development activities, analyze cryptocurrency trends, identify network communities, and make recommendations, among others. Apart from other fields within the eHealth domain, the application of social media platforms and the sophisticated analysis of extensive datasets to anticipate mental health disorders like depression, schizophrenia, eating disorders, anxiety, and addictive tendencies has garnered substantial attention and interest. However, one of the challenges lies in either having enough historical data or regular monitoring of a patient's activities to identify a person's mental health condition using traditional methods. To tackle this concern, we introduce an approach aimed at categorizing individuals with past mental health conditions through the utilization of information sourced from a widely-used social media platform such as Facebook.
+ER  - 
+
+TY  - JOUR
+TI  - A Deep Learning Method for Traffic Light Status Recognition
+T2  - Journal of Intelligent and Connected Vehicles
+SP  - 173
+EP  - 182
+AU  - L. Yang
+AU  - Z. He
+AU  - X. Zhao
+AU  - S. Fang
+AU  - J. Yuan
+AU  - Y. He
+AU  - S. Li
+AU  - S. Liu
+PY  - 2023
+KW  - Deep learning
+KW  - Visualization
+KW  - Feature extraction
+KW  - Transformers
+KW  - Robustness
+KW  - Real-time systems
+KW  - Sensors
+KW  - traffic light status recognition
+KW  - autonomous vehicle
+KW  - detection transformer with improved denoising anchor boxes (DINO)
+KW  - Chinese urban traffic light dataset (CUTLD)
+DO  - 10.26599/JICV.2023.9210022
+JO  - Journal of Intelligent and Connected Vehicles
+IS  - 3
+SN  - 2399-9802
+VO  - 6
+VL  - 6
+JA  - Journal of Intelligent and Connected Vehicles
+Y1  - September 2023
+AB  - Real-time and accurate traffic light status recognition can provide reliable data support for autonomous vehicle decision-making and control systems. To address potential problems such as the minor component of traffic lights in the perceptual domain of visual sensors and the complexity of recognition scenarios, we propose an end-to-end traffic light status recognition method, ResNeSt50-CBAM-DINO (RC-DINO). First, we performed data cleaning on the Tsinghua-Tencent traffic lights (TTTL) and fused it with the Shanghai Jiao Tong University's traffic light dataset (S2TLD) to form a Chinese urban traffic light dataset (CUTLD). Second, we combined residual network with split-attention module-50 (ResNeSt50) and the convolutional block attention module (CBAM) to extract more significant traffic light features. Finally, the proposed RC-DINO and mainstream recognition algorithms were trained and analyzed using CUTLD. The experimental results show that, compared to the original DINO, RC-DINO improved the average precision (AP), AP at intersection over union (IOU) = 0.5 (AP50), AP for small objects (APs), average recall (AR), and balanced F score (F1-Score) by 3.1 %, 1.6%, 3.4%, 0.9%, and 0.9%, respectively, and had a certain capability to recognize the partially covered traffic light status. The above results indicate that the proposed RC-DINO improved recognition performance and robustness, making it more suitable for traffic light status recognition tasks.
+ER  - 
+
+TY  - JOUR
+TI  - A Novel Seizure Detection Method Based on the Feature Fusion of Multimodal Physiological Signals
+T2  - IEEE Internet of Things Journal
+SP  - 27545
+EP  - 27556
+AU  - D. Wu
+AU  - J. Wei
+AU  - P. -P. Vidal
+AU  - D. Wang
+AU  - Y. Yuan
+AU  - J. Cao
+AU  - T. Jiang
+PY  - 2024
+KW  - Feature extraction
+KW  - Codes
+KW  - Hospitals
+KW  - Electromyography
+KW  - Classification algorithms
+KW  - Pediatrics
+KW  - Noise
+KW  - Archimedes optimization algorithm (AOA)
+KW  - feature fusion
+KW  - local differential ternary pattern
+KW  - portable device
+KW  - seizure detection
+DO  - 10.1109/JIOT.2024.3398418
+JO  - IEEE Internet of Things Journal
+IS  - 16
+SN  - 2327-4662
+VO  - 11
+VL  - 11
+JA  - IEEE Internet of Things Journal
+Y1  - 15 Aug.15, 2024
+AB  - Seizure detection is traditionally done using video/electroencephalography monitoring, but for out-of-hospital patients, this method is costly. In recent years, portable device to detect seizures gains attention. In this article, multimodal signals collected by portable devices are studied, and a seizure detection algorithm is proposed based on adaptive multibit local differential ternary pattern (MLDTP). This algorithm is used for detecting seizure period and interseizure period. Traditional local binary pattern has certain limitations in describing 1-D time-series signals. It can only describe two types of structures in signals: 1) rising structure and 2) falling structure, making the signal patterns overly monotonous and not conducive to classification tasks. To address this issue, this article introduces two additional structures, slowly rising structure and slowly falling structure, into the signal description using the MLDTP method. This method constructs multibit neighboring relationships of the signals and adaptively selects the optimal MLDTP parameters for different modalities using the Archimedes optimization algorithm (AOA). Additionally, this article extensively discusses a multimodal signal fusion strategy, mapping features of different modal signals to the same feature space through the MLDTP algorithm to achieve information complementarity. Long-term recorded data from 18 patients were collected using the wearable device Biovital P1, with 13 cases from the Children’s Hospital affiliated with Children’s Hospital, Zhejiang University School of Medicine, and five cases from the fourth Affiliated Hospital of Anhui Medical University. The data set underwent fivefold cross-validation, resulting in average accuracy, precision, sensitivity, and F1 score of 96.81%, 98.55%, 95.24%, and 96.87%, respectively.
+ER  - 
+
+TY  - JOUR
+TI  - Skipper: A Federated Siamese Network-Based Group Activity Segregator for IoMT Systems
+T2  - IEEE Transactions on Computational Social Systems
+SP  - 1770
+EP  - 1779
+AU  - V. Kotiyal
+AU  - A. Gupta
+AU  - P. K. Deb
+AU  - S. C. Misra
+AU  - D. Das
+AU  - V. Udutalapally
+PY  - 2023
+KW  - Monitoring
+KW  - Training
+KW  - Anomaly detection
+KW  - Task analysis
+KW  - Real-time systems
+KW  - Network architecture
+KW  - Data models
+KW  - Anomaly detection
+KW  - edge computing
+KW  - school monitoring
+KW  - Siamese network
+DO  - 10.1109/TCSS.2023.3244188
+JO  - IEEE Transactions on Computational Social Systems
+IS  - 4
+SN  - 2329-924X
+VO  - 10
+VL  - 10
+JA  - IEEE Transactions on Computational Social Systems
+Y1  - Aug. 2023
+AB  - The social IoMT-based activity-monitoring system comprises several devices with different datasets. It faces challenges like a collection of a global activity dataset which comprises a myriad of activities. In this article, we propose a federated Siamese network-based data-independent group activity segregator—Skipper—which aims to identify anomalies in an activity-monitoring social IoMT system. The novelty of this work is that Skipper does not require any dataset before its deployment, which removes the need for any prior training of the model for activity monitoring. As a proof of concept, we select activities pertaining to school environments to identify low-performing students in a classroom, who would require teachers’ close attention to ensure balanced growth and proper health. Skipper monitors the students independently for their motion signatures through a wearable device that consists of an accelerometer. A federated Siamese network calculates indices that signify the degree of similarity among the students’ activities. Skipper identifies the students who do not perform the same activity. With real-world implementations, we observe that Skipper requires network rates of 10 Kb/s, making it suitable for low bandwidth networks while we achieve just 20% CPU and 10 MB memory utilization on constrained edge devices. Further, with an increasing number of students up to 100, the time delay for final results is limited to 80 s. Hence, Skipper is a fast, easy, and accurate solution for recognizing outliers in IoMT social systems.
+ER  - 
+
+TY  - JOUR
+TI  - Learning Robust Perception-Based Controller for Quadruped Robot
+T2  - IEEE Access
+SP  - 94497
+EP  - 94505
+AU  - F. Muhamad
+AU  - J. -S. Kim
+AU  - J. -H. Park
+PY  - 2023
+KW  - Robots
+KW  - Robot sensing systems
+KW  - Quadrupedal robots
+KW  - Noise measurement
+KW  - Training
+KW  - Sensors
+KW  - Propioception
+KW  - Legged locomotion
+KW  - Robust control
+KW  - Gait controller
+KW  - machine learning
+KW  - quadruped robot
+KW  - robust perception
+DO  - 10.1109/ACCESS.2023.3311141
+JO  - IEEE Access
+IS  - 
+SN  - 2169-3536
+VO  - 11
+VL  - 11
+JA  - IEEE Access
+Y1  - 2023
+AB  - The perception of a quadruped robot is crucial in determining how the robot has to move while crossing challenging terrains. However, robustness in the quadruped perception is still a dilemma when facing a slippery, deformable, and reflective terrains. This problem arises due to the presence of noises from slippage on the foothold and misinterpretation of the terrain. The noises can elicit imperfect robot states and lead to the poor performance of the robot locomotion. This paper presents a robust perception-based control policy as a solution to overcome noises in the robot’s perception. In particular, attention is paid to devise a robust perception method against noises both in proprioceptive and exteroceptive observations. In other words, the proposed control policy has a capability to estimate states and reduce effect of noises from both observations in the robot. A student-teacher algorithm is leveraged to train the control policy on a randomly generated terrain. Multiple robots also are employed in parallel learning regimes to reduce the training duration. The result is a robust control policy that can produce the optimal actions even when the robot’s perception is affected by the noises observed not only the proprioceptive but also exteroceptive sensors. The robust control policy can handle a higher ratio of noise compared to the previous works in the literature. Robustness of the proposed control policy is validated using both the Isaac Gym simulation and a comparison with popular recurrent networks in the literature.
+ER  - 
+
+TY  - CONF
+TI  - Human emotional classification using EEG based on discrete wavelet transformation technique
+T2  - 2023 First International Conference on Cyber Physical Systems, Power Electronics and Electric Vehicles (ICPEEV)
+SP  - 1
+EP  - 6
+AU  - V. G. Rajendran
+AU  - S. Jayalalitha
+AU  - K. Adalarasu
+AU  - S. J. Mohammad
+PY  - 2023
+KW  - Support vector machines
+KW  - Time-frequency analysis
+KW  - Feature extraction
+KW  - Motion pictures
+KW  - Electroencephalography
+KW  - Discrete wavelet transforms
+KW  - Classification algorithms
+KW  - Electroencephalogram (EEG)
+KW  - Discrete Wavelet Transform (DWT)
+KW  - Relative sub-band energies
+KW  - Heart rate index
+KW  - CPARI
+KW  - SVM
+DO  - 10.1109/ICPEEV58650.2023.10391939
+JO  - 2023 First International Conference on Cyber Physical Systems, Power Electronics and Electric Vehicles (ICPEEV)
+IS  - 
+SN  - 
+VO  - 
+VL  - 
+JA  - 2023 First International Conference on Cyber Physical Systems, Power Electronics and Electric Vehicles (ICPEEV)
+Y1  - 28-30 Sept. 2023
+AB  - This paper proposes a method to classify a person’s emotional status while watching video clippings. A total of 15 students whose Electroencephalogram (EEG) signals were acquired during watching different categories of movie clippings. The human emotions such as Funny, Sad, Horror, Relax, and Romantic were considered, and short-duration movie clippings were played for 3 minutes duration for each emotion with an EEG signal acquired by using a wearable 14-channel Emotiv Epoc X device. The saline-based felt sensor type of electrodes was used in this study with a sampling rate of 256 Samples per Second. The raw EEG signal was pre-processed by enabling the built-in digital 5th-order Sinc filter and notch filter with a bandwidth of 0.2-45Hz to remove artifacts, power line noise, and signal drift. EEG sub-band energies such as alpha, theta, and beta features were extracted by decomposing the EEG signal into four levels with Daubechies (db4) as the mother wavelet. For every 5s of raw EEG data, the time-frequency features were extracted using discrete wavelet transformation using MATLAB 2022. The relative sub-band energies and band ratios such as heart rate index (HRI), neural activity, vigilance index, arousal index, performance Enhancement index, cognitive performance attentional resource index (CPARI), CNS arousal, and desynchronization were computed. The above 11 features were fed to the machine learning classifier for classification, and their classification accuracy was compared under different emotional data combinations. The result shows that the ensemble algorithm provides the highest classification accuracy of 62.8% for five emotions: Funny, Sad, Horror, Relax, and Romantic. Similarly, a detailed study was presented on comparing under 4, or 3, or 2 combinations of emotional data for classification with different classifier algorithms: decision tree, ensemble, SVM, neural network, and kernel. The highest classification accuracy of 88.80% was obtained for the ensemble classifier under two-level romantic and relax emotional data.
+ER  - 
+
+TY  - JOUR
+TI  - The Application of Mobile Sensing to Detect CO and NO2 Emission Spikes in Polluted Cities
+T2  - IEEE Access
+SP  - 79624
+EP  - 79635
+AU  - S. Sara
+AU  - A. Rebeiro-Hargrave
+AU  - A. Parmar
+AU  - P. L. Fung
+AU  - I. Patwardhan
+AU  - S. Varjonen
+AU  - C. R. Reddy
+AU  - S. Chaudhari
+AU  - S. Tarkoma
+PY  - 2023
+KW  - Sensors
+KW  - Pollution measurement
+KW  - Internet of Things
+KW  - Urban areas
+KW  - Atmospheric measurements
+KW  - Air pollution
+KW  - Temperature measurement
+KW  - Machine learning
+KW  - Air pollution
+KW  - low-cost sensors
+KW  - IoT
+KW  - mobile sensing
+KW  - data models
+KW  - geospatial data
+KW  - machine leaning calibration
+KW  - CO
+KW  - NO₂ emissions
+KW  - random forest regression
+KW  - points of interests
+DO  - 10.1109/ACCESS.2023.3297874
+JO  - IEEE Access
+IS  - 
+SN  - 2169-3536
+VO  - 11
+VL  - 11
+JA  - IEEE Access
+Y1  - 2023
+AB  - Carbon monoxide (CO) and Nitrogen dioxide (NO2) are major air pollutants that have the potential to affect human health adversely. There is a lack of useful information regarding the spatial distribution and temporal variability of CO and NO2 emissions in major metropolitan areas. The primary goal of this research is to provide a geospatial data methodology for detecting emission spikes of CO and NO2 in polluted urban environments employing portable, low-cost sensors. We propose that ephemeral identification of harmful gas concentrations can be achieved using different IoT device types mounted on a mobile platform. We propose that persistent CO and NO2 emission spikes can be identified by driving through the city on different days. We applied this approach to Hyderabad, India, by fixing a mobile platform on a street car. We corrected the IoT device measurement errors by calibrating the sensing component data against a reference instrument co-located on the mobile platform. We identified that random forest regression was the most suitable technique to reduce the variability between the IoT devices due to heterogeneity in the mobile sensing datasets. The spatial variability of CO and NO2 harmful emission spikes at a resolution of 50 m were identified, but their intensity changes on a daily basis according to meteorological conditions. The temporal variability shows a weak correlation between CO and NO2 concentrations. The data from the CO and NO2 emission spikes at Points of Interest that disturb traffic flows clearly show the need for public education about when it is hazardous for persons with respiratory conditions to be outside, as well as when it is unsafe for young children and the elderly to be outside for extended periods of time. This detection strategy is adaptable to any mobile platform used by individuals traveling by foot, bicycle, drone, or robot in any metropolis.
+ER  - 
+
+TY  - CONF
+TI  - Recognition of Depressive Mood Based on Electrocardiogram and Three Dimensional Acceleration
+T2  - 2024 9th International Conference on Computer and Communication Systems (ICCCS)
+SP  - 196
+EP  - 200
+AU  - M. Liu
+AU  - B. Li
+AU  - B. Cai
+PY  - 2024
+KW  - Performance evaluation
+KW  - Accuracy
+KW  - Mood
+KW  - Mental disorders
+KW  - Sociology
+KW  - Machine learning
+KW  - Depression
+KW  - depression
+KW  - ECG
+KW  - machine learning
+KW  - three-dimensional acceleration
+DO  - 10.1109/ICCCS61882.2024.10602853
+JO  - 2024 9th International Conference on Computer and Communication Systems (ICCCS)
+IS  - 
+SN  - 
+VO  - 
+VL  - 
+JA  - 2024 9th International Conference on Computer and Communication Systems (ICCCS)
+Y1  - 19-22 April 2024
+AB  - Depression, as a common mental disorder, has increasingly attracted societal attention. The diagnosis of depression often requires a lengthy process. This paper proposes a method for preventing depression by providing early warning through the detection of depressive moods in the morning. The experiment collected electrocardiogram and three-dimensional acceleration signals from 82 individuals, analyzing and processing data from 7:55 to 8:00 in the morning and extracting 23 features. Six machine learning models were trained using leave-one-out cross-validation, and the voting decision model exhibited the best performance, with an accuracy of 73%, a recall rate of 85.53%, and an F1 score of 78.31%. The method in this study is operationally simple, utilizes wearable devices, and requires minimal time, bringing strong practical value. A drawback of the experiment is that the study population consisted of university students aged 18–25, which may not be representative of all groups. Therefore, future research should aim to broaden the study population.
+ER  - 
+
+TY  - JOUR
+TI  - Multimodal Online Knowledge Distillation Framework for Land Use/Cover Classification Using Full or Missing Modalities
+T2  - IEEE Transactions on Geoscience and Remote Sensing
+SP  - 1
+EP  - 17
+AU  - X. Liu
+AU  - F. Jin
+AU  - S. Wang
+AU  - J. Rui
+AU  - X. Zuo
+AU  - X. Yang
+AU  - C. Cheng
+PY  - 2024
+KW  - Optical sensors
+KW  - Optical imaging
+KW  - Radar polarimetry
+KW  - Optical feedback
+KW  - Training
+KW  - Knowledge engineering
+KW  - Optical scattering
+KW  - Deep learning
+KW  - knowledge distillation
+KW  - land use/cover classification
+KW  - missing modality
+KW  - multimodal semantic segmentation
+KW  - optical images
+KW  - synthetic aperture radar (SAR) images
+DO  - 10.1109/TGRS.2024.3388604
+JO  - IEEE Transactions on Geoscience and Remote Sensing
+IS  - 
+SN  - 1558-0644
+VO  - 62
+VL  - 62
+JA  - IEEE Transactions on Geoscience and Remote Sensing
+Y1  - 2024
+AB  - Multimodal land use/cover classification using optical and synthetic aperture radar (SAR) images has attracted significant attention because the unique radiation and geometric characteristics of these images provide complementary information regarding land properties. However, the significant differences between these modalities create a large semantic gap, posing challenges for effective feature fusion in multimodal learning. Moreover, missing modalities often occur in practical applications due to weather constraints or sensor malfunctions, posing challenges to achieving high performance in cross-modal learning. In this study, we proposed a multimodal online knowledge distillation (MMOKD) framework, designed for land use/cover classification of optical and SAR images using either full or missing modalities. This framework trains one modality-fusion network alongside two modality-specific networks in an end-to-end manner, facilitating both multimodal and cross-modal learning. More specifically, we developed a multimodal feature fusion (MFF) module for integrating heterogeneous features and a single-modal feature generation (SFG) module for encapsulating cross-modal complementary information. In addition, we proposed the joint distillation with multitype fusion knowledge (JD-MFK) method, guiding the modality-specific student networks to comprehensively learn the modality-fusion teacher network. Notably, we adopted an online distillation strategy for real-time feedback and synchronous updates of both modality-fusion and modality-specific networks. Finally, we conducted extensive experiments on two multimodal land use/classification datasets with advanced multimodal fusion, cross-modal distillation, and specific baseline networks for comparison. The results demonstrate the effectiveness of the proposed MMODD, which not only outperforms the other networks in both full- and missing-modality scenarios but also significantly improves model training efficiency.
+ER  - 
+
+

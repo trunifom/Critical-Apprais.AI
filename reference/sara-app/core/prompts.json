@@ -1,0 +1,34 @@
+{
+    "baseline_abstract":
+    {
+        "pre_prompt": "The following is an excerpt of two sets of criteria. A study is considered included if it meets all of the inclusion criteria. If a study meets any of the exclusion criteria, it should be excluded. Here are the two sets of criteria:",
+        "instructions":"# Instructions\nWe now assess whether the paper should be included from the systematic review by evaluating it against each and every predefined inclusion and exclusion criterion. First, we will reflect on how we will decide whether a paper should be included or excluded. Then, we will think step by step for each criteria, giving reasons for why they are met or not met.\n\n**Studies that may not fully align with the primary focus of our inclusion criteria but provide data or insights potentially relevant to our review deserve thoughtful consideration. Given the nature of abstracts as concise summaries of comprehensive research, some degree of interpretation is necessary.**\n\nOur aim should be to inclusively screen abstracts, ensuring broad coverage of pertinent studies while filtering out those that are clearly irrelevant. We will conclude by outputting (on the very last line) 'XXX' if the paper warrants exclusion, or 'YYY' if inclusion is advised, or uncertainty persists. We must output either 'XXX' or 'YYY'."
+    },
+
+    "baseline_fulltext":
+    {
+        "pre_prompt": "The following is an excerpt of two sets of criteria. A study is considered included if it meets all the inclusion criteria. If a study meets any of the exclusion criteria, it should be excluded. Here are the two sets of criteria:",
+        "instructions":"# Instructions\nWe now assess whether the paper should be included from the systematic review by evaluating it against each and every predefined inclusion and exclusion criterion. First, we will reflect on how we will decide whether a paper should be included or excluded. Then, we will think step by step for each criteria, giving reasons for why they are met or not met.\n\nWe will conclude by outputting (on the very last line) 'XXX' if the paper warrants exclusion, or 'YYY' if inclusion is advised or uncertainty persists. We must output either 'XXX' or 'YYY'."
+
+    },
+    
+    "less_restrictive_abstract":
+    {
+
+        "pre_prompt": "The following is an excerpt of two sets of criteria. A study is considered included if it meets all of the inclusion criteria. Here are the two sets of criteria:",
+        "instructions":"# Instructions\nWe now assess whether the paper should be included from the systematic review by evaluating it against each and every predefined inclusion and exclusion criterion. First, we will reflect on how we will decide whether a paper should be included or excluded. Then, we will think step by step for each criteria, giving reasons for why they are met or not met.\n\n**Studies that may not fully align with the primary focus of our inclusion criteria but provide data or insights potentially relevant to our review deserve thoughtful consideration and should be included rather than excluded. Given the nature of abstracts as concise summaries of comprehensive research, some degree of interpretation is necessary.**\n\nOur aim should be to inclusively screen abstracts, ensuring broad coverage of pertinent studies while filtering out those that are clearly irrelevant. We will conclude by outputting (on the very last line) 'XXX' if the paper warrants exclusion, or 'YYY' if inclusion is advised, or uncertainty persists. We must output either 'XXX' or 'YYY'."
+    
+    },
+    "gpt_improved_abstract": {
+
+        "pre_prompt": "The following is an excerpt containing two sets of criteria. A study is INCLUDED only if ALL inclusion criteria are met. If ANY exclusion criterion is met, it is EXCLUDED. Here are the criteria:",
+        "instructions": "# Instructions\nGoal: High-quality, transparent abstract-level screening with concise reasoning.\n\nProcess:\n1. Strategy: One sentence describing your decision frame.\n2. Inclusion criteria: For each -> Met / Not Met / Unclear + ≤12 word justification.\n3. Exclusion criteria: For each -> Triggered / Not Triggered / Unclear + ≤12 word justification.\n4. Ambiguity: List any unresolved info gaps (bullet style, if any).\n5. Overall: 1–2 sentence synthesis of why the tentative decision is justified.\n\nHeuristics:\n- Prefer provisional inclusion when key eligibility elements are plausible but underspecified.\n- Do NOT fabricate specifics; mark as Unclear instead.\n- A single clearly triggered exclusion criterion overrides otherwise positive signals.\n\nOutput formatting (strict):\nSection 1: Strategy\nSection 2: Inclusion\nSection 3: Exclusion\nSection 4: Ambiguities (or 'None')\nSection 5: Summary\nFinal line ONLY: 'XXX' or 'YYY' (no punctuation, no extra text)."
+    
+    },
+    "gpt_improved_fulltext": {
+
+            "pre_prompt": "The following is an excerpt containing two sets of criteria. A study is INCLUDED only if ALL inclusion criteria are met. If ANY exclusion criterion is met, the study is EXCLUDED. Here are the criteria:",
+            "instructions": "# Instructions\nGoal: Decide on inclusion based on full text evidence.\n\nProcess:\n1. Summarize (1–2 sentences) the study's apparent purpose/population/intervention/outcomes (if applicable).\n2. Evaluate EACH inclusion criterion (Met / Not Met + justification).\n3. Evaluate EACH exclusion criterion (Triggered / Not Triggered + justification).\n4. Note uncertainties and what additional info would resolve them.\n\nPrinciples:\n- Rely on explicit full text statements; avoid over-inference.\n- If critical data are missing, treat as uncertainty (lean to exclusion ONLY if an exclusion criterion is clearly met).\n\nOutput requirements:\n- Provide a concise concluding rationale (≤2 sentences).\n- Final line ONLY: 'XXX' (exclude) OR 'YYY' (include or uncertain)."
+        
+        } 
+}

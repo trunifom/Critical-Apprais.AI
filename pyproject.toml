@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sara-local"
+version = "0.0.1"
+description = "Critical Apprais.AI: local, database-free LLM screening assistant for systematic reviews"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=2.0",
+    "pydantic>=2.5",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# Extras are introduced by the task cards (see tasks/). Listed here so agents know the plan.
+import = ["rispy", "pybtex", "openpyxl", "pymupdf", "pdfplumber", "pylatexenc"]
+llm-openai = ["openai", "tiktoken"]
+llm-anthropic = ["anthropic"]
+cli = ["typer", "rich"]
+ui = ["streamlit", "streamlit-aggrid"]
+stats = ["scikit-learn", "matplotlib"]
+dev = ["pytest", "pytest-asyncio", "hypothesis", "respx", "ruff", "mypy"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/saralocal"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+markers = [
+    "live: talks to a real LLM API (costs money; never run in CI)",
+    "large: uses files from tests/data_large (slow)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+# Files ported verbatim from SARA-App keep their original style until a task refactors them.
+[tool.ruff.lint.per-file-ignores]
+"src/saralocal/enums.py" = ["E501", "UP", "I"]
+"src/saralocal/cost/estimator.py" = ["E501", "UP", "I", "SIM"]
+"src/saralocal/criteria/template.py" = ["E501", "UP", "I", "SIM"]
+"src/saralocal/i18n/**" = ["E501", "UP", "I", "SIM", "B"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true

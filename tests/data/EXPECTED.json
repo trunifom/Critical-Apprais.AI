@@ -1,0 +1,118 @@
+{
+  "data/citation-export.bib": {
+    "bytes": 159056,
+    "kind": "bibtex",
+    "records": 48
+  },
+  "data/citation-export.ris": {
+    "bytes": 56137,
+    "kind": "ris",
+    "records": 6,
+    "abstracts": 6,
+    "doi_count": 6,
+    "unique_doi": 6
+  },
+  "data/citation-export_1.bib": {
+    "bytes": 36918,
+    "kind": "bibtex",
+    "records": 9
+  },
+  "data/example_AB_nr4.ris": {
+    "bytes": 1968,
+    "kind": "ris",
+    "records": 3,
+    "abstracts": 3,
+    "doi_count": 3,
+    "unique_doi": 3
+  },
+  "data/example_AB_nr4.txt": {
+    "bytes": 1968,
+    "kind": "ris",
+    "records": 3,
+    "abstracts": 3,
+    "doi_count": 3,
+    "unique_doi": 3
+  },
+  "data/example_db_nr1_total-15_duplicates-0.ris": {
+    "bytes": 2340,
+    "kind": "ris",
+    "records": 13,
+    "abstracts": 0,
+    "doi_count": 13,
+    "unique_doi": 13
+  },
+  "data/example_db_nr2_total-10_duplicates-3.ris": {
+    "bytes": 1746,
+    "kind": "ris",
+    "records": 10,
+    "abstracts": 0,
+    "doi_count": 10,
+    "unique_doi": 7
+  },
+  "data/example_db_nr3_total-8_duplicates-2.ris": {
+    "bytes": 1467,
+    "kind": "ris",
+    "records": 8,
+    "abstracts": 0,
+    "doi_count": 8,
+    "unique_doi": 6
+  },
+  "data/IEEE-Xplore_SR_2023-2024.ris": {
+    "bytes": 115523,
+    "kind": "ris",
+    "records": 46,
+    "abstracts": 46,
+    "doi_count": 46,
+    "unique_doi": 46
+  },
+  "data/pubmed-adhd-set.nbib": {
+    "bytes": 278271,
+    "kind": "nbib",
+    "records": 100
+  },
+  "data/pubmed-adhd-set.ris": {
+    "bytes": 278271,
+    "kind": "nbib",
+    "records": 100
+  },
+  "data/pubmed-adhdANDchi-set.nbib": {
+    "bytes": 422318,
+    "kind": "nbib",
+    "records": 62
+  },
+  "data/pubmed_adhd_converted-zotero.bib": {
+    "bytes": 624107,
+    "kind": "bibtex",
+    "records": 706
+  },
+  "data/pubmed_adhd_converted-zotero.ris": {
+    "bytes": 573544,
+    "kind": "ris",
+    "records": 706,
+    "abstracts": 156,
+    "doi_count": 546,
+    "unique_doi": 460
+  },
+  "data_large/citation-export_2.bib": {
+    "bytes": 11508340,
+    "kind": "bibtex",
+    "records": 1343
+  },
+  "data_large/test.zip": {
+    "bytes": 25537675,
+    "kind": "zip_pdf",
+    "zip_members": 12,
+    "pdf_count": 6
+  },
+  "_derived/example_db_trio_merged": {
+    "files": [
+      "example_db_nr1_total-15_duplicates-0.ris",
+      "example_db_nr2_total-10_duplicates-3.ris",
+      "example_db_nr3_total-8_duplicates-2.ris"
+    ],
+    "records_total": 31,
+    "unique_doi": 13,
+    "duplicates_by_doi": 18,
+    "note": "File name 'total-15' of example_db_nr1 is inaccurate: the file has 13 records."
+  }
+}

@@ -1,0 +1,48 @@
+TY  - JOUR
+TI  - Neurofeedback for Attention Regulation in Children: A Pilot Study
+AU  - Miller, Sophia
+AU  - Chen, David
+PY  - 2021
+JO  - Journal of Pediatric Neuropsychology
+VL  - 12
+IS  - 2
+SP  - 101
+EP  - 115
+DO  - 10.1234/jpn.2021.001
+AB  - This pilot study investigates whether EEG-based neurofeedback improves attention regulation in children diagnosed with ADHD. We conducted a 10-week intervention with 32 participants and observed moderate improvements in sustained attention scores compared to baseline. Limitations include the small sample size and the need for longer-term follow-up.
+KW  - ADHD
+KW  - Neurofeedback
+KW  - Attention
+ER  - 
+
+TY  - JOUR
+TI  - Comparing Behavioral Therapy and Neurofeedback in School Settings
+AU  - Rodríguez, Elena
+AU  - Patel, Rina
+PY  - 2022
+JO  - School Psychology Review
+VL  - 39
+IS  - 4
+SP  - 250
+EP  - 270
+DO  - 10.5678/spr.2022.004
+AB  - We compare the feasibility and preliminary effectiveness of cognitive-behavioral therapy versus neurofeedback within public schools. In a quasi-experimental design (n=68), both approaches showed benefits; however, neurofeedback required specialized staff and equipment. Cost and implementation barriers are discussed.
+KW  - Behavioral Therapy
+KW  - School-based Intervention
+KW  - ADHD
+ER  - 
+
+TY  - CONF
+TI  - Real-time EEG Feedback for Classroom Engagement: A Feasibility Trial
+T2  - Proceedings of the 2023 International Conference on Learning Technologies
+AU  - Kim, Ji-Yeon
+AU  - Bauer, Thomas
+PY  - 2023
+SP  - 55
+EP  - 60
+DO  - 10.9012/iclt.2023.055
+AB  - This feasibility trial explores real-time EEG feedback to support classroom engagement. Twenty adolescents participated over four weeks. Engagement proxies improved during feedback sessions; however, transfer to non-feedback contexts was inconsistent. Future work will investigate personalization and teacher training.
+KW  - EEG
+KW  - Engagement
+KW  - Classroom
+ER  - 

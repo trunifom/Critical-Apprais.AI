@@ -1,0 +1,2 @@
+Accuracy;Sensitivity (Recall);Specificity;Precision;F1 Score;Cohen's Kappa;TP;FP;TN;FN;Kappa_Interpretation;Accuracy_Interpretation
+0.9598997493734336;0.08823529411764706;0.9986910994764397;0.75;0.15789473684210525;0.15027286037534937;3;1;763;31;Slight;Excellent

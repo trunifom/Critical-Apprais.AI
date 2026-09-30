@@ -1,0 +1,11 @@
+run1,run2,n_overlap,percent_agreement,cohen_kappa,interpretation
+run-01,run-02,99,0.9798,0.9052,Almost Perfect
+run-01,run-03,99,0.9798,0.9052,Almost Perfect
+run-01,run-04,99,0.9697,0.8525,Almost Perfect
+run-01,run-05,99,0.9697,0.8525,Almost Perfect
+run-02,run-03,99,1.0,1.0,Almost Perfect
+run-02,run-04,99,0.9899,0.9508,Almost Perfect
+run-02,run-05,99,0.9899,0.9508,Almost Perfect
+run-03,run-04,99,0.9899,0.9508,Almost Perfect
+run-03,run-05,99,0.9899,0.9508,Almost Perfect
+run-04,run-05,99,1.0,1.0,Almost Perfect

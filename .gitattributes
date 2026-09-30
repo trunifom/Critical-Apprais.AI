@@ -1,0 +1,19 @@
+# Text files: normalise to LF in the repository, checkout follows the platform default.
+* text=auto
+
+# Fixtures, archived results and snapshots must stay byte-identical (tests compare file sizes and hashes;
+# RIS/BibTeX exports use CRLF on purpose). Never let Git convert line endings there.
+tests/data/**            -text
+tests/data_large/**      -text
+tests/legacy_runs/**     -text
+tests/expected/**        -text
+reference/**             -text
+docs/legacy/**           -text
+
+# Binary files
+*.pdf     binary
+*.png     binary
+*.docx    binary
+*.zip     binary
+*.parquet binary
+*.drawio  -text

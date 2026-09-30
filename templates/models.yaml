@@ -1,0 +1,45 @@
+# Model catalog (DATA, not code). Extend freely; verify every entry against the provider docs.
+# Status of the values: EXAMPLES from the predecessor repo (reference/sara-ancestor/tools/llm_providers.py),
+# the SARA-App worker and the working environment as of 2026-09-30. Context windows and capabilities
+# are intentionally left `null` until verified (task T-M3-02 / T-M7-01).
+schema: 1
+
+providers:
+  openai:
+    kind: openai
+    base_url: null
+    key_env: OPENAI_API_KEY
+    models:
+      gpt-4o:        { display: "GPT-4o",        context_tokens: null, structured_output: null, seed: true }
+      gpt-4o-mini:   { display: "GPT-4o mini",   context_tokens: null, structured_output: null, seed: true }
+      gpt-4.1:       { display: "GPT-4.1",       context_tokens: null, structured_output: null, seed: true }
+      gpt-4.1-mini:  { display: "GPT-4.1 mini",  context_tokens: null, structured_output: null, seed: true }
+      o3:            { display: "o3",            context_tokens: null, structured_output: null, seed: null, note: "reasoning model; temperature may be fixed" }
+      o3-mini:       { display: "o3-mini",       context_tokens: null, structured_output: null, seed: null, note: "reasoning model; temperature may be fixed" }
+
+  anthropic:
+    kind: anthropic
+    base_url: null
+    key_env: ANTHROPIC_API_KEY
+    models:
+      claude-haiku-4-5-20251001: { display: "Claude Haiku 4.5",  context_tokens: null, structured_output: "tool_use", seed: false }
+      claude-sonnet-5-5:         { display: "Claude Sonnet 5.5", context_tokens: null, structured_output: "tool_use", seed: false }
+      claude-opus-5-5:           { display: "Claude Opus 5.5",   context_tokens: null, structured_output: "tool_use", seed: false }
+
+  swissgpt:
+    kind: openai_compatible
+    base_url: "https://api.prod.alpineai.ch/v1"     # from docs/swissgpt (spec: OpenAI-compatible)
+    key_env: SWISSGPT_API_KEY
+    models: {}                                       # fetch live via GET /v1/models
+    capabilities:
+      # From docs/swissgpt/Documentation_API_SwissGPT-AlpineAI.json: the request schema has NO
+      # response_format and NO seed. Validate model output in code; use tools/tool_choice only if verified.
+      response_format: false
+      seed: false
+      tools: true
+
+  local:
+    kind: openai_compatible
+    base_url: "http://localhost:11434/v1"           # e.g. Ollama; change for LM Studio/vLLM
+    key_env: null
+    models: {}

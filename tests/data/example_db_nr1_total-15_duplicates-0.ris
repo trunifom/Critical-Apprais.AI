@@ -1,0 +1,151 @@
+TY  - JOUR
+TI  - Understanding Machine Learning
+AU  - Smith, John
+PY  - 2020
+JO  - Journal of AI Research
+VL  - 45
+IS  - 2
+SP  - 100
+EP  - 120
+DO  - 10.1234/jair.2020.001
+ER  - 
+
+TY  - JOUR
+TI  - Deep Learning in Practice
+AU  - Johnson, Alice
+PY  - 2019
+JO  - AI & Society
+VL  - 30
+IS  - 4
+SP  - 200
+EP  - 220
+DO  - 10.5678/ai.2019.002
+ER  - 
+
+TY  - JOUR
+TI  - Neural Networks for NLP
+AU  - Brown, Charlie
+PY  - 2021
+JO  - Computational Linguistics
+VL  - 50
+IS  - 1
+SP  - 50
+EP  - 75
+DO  - 10.9101/cl.2021.003
+ER  - 
+
+TY  - JOUR
+TI  - How to train a model
+AU  - Smith, John
+PY  - 2012
+JO  - Journal of AI Research
+VL  - 35
+IS  - 22
+SP  - 110
+EP  - 100
+DO  - 10.9876/jair.2012.02
+ER  - 
+
+TY  - CONF
+TI  - Advances in Computer Vision
+AU  - White, Emily
+PY  - 2018
+JO  - CVPR Proceedings
+SP  - 300
+EP  - 315
+DO  - 10.9876/cvpr.2018.004
+ER  - 
+
+TY  - JOUR
+TI  - Explainable AI
+AU  - Black, David
+PY  - 2022
+JO  - Ethics in AI
+VL  - 15
+IS  - 1
+SP  - 10
+EP  - 30
+DO  - 10.2468/eai.2022.005
+ER  - 
+
+TY  - JOUR
+TI  - Deep Reinforcement Learning
+AU  - Garcia, Maria
+PY  - 2017
+JO  - Machine Learning Review
+VL  - 12
+IS  - 3
+SP  - 400
+EP  - 420
+DO  - 10.3456/mlr.2017.006
+ER  - 
+
+TY  - JOUR
+TI  - Ethics in Machine Learning
+AU  - Wilson, Richard
+PY  - 2020
+JO  - Journal of AI Research
+VL  - 45
+IS  - 3
+SP  - 121
+EP  - 140
+DO  - 10.1234/jair.2020.007
+ER  - 
+
+TY  - JOUR
+TI  - Quantum Computing for AI
+AU  - Miller, Sophia
+PY  - 2023
+JO  - Quantum AI Journal
+VL  - 5
+IS  - 2
+SP  - 50
+EP  - 70
+DO  - 10.7890/qai.2023.008
+ER  - 
+
+TY  - JOUR
+TI  - Large Language Models in Industry
+AU  - Patel, Kevin
+PY  - 2022
+JO  - AI & Society
+VL  - 30
+IS  - 5
+SP  - 250
+EP  - 270
+DO  - 10.5678/ai.2022.009
+ER  - 
+
+TY  - JOUR
+TI  - Bayesian Inference for AI
+AU  - Lee, Thomas
+PY  - 2021
+JO  - Statistical AI Review
+VL  - 8
+IS  - 2
+SP  - 350
+EP  - 370
+DO  - 10.6543/sai.2021.010
+ER  - 
+
+TY  - CONF
+TI  - Neural Architecture Search
+AU  - Kim, Andrew
+PY  - 2022
+JO  - NeurIPS Proceedings
+SP  - 600
+EP  - 620
+DO  - 10.8888/nips.2022.011
+ER  - 
+
+TY  - JOUR
+TI  - Federated Learning and Privacy
+AU  - Taylor, Olivia
+PY  - 2021
+JO  - Privacy & AI Journal
+VL  - 7
+IS  - 1
+SP  - 45
+EP  - 65
+DO  - 10.4444/pai.2021.012
+ER  - 

@@ -1,0 +1,33 @@
+Test-Retest Reliability Report
+Project:   project-03_dhem
+Date:      2025-12-01 23:36:58
+================================================================================
+
+SUMMARY STATISTICS:
+- Total Comparisons: 10
+- Average Kappa:     0.7496 (Substantial)
+- Min Kappa:         0.6470
+- Max Kappa:         0.8438
+
+DETAILED RESULTS:
+--------------------------------------------------------------------------------
+  run1   run2  n_overlap  percent_agreement  cohen_kappa interpretation
+run-01 run-02        239             0.9623       0.8438 Almost Perfect
+run-01 run-03        239             0.9414       0.7336    Substantial
+run-01 run-04        239             0.9456       0.7624    Substantial
+run-01 run-05        239             0.9582       0.8196 Almost Perfect
+run-02 run-03        239             0.9456       0.7562    Substantial
+run-02 run-04        239             0.9414       0.7476    Substantial
+run-02 run-05        239             0.9456       0.7686    Substantial
+run-03 run-04        239             0.9289       0.6615    Substantial
+run-03 run-05        239             0.9247       0.6470    Substantial
+run-04 run-05        239             0.9456       0.7557    Substantial
+--------------------------------------------------------------------------------
+
+INTERPRETATION GUIDE (Landis & Koch, 1977):
+ < 0.00:    Poor
+ 0.00-0.20: Slight
+ 0.21-0.40: Fair
+ 0.41-0.60: Moderate
+ 0.61-0.80: Substantial
+ 0.81-1.00: Almost Perfect

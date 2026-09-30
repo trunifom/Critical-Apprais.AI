@@ -1,0 +1,1245 @@
+{
+"openapi": "3.1.0",
+"info": {
+"title": "AlpineAI API",
+"description": "The public API for SwissGPT follows the OpenAI API specification, allowing easy and seamless integration",
+"version": "0.1.0"
+},
+"paths": {
+"/v1/chat/completions": {
+"post": {
+"tags": [
+"Chat"
+],
+"summary": "Create Chat Completion",
+"description": "# Important Notes for Llama 4\n\n## 1. Streaming Finish Reason [Non-Standard]\n\nWhen streaming, the API currently returns `\"finish_reason\": \"None\"` in the final chunk rather than the standard `\"tool_calls\"`. This is a non-standard behavior and will be fixed in a future update.\n\n- **Handling:** Ensure your streaming logic treats `None` as a valid termination state for tool invocations.\n- **Future Updates:** This is a temporary behavior. The API will be updated in a future release to be fully compliant with the standard protocol.\n\n---\n\n## 2. Prompt-Based Tool Calling\n\nLlama 4 uses a specific prompt-based mechanism for function calling. Avoid adding conflicting tool instructions to your prompts, as this may prevent responses from being parsed correctly.\n\n- **Automatic Parsing:** The API automatically parses the syntax: `[func_name(params_name=params_value, ...)]`. You do not need to implement custom parsing for this format.\n- **Best Practice:** To ensure compatibility with Llama 4 and future models, do not include custom formatting rules in your system or user prompts. Adding custom instructions may require you to handle the parsing manually.\n- **No Mixed Content:** Llama 4 supports either a tool call or a text response, but not both in the same turn.\n    - Do not ask the model to \"explain its logic\" or provide a preamble before calling a tool.\n    - Support for mixed content (reasoning + tool calls) varies by model and may be available in future API updates.",
+"operationId": "create_chat_completion_v1_chat_completions_post",
+"requestBody": {
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/ChatCompletionRequest"
+}
+}
+},
+"required": true
+},
+"responses": {
+"200": {
+"description": "Successful Response",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/ChatCompletionResponse"
+}
+}
+}
+},
+"422": {
+"description": "Validation Error",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/HTTPValidationError"
+}
+}
+}
+}
+}
+}
+},
+"/v1/completions": {
+"post": {
+"tags": [
+"Completions"
+],
+"summary": "Create Completion",
+"description": "Creates a completion for the provided prompt and parameters",
+"operationId": "create_completion_v1_completions_post",
+"requestBody": {
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/CompletionRequest"
+}
+}
+},
+"required": true
+},
+"responses": {
+"200": {
+"description": "Successful Response",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/CompletionResponse"
+}
+}
+}
+},
+"422": {
+"description": "Validation Error",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/HTTPValidationError"
+}
+}
+}
+}
+}
+}
+},
+"/v1/models": {
+"get": {
+"tags": [
+"Models"
+],
+"summary": "List Models",
+"description": "Lists the currently available models",
+"operationId": "list_models_v1_models_get",
+"responses": {
+"200": {
+"description": "Successful Response",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/ModelList"
+}
+}
+}
+}
+}
+}
+},
+"/v1/models/{model_id}": {
+"get": {
+"tags": [
+"Models"
+],
+"summary": "Retrieve Model",
+"description": "Retrieves a model instance",
+"operationId": "retrieve_model_v1_models__model_id__get",
+"parameters": [
+{
+"name": "model_id",
+"in": "path",
+"required": true,
+"schema": {
+"type": "string",
+"title": "Model Id"
+}
+}
+],
+"responses": {
+"200": {
+"description": "Successful Response",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/ModelResponse"
+}
+}
+}
+},
+"422": {
+"description": "Validation Error",
+"content": {
+"application/json": {
+"schema": {
+"$ref": "#/components/schemas/HTTPValidationError"
+}
+}
+}
+}
+}
+}
+},
+"/": {
+"get": {
+"summary": "Root",
+"operationId": "root__get",
+"responses": {
+"200": {
+"description": "Successful Response",
+"content": {
+"application/json": {
+"schema": {}
+}
+}
+}
+}
+}
+}
+},
+"components": {
+"schemas": {
+"ChatCompletionAllowedToolChoiceParam": {
+"properties": {
+"allowed_tools": {
+"$ref": "#/components/schemas/ChatCompletionAllowedToolsParam"
+},
+"type": {
+"type": "string",
+"const": "allowed_tools",
+"title": "Type"
+}
+},
+"type": "object",
+"required": [
+"allowed_tools",
+"type"
+],
+"title": "ChatCompletionAllowedToolChoiceParam",
+"description": "Constrains the tools available to the model to a pre-defined set."
+},
+"ChatCompletionAllowedToolsParam": {
+"properties": {
+"mode": {
+"type": "string",
+"enum": [
+"auto",
+"required"
+],
+"title": "Mode"
+},
+"tools": {
+"items": {
+"type": "object"
+},
+"type": "array",
+"title": "Tools"
+}
+},
+"type": "object",
+"required": [
+"mode",
+"tools"
+],
+"title": "ChatCompletionAllowedToolsParam",
+"description": "Constrains the tools available to the model to a pre-defined set."
+},
+"ChatCompletionFunctionToolParam": {
+"properties": {
+"function": {
+"$ref": "#/components/schemas/FunctionDefinition"
+},
+"type": {
+"type": "string",
+"const": "function",
+"title": "Type"
+}
+},
+"type": "object",
+"required": [
+"function",
+"type"
+],
+"title": "ChatCompletionFunctionToolParam",
+"description": "A function tool that can be used to generate a response."
+},
+"ChatCompletionNamedToolChoiceCustomParam": {
+"properties": {
+"custom": {
+"$ref": "#/components/schemas/Custom"
+},
+"type": {
+"type": "string",
+"const": "custom",
+"title": "Type"
+}
+},
+"type": "object",
+"required": [
+"custom",
+"type"
+],
+"title": "ChatCompletionNamedToolChoiceCustomParam",
+"description": "Specifies a tool the model should use.\n\nUse to force the model to call a specific custom tool."
+},
+"ChatCompletionNamedToolChoiceParam": {
+"properties": {
+"function": {
+"$ref": "#/components/schemas/Function"
+},
+"type": {
+"type": "string",
+"const": "function",
+"title": "Type"
+}
+},
+"type": "object",
+"required": [
+"function",
+"type"
+],
+"title": "ChatCompletionNamedToolChoiceParam",
+"description": "Specifies a tool the model should use.\n\nUse to force the model to call a specific function."
+},
+"ChatCompletionRequest": {
+"properties": {
+"model": {
+"type": "string",
+"title": "Model"
+},
+"messages": {
+"items": {
+"$ref": "#/components/schemas/ChatMessage-Input"
+},
+"type": "array",
+"title": "Messages"
+},
+"temperature": {
+"anyOf": [
+{
+"type": "number"
+},
+{
+"type": "null"
+}
+],
+"title": "Temperature"
+},
+"top_p": {
+"anyOf": [
+{
+"type": "number"
+},
+{
+"type": "null"
+}
+],
+"title": "Top P"
+},
+"n": {
+"anyOf": [
+{
+"type": "integer"
+},
+{
+"type": "null"
+}
+],
+"title": "N"
+},
+"stream": {
+"anyOf": [
+{
+"type": "boolean"
+},
+{
+"type": "null"
+}
+],
+"title": "Stream",
+"default": false
+},
+"stream_options": {
+"anyOf": [
+{
+"$ref": "#/components/schemas/ChatCompletionStreamOptionsParam"
+},
+{
+"type": "null"
+}
+]
+},
+"stop": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+{
+"type": "null"
+}
+],
+"title": "Stop"
+},
+"max_tokens": {
+"anyOf": [
+{
+"type": "integer"
+},
+{
+"type": "null"
+}
+],
+"title": "Max Tokens"
+},
+"presence_penalty": {
+"anyOf": [
+{
+"type": "number"
+},
+{
+"type": "null"
+}
+],
+"title": "Presence Penalty"
+},
+"frequency_penalty": {
+"anyOf": [
+{
+"type": "number"
+},
+{
+"type": "null"
+}
+],
+"title": "Frequency Penalty"
+},
+"logit_bias": {
+"anyOf": [
+{
+"additionalProperties": {
+"type": "number"
+},
+"type": "object"
+},
+{
+"type": "null"
+}
+],
+"title": "Logit Bias"
+},
+"user": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"type": "null"
+}
+],
+"title": "User"
+},
+"tools": {
+"items": {
+"$ref": "#/components/schemas/ChatCompletionFunctionToolParam"
+},
+"type": "array",
+"title": "Tools"
+},
+"tool_choice": {
+"anyOf": [
+{
+"type": "string",
+"enum": [
+"none",
+"auto",
+"required"
+]
+},
+{
+"$ref": "#/components/schemas/ChatCompletionAllowedToolChoiceParam"
+},
+{
+"$ref": "#/components/schemas/ChatCompletionNamedToolChoiceParam"
+},
+{
+"$ref": "#/components/schemas/ChatCompletionNamedToolChoiceCustomParam"
+},
+{
+"type": "null"
+}
+],
+"title": "Tool Choice"
+},
+"extra_body": {
+"anyOf": [
+{
+"type": "object"
+},
+{
+"type": "null"
+}
+],
+"title": "Extra Body"
+}
+},
+"additionalProperties": true,
+"type": "object",
+"required": [
+"model",
+"messages"
+],
+"title": "ChatCompletionRequest",
+"description": "``extra=\"allow\"`` captures OpenAI SDK ``extra_body`` merges as top-level JSON keys in ``model_extra``."
+},
+"ChatCompletionResponse": {
+"properties": {
+"id": {
+"type": "string",
+"title": "Id"
+},
+"object": {
+"type": "string",
+"title": "Object",
+"default": "chat.completion"
+},
+"created": {
+"type": "integer",
+"title": "Created"
+},
+"model": {
+"type": "string",
+"title": "Model"
+},
+"choices": {
+"items": {
+"$ref": "#/components/schemas/ChatCompletionResponseChoice"
+},
+"type": "array",
+"title": "Choices"
+},
+"usage": {
+"$ref": "#/components/schemas/Usage"
+}
+},
+"type": "object",
+"required": [
+"id",
+"created",
+"model",
+"choices",
+"usage"
+],
+"title": "ChatCompletionResponse"
+},
+"ChatCompletionResponseChoice": {
+"properties": {
+"index": {
+"type": "integer",
+"title": "Index"
+},
+"message": {
+"$ref": "#/components/schemas/ChatMessage-Output"
+},
+"finish_reason": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"type": "null"
+}
+],
+"title": "Finish Reason"
+}
+},
+"type": "object",
+"required": [
+"index",
+"message"
+],
+"title": "ChatCompletionResponseChoice"
+},
+"ChatCompletionStreamOptionsParam": {
+"properties": {
+"include_obfuscation": {
+"type": "boolean",
+"title": "Include Obfuscation"
+},
+"include_usage": {
+"type": "boolean",
+"title": "Include Usage"
+}
+},
+"type": "object",
+"title": "ChatCompletionStreamOptionsParam",
+"description": "Options for streaming response. Only set this when you set `stream: true`."
+},
+"ChatMessage-Input": {
+"properties": {
+"role": {
+"type": "string",
+"title": "Role"
+},
+"content": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"items": {
+"type": "object"
+},
+"type": "array"
+},
+{
+"type": "null"
+}
+],
+"title": "Content"
+},
+"name": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"type": "null"
+}
+],
+"title": "Name"
+},
+"tool_calls": {
+"anyOf": [
+{
+"items": {
+"$ref": "#/components/schemas/ToolCall"
+},
+"type": "array"
+},
+{
+"type": "null"
+}
+],
+"title": "Tool Calls"
+},
+"tool_call_id": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"type": "null"
+}
+],
+"title": "Tool Call Id"
+},
+"function_call": {
+"anyOf": [
+{
+"$ref": "#/components/schemas/FunctionCall"
+},
+{
+"type": "null"
+}
+]
+},
+"refusal": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"type": "null"
+}
+],
+"title": "Refusal"
+}
+},
+"additionalProperties": true,
+"type": "object",
+"required": [
+"role"
+],
+"title": "ChatMessage",
+"description": "OpenAI Chat Completions message shape aligned with ``openai.types.chat.ChatCompletionMessageParam``\n(OpenAI Python SDK 2.29.x): developer, system, user, assistant, tool, and function roles."
+},
+"ChatMessage-Output": {
+"properties": {
+"role": {
+"type": "string",
+"title": "Role"
+},
+"content": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"items": {
+"type": "object"
+},
+"type": "array"
+},
+{
+"type": "null"
+}
+],
+"title": "Content"
+},
+"name": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"type": "null"
+}
+],
+"title": "Name"
+},
+"tool_calls": {
+"anyOf": [
+{
+"items": {
+"$ref": "#/components/schemas/ToolCall"
+},
+"type": "array"
+},
+{
+"type": "null"
+}
+],
+"title": "Tool Calls"
+},
+"tool_call_id": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"type": "null"
+}
+],
+"title": "Tool Call Id"
+},
+"function_call": {
+"anyOf": [
+{
+"$ref": "#/components/schemas/FunctionCall"
+},
+{
+"type": "null"
+}
+]
+},
+"refusal": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"type": "null"
+}
+],
+"title": "Refusal"
+}
+},
+"additionalProperties": true,
+"type": "object",
+"required": [
+"role"
+],
+"title": "ChatMessage",
+"description": "OpenAI Chat Completions message shape aligned with ``openai.types.chat.ChatCompletionMessageParam``\n(OpenAI Python SDK 2.29.x): developer, system, user, assistant, tool, and function roles."
+},
+"CompletionRequest": {
+"properties": {
+"model": {
+"type": "string",
+"title": "Model"
+},
+"prompt": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"items": {
+"type": "string"
+},
+"type": "array"
+}
+],
+"title": "Prompt"
+},
+"suffix": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"type": "null"
+}
+],
+"title": "Suffix"
+},
+"max_tokens": {
+"anyOf": [
+{
+"type": "integer"
+},
+{
+"type": "null"
+}
+],
+"title": "Max Tokens"
+},
+"temperature": {
+"anyOf": [
+{
+"type": "number"
+},
+{
+"type": "null"
+}
+],
+"title": "Temperature"
+},
+"top_p": {
+"anyOf": [
+{
+"type": "number"
+},
+{
+"type": "null"
+}
+],
+"title": "Top P"
+},
+"n": {
+"anyOf": [
+{
+"type": "integer"
+},
+{
+"type": "null"
+}
+],
+"title": "N"
+},
+"stream": {
+"anyOf": [
+{
+"type": "boolean"
+},
+{
+"type": "null"
+}
+],
+"title": "Stream",
+"default": false
+},
+"stream_options": {
+"anyOf": [
+{
+"$ref": "#/components/schemas/ChatCompletionStreamOptionsParam"
+},
+{
+"type": "null"
+}
+]
+},
+"logprobs": {
+"anyOf": [
+{
+"type": "integer"
+},
+{
+"type": "null"
+}
+],
+"title": "Logprobs"
+},
+"echo": {
+"anyOf": [
+{
+"type": "boolean"
+},
+{
+"type": "null"
+}
+],
+"title": "Echo",
+"default": false
+},
+"stop": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+{
+"type": "null"
+}
+],
+"title": "Stop"
+},
+"presence_penalty": {
+"anyOf": [
+{
+"type": "number"
+},
+{
+"type": "null"
+}
+],
+"title": "Presence Penalty"
+},
+"frequency_penalty": {
+"anyOf": [
+{
+"type": "number"
+},
+{
+"type": "null"
+}
+],
+"title": "Frequency Penalty"
+},
+"best_of": {
+"anyOf": [
+{
+"type": "integer"
+},
+{
+"type": "null"
+}
+],
+"title": "Best Of"
+},
+"logit_bias": {
+"anyOf": [
+{
+"additionalProperties": {
+"type": "number"
+},
+"type": "object"
+},
+{
+"type": "null"
+}
+],
+"title": "Logit Bias"
+},
+"user": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"type": "null"
+}
+],
+"title": "User"
+},
+"extra_body": {
+"anyOf": [
+{
+"type": "object"
+},
+{
+"type": "null"
+}
+],
+"title": "Extra Body"
+}
+},
+"additionalProperties": true,
+"type": "object",
+"required": [
+"model",
+"prompt"
+],
+"title": "CompletionRequest"
+},
+"CompletionResponse": {
+"properties": {
+"id": {
+"type": "string",
+"title": "Id"
+},
+"object": {
+"type": "string",
+"title": "Object",
+"default": "text_completion"
+},
+"created": {
+"type": "integer",
+"title": "Created"
+},
+"model": {
+"type": "string",
+"title": "Model"
+},
+"choices": {
+"items": {
+"$ref": "#/components/schemas/CompletionResponseChoice"
+},
+"type": "array",
+"title": "Choices"
+},
+"usage": {
+"$ref": "#/components/schemas/Usage"
+}
+},
+"type": "object",
+"required": [
+"id",
+"created",
+"model",
+"choices",
+"usage"
+],
+"title": "CompletionResponse"
+},
+"CompletionResponseChoice": {
+"properties": {
+"text": {
+"type": "string",
+"title": "Text"
+},
+"index": {
+"type": "integer",
+"title": "Index"
+},
+"logprobs": {
+"anyOf": [
+{},
+{
+"type": "null"
+}
+],
+"title": "Logprobs"
+},
+"finish_reason": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"type": "null"
+}
+],
+"title": "Finish Reason"
+}
+},
+"type": "object",
+"required": [
+"text",
+"index"
+],
+"title": "CompletionResponseChoice"
+},
+"Custom": {
+"properties": {
+"name": {
+"type": "string",
+"title": "Name"
+}
+},
+"type": "object",
+"required": [
+"name"
+],
+"title": "Custom"
+},
+"Function": {
+"properties": {
+"name": {
+"type": "string",
+"title": "Name"
+}
+},
+"type": "object",
+"required": [
+"name"
+],
+"title": "Function"
+},
+"FunctionCall": {
+"properties": {
+"name": {
+"type": "string",
+"title": "Name"
+},
+"arguments": {
+"type": "string",
+"title": "Arguments"
+}
+},
+"type": "object",
+"required": [
+"name",
+"arguments"
+],
+"title": "FunctionCall"
+},
+"FunctionDefinition": {
+"properties": {
+"name": {
+"type": "string",
+"title": "Name"
+},
+"description": {
+"type": "string",
+"title": "Description"
+},
+"parameters": {
+"type": "object",
+"title": "Parameters"
+},
+"strict": {
+"anyOf": [
+{
+"type": "boolean"
+},
+{
+"type": "null"
+}
+],
+"title": "Strict"
+}
+},
+"type": "object",
+"required": [
+"name"
+],
+"title": "FunctionDefinition"
+},
+"HTTPValidationError": {
+"properties": {
+"detail": {
+"items": {
+"$ref": "#/components/schemas/ValidationError"
+},
+"type": "array",
+"title": "Detail"
+}
+},
+"type": "object",
+"title": "HTTPValidationError"
+},
+"ModelList": {
+"properties": {
+"object": {
+"type": "string",
+"title": "Object",
+"default": "list"
+},
+"data": {
+"items": {
+"type": "string"
+},
+"type": "array",
+"title": "Data"
+}
+},
+"type": "object",
+"required": [
+"data"
+],
+"title": "ModelList"
+},
+"ModelResponse": {
+"properties": {
+"name": {
+"type": "string",
+"title": "Name"
+}
+},
+"type": "object",
+"required": [
+"name"
+],
+"title": "ModelResponse"
+},
+"ToolCall": {
+"properties": {
+"id": {
+"type": "string",
+"title": "Id"
+},
+"type": {
+"type": "string",
+"title": "Type",
+"default": "function"
+},
+"function": {
+"$ref": "#/components/schemas/FunctionCall"
+}
+},
+"type": "object",
+"required": [
+"id",
+"function"
+],
+"title": "ToolCall"
+},
+"Usage": {
+"properties": {
+"prompt_tokens": {
+"type": "integer",
+"title": "Prompt Tokens"
+},
+"completion_tokens": {
+"anyOf": [
+{
+"type": "integer"
+},
+{
+"type": "null"
+}
+],
+"title": "Completion Tokens"
+},
+"total_tokens": {
+"type": "integer",
+"title": "Total Tokens"
+}
+},
+"type": "object",
+"required": [
+"prompt_tokens",
+"total_tokens"
+],
+"title": "Usage"
+},
+"ValidationError": {
+"properties": {
+"loc": {
+"items": {
+"anyOf": [
+{
+"type": "string"
+},
+{
+"type": "integer"
+}
+]
+},
+"type": "array",
+"title": "Location"
+},
+"msg": {
+"type": "string",
+"title": "Message"
+},
+"type": {
+"type": "string",
+"title": "Error Type"
+},
+"input": {
+"title": "Input"
+},
+"ctx": {
+"type": "object",
+"title": "Context"
+}
+},
+"type": "object",
+"required": [
+"loc",
+"msg",
+"type"
+],
+"title": "ValidationError"
+}
+}
+}
+}

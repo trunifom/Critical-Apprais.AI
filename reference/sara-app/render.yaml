@@ -1,0 +1,15 @@
+services:
+  - type: worker
+    name: sara-worker
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python core/worker.py"
+    autoDeploy: true
+    envVars:
+      - key: SUPABASE_URL
+        value: st.secrets["urls"]["supabase_url"]
+      - key: SUPABASE_KEY
+        value: st.secrets["api_keys"]["supabase_key"]
+      - key: OPENAI_API_KEY
+        value: st.secrets["api_keys"]["openai_key"]
