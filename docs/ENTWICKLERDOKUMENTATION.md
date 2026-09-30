@@ -10,7 +10,7 @@ Was **umgesetzt** ist, steht hier; Geplantes ist mit *(geplant)* gekennzeichnet.
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev,import,cli]"
-python -m pytest -q            # 450 Tests, ca. 1 Minute
+python -m pytest -q            # alle Tests, ca. 1 Minute (Anzahl: Umsetzungsplan)
 python -m ruff check .         # Lint (schliesst reference/ aus)
 python -m mypy src             # Typen
 ```

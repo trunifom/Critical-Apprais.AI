@@ -37,7 +37,7 @@ Commit-Schema: `type(scope): Zusammenfassung (Karten-ID)`; Ende der Nachricht: d
 | Punkt | Stand |
 |---|---|
 | Branch | Nur `main`. Die frühen Task-Branches wurden fast-forward nach `main` gemergt und gelöscht. Push: `git push origin main` durch den Projektleiter |
-| Tests | 450 passed (`python -m pytest -q`) |
+| Tests | 464 passed (`python -m pytest -q`) |
 | Lint / Typen | `ruff` sauber (ohne `reference/`), `mypy src` sauber |
 | CI | `.github/workflows/ci.yml` geschrieben (Linux/Windows/macOS x Python 3.11-3.13), noch nie auf GitHub gelaufen |
 | Extras in `pyproject.toml` | `import` (rispy, pybtex, openpyxl, pymupdf, pdfplumber, pylatexenc), `cli` (typer, rich), `dev`, u. a. Neue Abhängigkeiten ausserhalb der Extras: vorher fragen |
@@ -98,6 +98,16 @@ Reihenfolge = empfohlene Arbeitsreihenfolge. Aufwand in Stunden (Schätzung der 
 
 **Meilenstein A ist erreicht (2026-09-30 16:11, `94b21db`).** Bedingung war: alle Fixtures aus `tests/data/` importierbar sind, die Zahlen `tests/data/EXPECTED.json` entsprechen
 und `sara init/import/status` läuft.
+
+### Nachträge und Dokumentation (laufend)
+
+| Status | Schritt | Datum / Uhrzeit | Commit |
+|---|---|---|---|
+| [x] | Fehlerbehebung: gesperrte `records.csv` (Excel) lässt den Import mit `E401` scheitern statt eine Nebendatei zu schreiben | 2026-09-30 16:30 | `42eefa3` |
+| [x] | Dokumentationssatz: `docs/BENUTZERHANDBUCH.md`, `docs/ENTWICKLERDOKUMENTATION.md`, `docs/ARCHITEKTUR.md`, `README.md`, `CHANGELOG.md`, Doku-Konsistenztest `tests/unit/test_docs.py` | 2026-09-30 16:34 | `d25f329` |
+
+**Pflicht bei jeder Aufgabe:** die fünf Dokumente mitführen (neue Befehle/Optionen ins Benutzerhandbuch, neue Schnittstellen und Datenformate in die Entwicklerdokumentation,
+neue Module in die Architektur, Änderungen ins `CHANGELOG.md`, Stand ins `README.md`). `tests/unit/test_docs.py` schlägt fehl, wenn Handbuch, Code und Spalten auseinanderlaufen.
 
 ### M2 bis M3 (erst nach Meilenstein A; Karten in `tasks/`)
 
