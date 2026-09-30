@@ -92,6 +92,7 @@ Sie enthält, was Sie über Ihr Review festlegen. Die wichtigsten Abschnitte:
 | `screening` | Umgang mit „unsicher“ (Standard: einschliessen), Prompt-Variante *(geplant)* |
 | `llm` | Anbieter und Modell *(geplant)*; `api_key_env` ist der **Name** der Umgebungsvariable mit Ihrem Schlüssel |
 | `limits` | Parallelität, Aufruflimits, Kostenlimit *(geplant)* |
+| `import` | `mappings`: gespeicherte Spaltenzuordnung je Tabellendatei, damit ein Import wiederholbar ist (Abschnitt 5.2) |
 
 **Schreiben Sie nie einen API-Schlüssel in die Datei.** Das Programm lehnt so etwas ab. Setzen Sie den Schlüssel als Umgebungsvariable
 und tragen Sie nur deren Namen ein (z. B. `SWISSGPT_API_KEY`).
@@ -125,13 +126,27 @@ Das Programm erkennt das Format am **Inhalt**, nicht an der Endung. Beispiel: Ei
 | Option | Wirkung |
 |---|---|
 | `--label NAME` | Name der Quelle. Einmal angeben (gilt für alle Dateien) oder einmal pro Datei in der Reihenfolge der Dateien. Ohne Angabe: Dateiname |
-| `--map ziel=Spalte` | Tabellen: Spalte selbst zuordnen, z. B. `--map abstract=Zusammenfassung --map title=Name`. Mehrfach möglich |
+| `--map ziel=Spalte` | Tabellen: Spalte selbst zuordnen, z. B. `--map abstract=Zusammenfassung --map title=Name`. Mehrfach möglich. Hat Vorrang vor der gespeicherten Zuordnung |
 | `--encoding cp1252` | Zeichenkodierung erzwingen, falls Umlaute falsch erscheinen |
 | `--delimiter ";"` | Trennzeichen einer CSV-Datei erzwingen |
 | `--sheet Name` | Blatt einer Excel-Datei wählen (Standard: erstes sichtbares) |
 | `--force` | Eine bereits importierte Datei nochmals importieren (die Datensätze sind dann doppelt vorhanden) |
 | `--json` | Ergebnis maschinenlesbar auf dem Bildschirm (für Skripte) |
 | `--lang de` | Sprache der Meldungen |
+
+**Import wiederholbar machen.** Die Ausgabe nennt die verwendeten Spalten (`Verwendete Spalten: title=Name, abstract=Body`, mit `--json` im Feld `column_map`, ebenso im Import-Protokoll).
+Tragen Sie diese Zuordnung in die `project.yaml` ein, dann gilt sie beim nächsten Import derselben Datei automatisch, ohne `--map`:
+
+```yaml
+import:
+  mappings:
+    export.csv:            # Dateiname der Quelle
+      title: Name
+      abstract: Body
+```
+
+Die Zuordnung gilt nur für die Datei mit genau diesem Namen. Ein `--map` auf der Befehlszeile hat Vorrang. Stimmt eine Spalte der gespeicherten Zuordnung nicht, erscheint `E104` und es wird nichts importiert.
+Das Programm schreibt die `project.yaml` nicht selbst (Ihre Kommentare bleiben erhalten).
 
 ### 5.3 Was beim Import geschieht
 

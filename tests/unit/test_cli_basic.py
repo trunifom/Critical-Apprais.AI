@@ -191,3 +191,25 @@ def test_project_log_file_is_written(demo: Path) -> None:
     log = (demo / ".crapai" / "app.log").read_text(encoding="utf-8")
     assert "Imported 10 record(s)" in log
     assert "Title" not in log  # no record content in the log
+
+
+def test_repeated_table_import_uses_the_mapping_stored_in_project_yaml(
+    tmp_path: Path, demo: Path
+) -> None:
+    import yaml
+
+    table = tmp_path / "export.csv"
+    table.write_text("Name,Body\nPaper one,Text one\nPaper two,Text two\n", encoding="utf-8")
+    config_path = demo / "project.yaml"
+    data = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    data["import"] = {"mappings": {"export.csv": {"title": "Name", "abstract": "Body"}}}
+    config_path.write_text(yaml.safe_dump(data), encoding="utf-8")
+
+    result = invoke("import", demo, table, "--lang", "en")
+    assert result.exit_code == 0, result.output
+    assert "Columns used (import.mappings in project.yaml):" in result.output
+    assert "title=Name" in result.output and "abstract=Body" in result.output
+    german = invoke("import", demo, table, "--force", "--lang", "de")
+    assert "Verwendete Spalten (import.mappings in der project.yaml)" in german.output
+    as_json = CliRunner().invoke(app, ["import", str(demo), str(table), "--force", "--json"])
+    assert json.loads(as_json.stdout)["imported"][0]["mapping_source"] == "project"

@@ -34,6 +34,14 @@ llm:
   model: "gpt-4o-mini"        # check the model name against your provider's list
   api_key_env: OPENAI_API_KEY # NAME of the environment variable that holds the key
 
+# Optional: remember how the columns of a table file are assigned, so the import can be repeated
+# without --map. Key = file name, value = internal column: header in the file.
+# import:
+#   mappings:
+#     export.csv:
+#       title: Name
+#       abstract: Zusammenfassung
+
 limits:
   max_cost: 10.0              # in the currency below; null = no limit
   currency: USD

@@ -238,3 +238,80 @@ def test_locked_records_csv_fails_the_import_instead_of_writing_a_side_file(
     assert len(read_entries(workspace.import_log)) == 1  # the failed import is not logged
     run(workspace, "example_db_nr1_total-15_duplicates-0.ris")  # works once Excel is closed
     assert len(read_records(workspace.records_csv)) == 3 + 13
+
+
+# --- repeatable imports: import.mappings in project.yaml (plan chapter 25.5) ---
+
+
+def write_table(path: Path) -> Path:
+    path.write_text("Name,Body\nPaper one,Text one\nPaper two,Text two\n", encoding="utf-8")
+    return path
+
+
+def add_mapping(workspace: Workspace, mapping: dict[str, dict[str, str]]) -> None:
+    import yaml
+
+    from crapai.services.project import read_template
+
+    if not workspace.project_yaml.exists():  # the plain fixture folder has no project file yet
+        workspace.project_yaml.write_text(read_template("demo"), encoding="utf-8")
+    data = yaml.safe_load(workspace.project_yaml.read_text(encoding="utf-8"))
+    data["import"] = {"mappings": mapping}
+    workspace.project_yaml.write_text(yaml.safe_dump(data), encoding="utf-8")
+
+
+def test_stored_mapping_makes_a_table_import_repeatable(
+    workspace: Workspace, tmp_path: Path
+) -> None:
+    table = write_table(tmp_path / "export.csv")
+    add_mapping(workspace, {"export.csv": {"title": "Name", "abstract": "Body"}})
+    summary = import_source(workspace, ImportRequest(table))  # no --map needed
+    assert summary.mapping_source == "project"
+    assert summary.column_map == {"title": "Name", "abstract": "Body"}
+    assert read_records(workspace.records_csv)[0].abstract == "Text one"
+
+
+def test_command_line_mapping_wins_over_the_stored_one(
+    workspace: Workspace, tmp_path: Path
+) -> None:
+    table = write_table(tmp_path / "export.csv")
+    add_mapping(workspace, {"export.csv": {"title": "Body", "abstract": "Name"}})  # swapped
+    summary = import_source(
+        workspace, ImportRequest(table, mapping={"title": "Name", "abstract": "Body"})
+    )
+    assert summary.mapping_source == "cli"
+    assert read_records(workspace.records_csv)[0].title == "Paper one"
+
+
+def test_stored_mapping_only_applies_to_the_named_file(
+    workspace: Workspace, tmp_path: Path
+) -> None:
+    add_mapping(workspace, {"other.csv": {"title": "Name", "abstract": "Body"}})
+    with pytest.raises(ImportFailed) as info:
+        import_source(workspace, ImportRequest(write_table(tmp_path / "export.csv")))
+    assert info.value.code == "E104"
+
+
+def test_stored_mapping_with_a_wrong_column_is_reported(
+    workspace: Workspace, tmp_path: Path
+) -> None:
+    add_mapping(workspace, {"export.csv": {"title": "Name", "abstract": "Missing column"}})
+    with pytest.raises(ImportFailed) as info:
+        import_source(workspace, ImportRequest(write_table(tmp_path / "export.csv")))
+    assert info.value.code == "E104" and "Missing column" in info.value.user_message
+    assert not workspace.records_csv.exists()  # nothing was written
+
+
+def test_an_invalid_project_yaml_does_not_block_an_import_without_mapping(
+    workspace: Workspace,
+) -> None:
+    workspace.project_yaml.write_text("import: [this, is, wrong]\n", encoding="utf-8")
+    summary = run(workspace, "example_AB_nr4.ris")
+    assert summary.records == 3 and summary.mapping_source is None
+
+
+def test_aliases_alone_report_no_mapping_source(workspace: Workspace, tmp_path: Path) -> None:
+    table = tmp_path / "plain.csv"
+    table.write_text("title,abstract\nA,B\nC,D\n", encoding="utf-8")
+    summary = import_source(workspace, ImportRequest(table))
+    assert summary.mapping_source is None and summary.column_map["title"] == "title"

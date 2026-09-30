@@ -165,6 +165,7 @@ cli:
     format: "Format: {format} ({reason})"
     encoding: "Zeichenkodierung: {encoding}"
     mapping: "Verwendete Spalten: {mapping}"
+    mapping_project: "Verwendete Spalten (import.mappings in der project.yaml): {mapping}"
     note: "Hinweis: {note}"
   warning:
     no_abstracts: "Warnung: Keiner dieser Datensätze hat einen Abstract. Das Screening braucht Abstracts (oder die Option nur Titel)."

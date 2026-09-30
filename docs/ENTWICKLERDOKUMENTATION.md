@@ -93,7 +93,8 @@ from crapai.services.importing import ImportRequest, import_source
 summary = import_source(Workspace(root), ImportRequest(Path("pubmed.ris"), label="PubMed"))
 ```
 `ImportRequest`: `path, label, encoding, delimiter, sheet, mapping, force`. `ImportSummary`: Zahlen, Format und Begründung,
-`column_map`, `notes`, `warnings` (`no_abstracts`, `low_abstract_ratio`, `empty_records`).
+`column_map`, `mapping_source` (`cli`, `project` oder `None`), `notes`, `warnings` (`no_abstracts`, `low_abstract_ratio`, `empty_records`).
+Spaltenzuordnung: `--map` > `import.mappings.<Dateiname>` der `project.yaml` > Aliastabelle. Eine unlesbare `project.yaml` blockiert den Import nicht (Warnung im Log).
 
 Einzelbausteine:
 

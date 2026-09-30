@@ -167,3 +167,31 @@ def test_dump_by_alias_round_trips() -> None:
     dumped = config.model_dump(by_alias=True)
     assert dumped["schema"] == 1
     assert ProjectConfig.model_validate(dumped) == config
+
+
+def test_import_mappings_section_is_optional_and_typed() -> None:
+    assert ProjectConfig.model_validate(example()).import_settings.mappings == {}
+    data = example()
+    data["import"] = {"mappings": {"export.csv": {"abstract": "Zusammenfassung"}}}
+    config = ProjectConfig.model_validate(data)
+    assert config.import_settings.mappings["export.csv"] == {"abstract": "Zusammenfassung"}
+    assert config.model_dump(by_alias=True)["import"] == {
+        "mappings": {"export.csv": {"abstract": "Zusammenfassung"}}
+    }
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"mappings": ["not", "a", "mapping"]},
+        {"mappings": {"export.csv": "not a mapping"}},
+        {"mappings": {"export.csv": {"abstract": 5}}},
+        {"mapping": {}},  # misspelt key
+    ],
+)
+def test_import_mappings_reject_wrong_shapes(bad: dict[str, Any]) -> None:
+    data = example()
+    data["import"] = bad
+    with pytest.raises(ValidationError) as info:
+        ProjectConfig.model_validate(data)
+    assert any(loc.startswith("import") for loc in error_locs(info.value))

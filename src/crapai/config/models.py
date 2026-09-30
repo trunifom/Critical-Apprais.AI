@@ -207,6 +207,17 @@ class Acknowledgements(_Strict):
     data_transfer: bool = False
 
 
+class ImportSettings(_Strict):
+    """Settings for repeatable imports (plan chapter 25.5).
+
+    ``mappings`` assigns table columns to internal columns per source file name, for example
+    ``{"export.csv": {"abstract": "Zusammenfassung"}}``. It is used when the file is imported again
+    and no ``--map`` option is given; an option on the command line always wins.
+    """
+
+    mappings: dict[str, dict[str, str]] = Field(default_factory=dict)
+
+
 class ProjectConfig(_Strict):
     """Complete content of ``project.yaml``."""
 
@@ -223,3 +234,5 @@ class ProjectConfig(_Strict):
     limits: Limits = Field(default_factory=Limits)
     output: OutputSettings = Field(default_factory=OutputSettings)
     acknowledgements: Acknowledgements = Field(default_factory=Acknowledgements)
+    # "import" is a Python keyword, hence the alias; the YAML key is `import:`.
+    import_settings: ImportSettings = Field(default_factory=ImportSettings, alias="import")

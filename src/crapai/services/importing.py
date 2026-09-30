@@ -20,7 +20,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
-from crapai.errors import ImportFailed, StorageError
+from crapai.config.loader import load_project_config
+from crapai.errors import ImportFailed, SaraError, StorageError
 from crapai.io.import_log import (
     ImportLogEntry,
     append_entry,
@@ -65,6 +66,7 @@ class ImportSummary:
     column_map: dict[str, str]
     format_reason: str
     warnings: tuple[str, ...]
+    mapping_source: str | None = None  # "cli", "project" or None (aliases only)
 
 
 def import_source(
@@ -98,12 +100,13 @@ def _import_locked(workspace: Workspace, request: ImportRequest, now: datetime) 
     digest = sha256_file(path)
     ensure_not_imported(workspace.import_log, digest, force=request.force)
 
+    mapping, mapping_source = _effective_mapping(workspace, request)
     result, detection = read_source(
         path,
         encoding=request.encoding,
         delimiter=request.delimiter,
         sheet=request.sheet,
-        mapping=request.mapping or None,
+        mapping=mapping or None,
     )
 
     stored = _copy_to_sources(path, workspace.sources_dir, digest)
@@ -157,7 +160,28 @@ def _import_locked(workspace: Workspace, request: ImportRequest, now: datetime) 
         column_map=dict(result.column_map),
         format_reason=detection.reason,
         warnings=tuple(warnings),
+        mapping_source=mapping_source if result.column_map else None,
     )
+
+
+def _effective_mapping(
+    workspace: Workspace, request: ImportRequest
+) -> tuple[dict[str, str], str | None]:
+    """The column mapping for this file: command line, else ``import.mappings`` of project.yaml.
+
+    An unreadable or invalid project.yaml is ignored here (the import does not need it) and logged.
+    """
+    if request.mapping:
+        return dict(request.mapping), "cli"
+    if not workspace.project_yaml.exists():
+        return {}, None
+    try:
+        config = load_project_config(workspace.project_yaml)
+    except SaraError as exc:
+        logger.warning("project.yaml not used for column mappings (%s)", exc.code)
+        return {}, None
+    stored = config.import_settings.mappings.get(request.path.name, {})
+    return (dict(stored), "project") if stored else ({}, None)
 
 
 def _warnings(records: int, abstracts: int, empty: int) -> list[str]:

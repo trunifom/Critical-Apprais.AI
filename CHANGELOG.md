@@ -22,6 +22,7 @@ Jeder Eintrag verweist auf die Aufgabenkarte; die genauen Commits stehen in `doc
   verlustfreie Rundreise (Eigenschaftstest), Sicherungen in `data/.backup/`, Import-Protokoll mit SHA-256 und Erkennung erneuter Importe (`E106`) (T-M1-10).
 * **Befehle** `crapai init`, `crapai import`, `crapai status` mit Rückgabecodes 0/1/2/4, `--json`, `--lang` (T-M1-11); Import-Dienst und Projektdienst; Vorlagen `blank` und `demo`.
 * **Texte** Deutsch und Englisch für Befehlszeile, Oberfläche und alle Fehlercodes (Was ist passiert - Warum - Was tun), Paritätstest (T-M1-12).
+* **Wiederholbarer Tabellenimport:** `import.mappings` in der `project.yaml` (je Dateiname), Vorrang von `--map`; die Ausgabe nennt die Herkunft der Zuordnung.
 * **Duplikate markieren** (`crapai dedup`, T-M2-01): vier Strategien, normalisierte Titel, nicht löschend, behält den vollständigsten Datensatz, im Zweifel keine Markierung, wiederholbar; Statistik innerhalb/zwischen Quellen. `dedup_method` erhält den Wert `pmid` (zu bestätigen).
 * **Tests:** Abdeckungsmessung mit Zweigabdeckung (96 % gesamt, neuer Code 99-100 %), `tests/unit/test_edge_cases.py` (37 Randfälle), Wächtertest für Docstrings und Rückgabetypen der öffentlichen API.
 * **Lizenz:** PolyForm Noncommercial 1.0.0 (`LICENSE`, ADR 0016, `license` in `pyproject.toml`): nicht kommerzielle Nutzung erlaubt, kommerzielle ausgeschlossen (T-M0-01).
@@ -40,6 +41,6 @@ Jeder Eintrag verweist auf die Aufgabenkarte; die genauen Commits stehen in `doc
 ### Bekannte Einschränkungen
 
 * Kein Screening, keine Duplikaterkennung, keine grafische Oberfläche (siehe Umsetzungsplan).
-* `import.mappings` aus Plan Kap. 25.5 steht noch nicht in `project.yaml`; die Spaltenzuordnung liegt im Import-Protokoll.
+* **Unscharfe Duplikatsuche (T-M2-02) ist noch nicht umgesetzt** und bewusst zurückgestellt: sie braucht die neue Abhängigkeit `rapidfuzz` (Freigabe nötig) und eine Prüfliste `reports/possible_duplicates.csv`. Bis dahin findet `crapai dedup` nur exakte und normalisierte Übereinstimmungen.
 * Der Rechteinhaber in der Zeile `Required Notice` ist mit der Hochschule zu klären.
 * Die CI-Matrix ist noch nicht auf GitHub gelaufen.

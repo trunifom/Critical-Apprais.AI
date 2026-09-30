@@ -173,6 +173,7 @@ cli:
     format: "Format: {format} ({reason})"
     encoding: "Text encoding: {encoding}"
     mapping: "Columns used: {mapping}"
+    mapping_project: "Columns used (import.mappings in project.yaml): {mapping}"
     note: "Note: {note}"
   warning:
     no_abstracts: "Warning: none of these records has an abstract. Screening needs abstracts (or the title-only option)."

@@ -165,6 +165,7 @@ def _summary_json(summary: ImportSummary) -> dict[str, Any]:
         "total_records": summary.total_records,
         "encoding": summary.encoding,
         "column_map": summary.column_map,
+        "mapping_source": summary.mapping_source,
         "notes": list(summary.notes),
         "warnings": list(summary.warnings),
     }
@@ -275,7 +276,9 @@ def _print_import(summary: ImportSummary, messages: Messages, *, json_mode: bool
         _echo(messages.text("cli.import.encoding", encoding=summary.encoding), json_mode=json_mode)
     if summary.column_map:
         used = ", ".join(f"{target}={column}" for target, column in summary.column_map.items())
-        _echo(messages.text("cli.import.mapping", mapping=used), json_mode=json_mode)
+        from_project = summary.mapping_source == "project"
+        key = "cli.import.mapping_project" if from_project else "cli.import.mapping"
+        _echo(messages.text(key, mapping=used), json_mode=json_mode)
     for note in summary.notes:
         _echo(messages.text("cli.import.note", note=note), json_mode=json_mode)
     for warning in summary.warnings:
