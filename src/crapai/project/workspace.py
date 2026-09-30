@@ -48,59 +48,73 @@ class Workspace:
     # -- files -----------------------------------------------------------------------------
     @property
     def project_yaml(self) -> Path:
+        """``project.yaml``: the project configuration."""
         return self.root / "project.yaml"
 
     @property
     def records_csv(self) -> Path:
+        """``data/records.csv``: all records (the single source of truth)."""
         return self.data_dir / "records.csv"
 
     @property
     def import_log(self) -> Path:
+        """``data/records.import.jsonl``: one entry per imported file."""
         return self.data_dir / "records.import.jsonl"
 
     @property
     def version_file(self) -> Path:
+        """``.crapai/version``: the schema version of the project folder."""
         return self.state_dir / "version"
 
     @property
     def lock_file(self) -> Path:
+        """``.crapai/lock``: the single-writer lock."""
         return self.state_dir / "lock"
 
     @property
     def app_log(self) -> Path:
+        """``.crapai/app.log``: the technical log (no record contents)."""
         return self.state_dir / "app.log"
 
     # -- folders ---------------------------------------------------------------------------
     @property
     def sources_dir(self) -> Path:
+        """``sources/``: unchanged copies of the imported files."""
         return self.root / "sources"
 
     @property
     def data_dir(self) -> Path:
+        """``data/``: records, import log and backups."""
         return self.root / "data"
 
     @property
     def backup_dir(self) -> Path:
+        """``data/.backup/``: the last five copies of ``records.csv``."""
         return self.data_dir / ".backup"
 
     @property
     def runs_dir(self) -> Path:
+        """``runs/``: one folder per screening run (planned)."""
         return self.root / "runs"
 
     @property
     def human_dir(self) -> Path:
+        """``human/``: human decisions for the evaluation (planned)."""
         return self.root / "human"
 
     @property
     def reports_dir(self) -> Path:
+        """``reports/``: statistics and reports (planned)."""
         return self.root / "reports"
 
     @property
     def prompts_dir(self) -> Path:
+        """``prompts/``: optional own prompt variants (planned)."""
         return self.root / "prompts"
 
     @property
     def state_dir(self) -> Path:
+        """``.crapai/``: technical state of the project (version, lock, log)."""
         return self.root / STATE_DIR_NAME
 
     def folders(self) -> tuple[Path, ...]:

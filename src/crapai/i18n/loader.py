@@ -135,13 +135,16 @@ class I18n:
     # -------------- getters --------------
 
     def t(self, path: str) -> str:
+        """Text at the dotted ``path``; empty string if missing or not a scalar."""
         v = self._get_nested(path)
         return str(v) if isinstance(v, (str, int, float)) else ""
 
     def tf(self, path: str, **kwargs) -> str:
+        """Text at ``path`` with ``{placeholders}`` filled from ``kwargs``."""
         return self.t(path).format(**kwargs)
 
     def lst(self, path: str) -> List[str]:
+        """List of strings at ``path``; empty list if it is not a list."""
         v = self._get_nested(path)
         return [str(x) for x in v] if isinstance(v, list) else []
 
@@ -176,4 +179,5 @@ class I18n:
     # Expose resolved paths for diagnostics
     @property
     def resolved_paths(self) -> Dict[str, Optional[Path]]:
+        """Language -> YAML path that was read by the last :meth:`load` (diagnostics)."""
         return getattr(self, "_paths", {})

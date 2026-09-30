@@ -23,6 +23,7 @@ Jeder Eintrag verweist auf die Aufgabenkarte; die genauen Commits stehen in `doc
 * **Befehle** `crapai init`, `crapai import`, `crapai status` mit Rückgabecodes 0/1/2/4, `--json`, `--lang` (T-M1-11); Import-Dienst und Projektdienst; Vorlagen `blank` und `demo`.
 * **Texte** Deutsch und Englisch für Befehlszeile, Oberfläche und alle Fehlercodes (Was ist passiert - Warum - Was tun), Paritätstest (T-M1-12).
 * **Duplikate markieren** (`crapai dedup`, T-M2-01): vier Strategien, normalisierte Titel, nicht löschend, behält den vollständigsten Datensatz, im Zweifel keine Markierung, wiederholbar; Statistik innerhalb/zwischen Quellen. `dedup_method` erhält den Wert `pmid` (zu bestätigen).
+* **Tests:** Abdeckungsmessung mit Zweigabdeckung (96 % gesamt, neuer Code 99-100 %), `tests/unit/test_edge_cases.py` (37 Randfälle), Wächtertest für Docstrings und Rückgabetypen der öffentlichen API.
 * **Lizenz:** PolyForm Noncommercial 1.0.0 (`LICENSE`, ADR 0016, `license` in `pyproject.toml`): nicht kommerzielle Nutzung erlaubt, kommerzielle ausgeschlossen (T-M0-01).
 * **Dokumentation:** Benutzerhandbuch, Entwicklerdokumentation, Architektur, ausführliches README, dieses Änderungsprotokoll, Umsetzungsplan mit Fortschrittsliste.
 

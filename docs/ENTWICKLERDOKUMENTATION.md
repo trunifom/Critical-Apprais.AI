@@ -145,6 +145,29 @@ options (delimiter, sheet), column_map, notes, forced`.
 
 `version`: eine Ganzzahl (heute `1`). `lock`: siehe 3.3. `app.log`: rotierendes Log (1 MB × 3), enthält Vorgänge, keine Datensatzinhalte.
 
+## 4a. Tests und Abdeckung
+
+| Prüfung | Datei | Was sie sicherstellt |
+|---|---|---|
+| Einheitstests je Modul | `tests/unit/test_<modul>.py` | Erfolg, Fehlerfälle, Grenzwerte; `hypothesis` für Eigenschaften |
+| Randfälle und Schutzzweige | `tests/unit/test_edge_cases.py` | Zweige, die nur bei Störungen laufen (gesperrte Dateien, beschädigte Eingaben, andere Betriebssysteme), gefunden mit einer Abdeckungsmessung |
+| Sollzahlen | `tests/unit/test_*_reader.py`, `tests/integration/` | Zahlen aus `tests/data/EXPECTED.json` (unabhängig berechnet) |
+| Dokumente | `tests/unit/test_docs.py` | Handbuch, Entwicklerdokumentation und Architektur stimmen mit CLI und Code überein |
+| Docstrings | `tests/unit/test_docstrings.py` | öffentliche API hat Docstring und Rückgabetyp (portierte Module ausgenommen) |
+| Texte | `tests/unit/test_i18n_parity.py` | Deutsch und Englisch haben dieselben Schlüssel und Platzhalter |
+| Schichten, Lizenz | `test_layering.py`, `test_license.py` | Architekturregel, unveränderter Lizenztext |
+
+**Abdeckung messen** (Zweigabdeckung; `pytest-cov` ist bisher nur lokal installiert und noch nicht in den Extras, siehe Umsetzungsplan):
+
+```powershell
+python -m pip install pytest-cov
+python -m pytest -q --cov=crapai --cov-branch --cov-report=term-missing:skip-covered
+```
+
+Stand 2026-09-30: **96 %** insgesamt. Der neue Code (Import, Konfiguration, Projekt, Dedup, CLI, Meldungen) liegt bei 99-100 %; die letzten Lücken sind
+Zweige, die nur ein anderes Betriebssystem oder eine Unterbrechung in einem bestimmten Augenblick erreichen. Die Restlücke liegt in den **übernommenen** Modulen
+`cost/estimator.py` (63 %; wird mit T-M2-05 neu geschrieben und dann getestet), `criteria/template.py` und `legacy.py`. Ziel laut Plan Kap. 33.8: mindestens 80 % Zeilen und 70 % Zweige im Kern.
+
 ## 5. Einen Reader hinzufügen
 
 1. `SourceFormat` in `io/readers/detect.py` ergänzen und die Erkennung (`_sniff_*`) mit Test erweitern.

@@ -134,6 +134,8 @@ Namen: Paket und Befehl `crapai`, Zustandsordner `.crapai/` (ADR 0017).
 | Orakel | `tests/data/EXPECTED.json` | unabhängig berechnete Sollzahlen der Fixtures (z. B. Zotero-RIS 706 Datensätze / 156 Abstracts) |
 | Golden | `tests/unit/test_legacy_golden.py` | Statistik gegen archivierte Berichte des Vorgängers |
 | Architektur | `tests/unit/test_layering.py` | Schichtenregel |
+| Randfälle | `tests/unit/test_edge_cases.py` | Schutzzweige, die nur bei Störungen laufen; Grundlage ist eine Zweigabdeckungsmessung (Stand 96 %, neuer Code 99-100 %) |
+| Dokumentation | `tests/unit/test_docs.py`, `test_docstrings.py`, `test_i18n_parity.py` | Handbuch, Docstrings und Texte bleiben mit dem Code konsistent |
 | Integration | `tests/integration/` | Meilenstein A: alle Fixtures über die echte CLI importieren |
 | Live | Marker `live` | echte API-Aufrufe; nie in der CI, nur auf Anweisung |
 

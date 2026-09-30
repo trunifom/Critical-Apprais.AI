@@ -110,18 +110,21 @@ class _Groups:
         self._parent = list(range(size))
 
     def find(self, item: int) -> int:
+        """Root of the group that contains ``item`` (with path compression)."""
         while self._parent[item] != item:
             self._parent[item] = self._parent[self._parent[item]]
             item = self._parent[item]
         return item
 
     def union(self, first: int, second: int) -> None:
+        """Join the groups of the two records; the smaller index becomes the root."""
         root_a, root_b = self.find(first), self.find(second)
         if root_a != root_b:
             # keep the smaller index as root so groups are stable and ordered
             self._parent[max(root_a, root_b)] = min(root_a, root_b)
 
     def components(self) -> dict[int, list[int]]:
+        """All groups with at least two members, by root, members in ascending order."""
         groups: dict[int, list[int]] = defaultdict(list)
         for index in range(len(self._parent)):
             groups[self.find(index)].append(index)
