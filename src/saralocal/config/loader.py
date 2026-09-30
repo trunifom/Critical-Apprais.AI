@@ -9,6 +9,8 @@ that cannot be read or parsed.
 from __future__ import annotations
 
 import logging
+import os
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +24,8 @@ logger = logging.getLogger(__name__)
 
 CODE_MISSING = "E201"
 CODE_INVALID = "E203"
+ENV_PREFIX = "SARA_"
+ENV_NESTING = "__"
 
 
 def read_yaml_mapping(path: Path) -> dict[str, Any]:
@@ -130,7 +134,7 @@ def validate_config(data: dict[str, Any], source: str = "project.yaml") -> Proje
 def load_project_config(path: Path) -> ProjectConfig:
     """Read and validate one ``project.yaml``.
 
-    Layering with environment, command line and user config is added in :func:`resolve_config`.
+    Environment, command line and user config are layered on top by :func:`resolve_config`.
 
     Raises:
         ConfigError: if the file cannot be read or fails validation.
@@ -138,4 +142,106 @@ def load_project_config(path: Path) -> ProjectConfig:
     data = read_yaml_mapping(path)
     config = validate_config(data, source=path.name)
     logger.info("Loaded project configuration from %s", path)
+    return config
+
+
+def default_user_config_path() -> Path:
+    """Location of the optional per-user configuration (plan chapter 16.3)."""
+    return Path.home() / ".config" / "sara" / "config.yaml"
+
+
+def _set_nested(target: dict[str, Any], keys: list[str], value: Any) -> None:
+    """Set ``value`` at the path ``keys`` inside ``target``, creating mappings as needed."""
+    node = target
+    for key in keys[:-1]:
+        child = node.get(key)
+        if not isinstance(child, dict):
+            child = {}
+            node[key] = child
+        node = child
+    node[keys[-1]] = value
+
+
+def _parse_scalar(text: str) -> Any:
+    """Interpret an override string like YAML would (``5`` -> 5, ``true`` -> True).
+
+    Text that is not valid YAML stays a plain string.
+    """
+    try:
+        return yaml.safe_load(text)
+    except yaml.YAMLError:
+        return text
+
+
+def env_overrides(environ: Mapping[str, str] | None = None) -> dict[str, Any]:
+    """Collect settings from environment variables named ``SARA_<SECTION>__<KEY>``.
+
+    Example: ``SARA_LLM__MODEL=gpt-4o`` sets ``llm.model``. Only variables that contain the nesting
+    separator ``__`` are used, so unrelated ``SARA_*`` variables are ignored. Names are
+    lower-cased. The naming scheme is an implementation choice; the plan only fixes the
+    precedence.
+    """
+    environ = os.environ if environ is None else environ
+    result: dict[str, Any] = {}
+    for name, raw in environ.items():
+        if not name.startswith(ENV_PREFIX) or ENV_NESTING not in name:
+            continue
+        keys = [part.lower() for part in name.removeprefix(ENV_PREFIX).split(ENV_NESTING)]
+        if not all(keys):
+            continue
+        _set_nested(result, keys, _parse_scalar(raw))
+    return result
+
+
+def parse_cli_overrides(pairs: Iterable[str]) -> dict[str, Any]:
+    """Turn ``["llm.model=gpt-4o", "limits.rpm=100"]`` into a nested mapping.
+
+    Raises:
+        ConfigError: (E203) if an entry has no ``=`` or an empty key.
+    """
+    result: dict[str, Any] = {}
+    for pair in pairs:
+        key, sep, raw = pair.partition("=")
+        keys = key.strip().split(".")
+        if not sep or not all(keys):
+            raise ConfigError(
+                f"Invalid override {key.strip() or pair!r}: expected section.key=value",
+                code=CODE_INVALID,
+                hint="Example: --set llm.model=gpt-4o",
+            )
+        _set_nested(result, keys, _parse_scalar(raw))
+    return result
+
+
+def resolve_config(
+    project_path: Path,
+    *,
+    cli: Mapping[str, Any] | None = None,
+    environ: Mapping[str, str] | None = None,
+    user_config_path: Path | None = None,
+) -> ProjectConfig:
+    """Load a project configuration with the precedence of plan chapter 16.3.
+
+    CLI argument > environment variable > ``project.yaml`` > user configuration > built-in default.
+    The built-in defaults are the field defaults of :class:`ProjectConfig`. The user configuration
+    is optional and may be partial; it is skipped when the file does not exist.
+
+    Args:
+        project_path: The project's ``project.yaml``.
+        cli: Nested overrides from the command line (see :func:`parse_cli_overrides`).
+        environ: Environment to read (defaults to ``os.environ``); injectable for tests.
+        user_config_path: Override for the user configuration location.
+
+    Raises:
+        ConfigError: if any layer cannot be read or the merged result is invalid.
+    """
+    user_path = user_config_path or default_user_config_path()
+    merged: dict[str, Any] = {}
+    if user_path.is_file():
+        merged = deep_merge(merged, read_yaml_mapping(user_path))
+    merged = deep_merge(merged, read_yaml_mapping(project_path))
+    merged = deep_merge(merged, env_overrides(environ))
+    merged = deep_merge(merged, dict(cli or {}))
+    config = validate_config(merged, source=project_path.name)
+    logger.info("Resolved project configuration for %s", project_path)
     return config
