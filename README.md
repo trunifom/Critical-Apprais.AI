@@ -16,7 +16,9 @@ Testdaten, Tests, Aufgabenkarten und Regeln für KI-Programmier-Agenten.
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev]"
-python -m pytest -q          # 47 Tests, ca. 25 s
+python -m pytest -q          # alle Tests (Anzahl siehe docs/UMSETZUNGSPLAN_UND_FORTSCHRITT.md)
+python -m ruff check .       # Lint
+python -m mypy src              # Typen
 ```
 
 ## Was ist drin
