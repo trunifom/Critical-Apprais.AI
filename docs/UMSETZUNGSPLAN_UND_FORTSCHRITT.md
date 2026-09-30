@@ -37,7 +37,7 @@ Commit-Schema: `type(scope): Zusammenfassung (Karten-ID)`; Ende der Nachricht: d
 | Punkt | Stand |
 |---|---|
 | Branch | Nur `main`. Die frühen Task-Branches wurden fast-forward nach `main` gemergt und gelöscht. Push: `git push origin main` durch den Projektleiter |
-| Tests | 258 passed (`python -m pytest -q`) |
+| Tests | 280 passed (`python -m pytest -q`) |
 | Lint / Typen | `ruff` sauber (ohne `reference/`), `mypy src` sauber |
 | CI | `.github/workflows/ci.yml` geschrieben (Linux/Windows/macOS x Python 3.11-3.13), noch nie auf GitHub gelaufen |
 | Extras in `pyproject.toml` | `import` (rispy, pybtex, openpyxl, pymupdf, pdfplumber, pylatexenc), `cli` (typer, rich), `dev`, u. a. Neue Abhängigkeiten ausserhalb der Extras: vorher fragen |
@@ -83,7 +83,7 @@ Reihenfolge = empfohlene Arbeitsreihenfolge. Aufwand in Stunden (Schätzung der 
 | [x] | T-M1-05 | `io/readers/ris.py`: RIS-Reader (Fortsetzungszeilen, L15 beheben; 706/156, 6, 46 laut EXPECTED.json) | 5 | 2026-09-30 15:27 | `a5b819d` |
 | [x] | T-M1-06 | `io/readers/nbib.py`: NBIB/MEDLINE (100 und 62 Datensätze) | 4 | 2026-09-30 15:31 | `049310f` |
 | [x] | T-M1-07 | `io/readers/bibtex.py`: BibTeX (48, 706; 11,5-MB-Datei nur Marker `large`) | 6 | 2026-09-30 15:39 | `ddf0afc` |
-| [ ] | T-M1-08 | `io/readers/tabular.py`: CSV/TSV/XLSX (Kodierung, Trennzeichen, Spaltenzuordnung) | 5 | | |
+| [x] | T-M1-08 | `io/readers/tabular.py`: CSV/TSV/XLSX (Kodierung, Trennzeichen, Spaltenzuordnung) | 5 | 2026-09-30 15:43 | `bb7a7de` |
 | [ ] | T-M1-10 | `io/normalize.py`: Normalisierung auf das Schema von Kap. 26.1 | 5 | | |
 | [ ] | T-M1-10 | `io/records_store.py`: `records.csv` schreiben/lesen, SHA-256 der Quellen, Import-Log (E106) | | | |
 | [ ] | T-M1-11 | `cli.py`: `sara init`, `sara import`, `sara status` (Exit-Codes Kap. 15.1) | 3 | | |
@@ -102,7 +102,7 @@ M2: T-M2-01 Dedup, -02 Fuzzy (optional), -03 fehlende Abstracts/Flags, -04 Prefl
 
 ## 5. Nächster Schritt (bitte aktuell halten)
 
-**T-M1-08 (Tabellen-Reader `io/readers/tabular.py`: CSV/TSV/XLSX, Kodierung, Trennzeichen, Spaltenzuordnung `--map`)**; T-M1-01 bis T-M1-07 stehen. Alle Reader liefern `ReadResult`/`RawRecord` aus `io/readers/base.py` (Vorbild: `ris.py`); `detect_format` liefert Trennzeichen und Kodierung für Tabellen. Felder ausserhalb von Kap. 26.1 (`notes`, `database_name`, `title_translated`, `place`, `edition`, `short_title` u. a.) muss T-M1-10 nach `extra_json` verschieben.
+**T-M1-10 (Normalisierung `io/normalize.py` und `io/records_store.py`: `records.csv` schreiben/lesen, SHA-256 der Quellen, Import-Log, E106)**; T-M1-01 bis T-M1-08 stehen (T-M1-09 zurückgestellt). Die vier Reader liefern `ReadResult`/`RawRecord` (`io/readers/base.py`). Felder ausserhalb von Kap. 26.1 (`notes`, `database_name`, `database_provider`, `title_translated`, `place`, `edition`, `short_title`, `publisher`, `editors`) muss T-M1-10 nach `extra_json` verschieben; `ReadResult.column_map` gehört in den Import-Log.
 
 ## 6. Abweichungen und offene Punkte
 
