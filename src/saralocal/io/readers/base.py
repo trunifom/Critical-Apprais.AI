@@ -48,12 +48,17 @@ class ReadResult:
         records: The records in file order.
         encoding: Text encoding used to decode the file (None for binary formats).
         notes: File-level remarks (discarded header lines, replaced characters ...).
+        column_map: For table readers: internal column -> source column header that was used.
+            Stored in ``project.yaml`` (``import.mappings``) so an import can be repeated.
+        options: Reader settings that were applied (delimiter, sheet name ...), for the import log.
     """
 
     format: SourceFormat
     records: list[RawRecord]
     encoding: str | None = None
     notes: list[str] = field(default_factory=list)
+    column_map: dict[str, str] = field(default_factory=dict)
+    options: dict[str, Any] = field(default_factory=dict)
 
 
 def decode_text(data: bytes, encoding: str | None = None) -> tuple[str, str]:
