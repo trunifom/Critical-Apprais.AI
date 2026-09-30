@@ -32,7 +32,8 @@ def count_file(path: Path) -> dict:
         return info
     text = path.read_bytes().decode("utf-8", errors="replace")
     if suffix == ".bib":
-        entries = re.findall(r"^@(?!string|comment|preamble)[A-Za-z]+\s*\{", text, flags=re.M | re.I)
+        pattern = r"^@(?!string|comment|preamble)[A-Za-z]+\s*\{"
+        entries = re.findall(pattern, text, flags=re.M | re.I)
         info.update(kind="bibtex", records=len(entries))
     elif "PMID-" in text[:2000]:
         info.update(kind="nbib", records=len(re.findall(r"^PMID-", text, flags=re.M)))

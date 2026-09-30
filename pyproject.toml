@@ -38,16 +38,20 @@ markers = [
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# reference/ is a read-only snapshot of the predecessor (AGENTS.md): never lint-fix or edit it.
+extend-exclude = ["reference"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
 
 # Files ported verbatim from SARA-App keep their original style until a task refactors them.
 [tool.ruff.lint.per-file-ignores]
+"scripts/generate_task_cards.py" = ["E501"]  # generator holds long card texts
+"scripts/plan_chapter.py" = ["SIM114"]
 "src/saralocal/enums.py" = ["E501", "UP", "I"]
-"src/saralocal/cost/estimator.py" = ["E501", "UP", "I", "SIM"]
+"src/saralocal/cost/estimator.py" = ["E501", "UP", "I", "SIM", "F401"]
 "src/saralocal/criteria/template.py" = ["E501", "UP", "I", "SIM"]
-"src/saralocal/i18n/**" = ["E501", "UP", "I", "SIM", "B"]
+"src/saralocal/i18n/**" = ["E501", "UP", "I", "SIM", "B", "F401", "E402"]
 
 [tool.mypy]
 python_version = "3.11"

@@ -49,7 +49,7 @@ def print_section(lines: list[str], wanted: str) -> None:
 
 
 def main() -> None:
-    # Windows consoles default to cp1252; the plan contains arrows, umlauts and other non-cp1252 characters.
+    # Windows consoles default to cp1252; the plan contains arrows and umlauts outside cp1252.
     sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
     lines = load()
     if len(sys.argv) < 2:
