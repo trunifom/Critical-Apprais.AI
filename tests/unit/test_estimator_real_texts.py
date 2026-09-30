@@ -82,7 +82,15 @@ def test_only_records_that_go_to_the_model_are_counted(project: Workspace, tmp_p
     from crapai.services.dedup import dedup_project
     from crapai.services.validity import validate_project
 
-    load(project, tmp_path, [("Same", SHORT), ("Same", SHORT), ("No abstract", "")])
+    load(
+        project,
+        tmp_path,
+        [
+            ("Same title of four words", SHORT),
+            ("Same title of four words", SHORT),
+            ("No abstract", ""),
+        ],
+    )
     dedup_project(project)
     validate_project(project)
     assert estimate_project(project).estimate.n_items == 1

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import itertools
 import json
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +26,10 @@ from crapai.prisma.dedup import (
 DATA = Path(__file__).resolve().parents[2] / "tests" / "data"
 EXPECTED = json.loads((DATA / "EXPECTED.json").read_text(encoding="utf-8"))
 _uid = itertools.count(1)
+
+
+# The fixtures use short titles; the guard against generic titles is tested separately.
+LOOSE = DedupConfig(min_title_words=1)
 
 
 def rec(title: str = "", doi: str = "", *, label: str = "A", **extra: Any) -> Record:
@@ -132,7 +137,7 @@ def test_doi_or_title_matches_by_doi_then_by_title() -> None:
         rec("Paper Two", "10.1/b"),
         rec("paper two!", "10.1/b"),
     ]
-    result = mark_duplicates(records)
+    result = mark_duplicates(records, LOOSE)
     assert [r.is_duplicate for r in result.records] == [False, True, True, False, True]
     assert result.by_method == {"doi": 2, "title_norm": 1}
     assert result.groups == 2
@@ -164,8 +169,8 @@ def test_strict_ids_use_doi_or_pmid_and_ignore_titles() -> None:
 
 def test_title_strategy_ignores_doi() -> None:
     records = [rec("Alpha study", "10.1/a"), rec("ALPHA STUDY.", "10.1/b")]
-    assert mark_duplicates(records, DedupConfig(strategy="title")).marked == 1
-    assert mark_duplicates(records).marked == 0  # doi_or_title respects the DOI conflict
+    assert mark_duplicates(records, replace(LOOSE, strategy="title")).marked == 1
+    assert mark_duplicates(records, LOOSE).marked == 0  # doi_or_title respects the DOI conflict
 
 
 def test_title_authors_needs_both() -> None:
@@ -176,7 +181,7 @@ def test_title_authors_needs_both() -> None:
         rec("Beta", authors=""),
         rec("Beta", authors=""),
     ]
-    result = mark_duplicates(records, DedupConfig(strategy="title_authors"))
+    result = mark_duplicates(records, replace(LOOSE, strategy="title_authors"))
     assert [r.is_duplicate for r in result.records] == [False, True, False, False, True]
     assert result.by_method == {"title_authors": 2}
 
@@ -208,7 +213,7 @@ def test_the_most_complete_record_is_kept_first_on_ties() -> None:
 def test_doi_beats_missing_doi_when_no_abstract_differs() -> None:
     no_doi = rec("Paper", "")
     with_doi = rec("Paper", "10.1/a")
-    result = mark_duplicates([no_doi, with_doi])
+    result = mark_duplicates([no_doi, with_doi], LOOSE)
     assert [r.is_duplicate for r in result.records] == [True, False]
 
 

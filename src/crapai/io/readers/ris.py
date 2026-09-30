@@ -214,6 +214,12 @@ def _to_record(index: int, pairs: list[tuple[str, str]], notes: list[str]) -> Ra
     year = _year(take("PY", "Y1"), take("DA"))
     if year is not None:
         fields["year"] = year
+    # The full date (DA, e.g. 2020/03/15/) and any further PY/Y1 values are not columns; keep them.
+    for tag in ("DA", "PY", "Y1"):
+        values = by_tag.get(tag, [])
+        kept = values if tag == "DA" else [v for v in values[1:] if v != values[0]]
+        if kept and not (tag == "DA" and all(v.strip("/") == str(year) for v in kept)):
+            extra[f"ris_{tag}"] = kept[0] if len(kept) == 1 else kept
     for column, tags in SINGLE_VALUE_TAGS.items():
         values = take(*tags)
         if values:
@@ -223,6 +229,9 @@ def _to_record(index: int, pairs: list[tuple[str, str]], notes: list[str]) -> Ra
     pages = _pages(take("SP"), take("EP"))
     if pages:
         fields["pages"] = pages
+        for tag in ("SP", "EP"):  # a second start or end page is not lost
+            if by_tag.get(tag):
+                _keep_leftovers(extra, (tag,), by_tag, chosen=by_tag[tag][0])
     keywords = unique_in_order(take("KW"))
     if keywords:
         fields["keywords"] = join_values(keywords)

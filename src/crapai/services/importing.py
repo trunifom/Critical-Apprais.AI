@@ -128,23 +128,33 @@ def _import_locked(workspace: Workspace, request: ImportRequest, now: datetime) 
     notes = list(result.notes)
     if detection.extension_mismatch:
         notes.insert(0, detection.reason)
-    append_entry(
-        workspace.import_log,
-        ImportLogEntry(
-            timestamp=now,
-            source_file=stored.name,
-            sha256=digest,
-            source_label=label,
-            format=result.format.value,
-            records=len(new_records),
-            abstracts=abstracts,
-            encoding=result.encoding,
-            options=result.options,
-            column_map=result.column_map,
-            notes=notes,
-            forced=request.force,
-        ),
+    entry = ImportLogEntry(
+        timestamp=now,
+        source_file=stored.name,
+        sha256=digest,
+        source_label=label,
+        format=result.format.value,
+        records=len(new_records),
+        abstracts=abstracts,
+        encoding=result.encoding,
+        options=result.options,
+        column_map=result.column_map,
+        notes=notes,
+        forced=request.force,
     )
+    try:
+        append_entry(workspace.import_log, entry)
+    except OSError as exc:
+        # The records are already saved; importing the file again would add them twice.
+        logger.error("Import log not written (%s); the records were saved", type(exc).__name__)
+        raise StorageError(
+            f"The records of {path.name} were saved, but the import log could not be written "
+            f"({type(exc).__name__})",
+            code="E401",
+            hint="Do not import this file again. Check data/records.import.jsonl and run "
+            "'crapai status'.",
+            details={"path": str(workspace.import_log)},
+        ) from exc
     events_ok = record_import(workspace, label, stored.name, result.format.value, len(new_records))
     warnings = _warnings(len(new_records), abstracts, empty)
     if not events_ok:
@@ -201,15 +211,26 @@ def _warnings(records: int, abstracts: int, empty: int) -> list[str]:
 
 def _copy_to_sources(path: Path, sources_dir: Path, digest: str) -> Path:
     """Copy the original into ``sources/`` without overwriting anything; verify the copy."""
-    sources_dir.mkdir(parents=True, exist_ok=True)
     target = sources_dir / path.name
-    counter = 2
-    while target.exists():
-        if sha256_file(target) == digest:
-            return target  # the very same bytes are already there (forced re-import)
-        target = sources_dir / f"{path.stem}-{counter}{path.suffix}"
-        counter += 1
-    shutil.copyfile(path, target)
+    try:
+        sources_dir.mkdir(parents=True, exist_ok=True)
+        counter = 2
+        while target.exists():
+            if sha256_file(target) == digest:
+                return target  # the very same bytes are already there (forced re-import)
+            target = sources_dir / f"{path.stem}-{counter}{path.suffix}"
+            counter += 1
+        shutil.copyfile(path, target)
+    except OSError as exc:
+        target.unlink(missing_ok=True)  # never leave a half-copied original behind
+        code = "E403" if getattr(exc, "errno", None) == 28 else "E401"  # 28 = no space left
+        logger.error("Cannot copy %s to sources/ (%s, %s)", path.name, type(exc).__name__, code)
+        raise StorageError(
+            f"Cannot copy {path.name} to sources/ ({type(exc).__name__})",
+            code=code,
+            hint="Free disk space or check the folder permissions; nothing was imported.",
+            details={"path": str(path)},
+        ) from exc
     if sha256_file(target) != digest:
         target.unlink(missing_ok=True)
         raise StorageError(

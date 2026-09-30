@@ -33,6 +33,7 @@ import logging
 import re
 from collections import Counter
 from dataclasses import dataclass, field
+from functools import cached_property
 from typing import Literal
 
 from crapai.io.records_store import Record
@@ -75,10 +76,27 @@ _LANGUAGE_TABLE: dict[str, tuple[str, ...]] = {
     "hun": ("hu", "hun", "hungarian"),
     "rum": ("ro", "rum", "ron", "romanian"),
     "lat": ("la", "lat", "latin"),
-    "und": ("und", "undetermined"),
 }
+# PubMed and other sources use these for "unknown" or "several": they tell nothing about the
+# language, so a record that has only these counts as having no language at all.
+_UNKNOWN_LANGUAGES = frozenset(
+    {
+        "und",
+        "undetermined",
+        "mul",
+        "multiple",
+        "zxx",
+        "unk",
+        "unknown",
+        "nan",
+        "null",
+        "none",
+        "n/a",
+    }
+)
 _LANGUAGE_LOOKUP = {alias: code for code, aliases in _LANGUAGE_TABLE.items() for alias in aliases}
 _SPLIT = re.compile(r"[;,/|]+")
+_LOCALE_SPLIT = re.compile(r"[-_\s(]")
 
 
 def normalize_language(text: str) -> str | None:
@@ -90,7 +108,11 @@ def normalize_language(text: str) -> str | None:
     value = text.strip().lower().strip(".")
     if not value:
         return None
-    return _LANGUAGE_LOOKUP.get(value, value)
+    if value in _LANGUAGE_LOOKUP:
+        return _LANGUAGE_LOOKUP[value]
+    # Locale tags and qualified names: "en-US", "en_GB", "Chinese (Traditional)".
+    head = _LOCALE_SPLIT.split(value, maxsplit=1)[0]
+    return _LANGUAGE_LOOKUP.get(head, value)
 
 
 def languages_of(text: str) -> tuple[list[str], bool]:
@@ -102,7 +124,11 @@ def languages_of(text: str) -> tuple[list[str], bool]:
         ``"see text"`` is not recognised and counts as missing.
     """
     codes = [c for c in (normalize_language(p) for p in _SPLIT.split(text)) if c]
-    recognised = [c for c in codes if c in _LANGUAGE_TABLE or re.fullmatch(r"[a-z]{3}", c)]
+    recognised = [
+        c
+        for c in codes
+        if c not in _UNKNOWN_LANGUAGES and (c in _LANGUAGE_TABLE or re.fullmatch(r"[a-z]{3}", c))
+    ]
     return codes, bool(recognised)
 
 
@@ -132,6 +158,24 @@ class PrefilterConfig:
     year_on_missing: OnMissing = "pass"
     type_exclude: tuple[str, ...] = ()
     type_on_missing: OnMissing = "pass"
+
+    def __post_init__(self) -> None:
+        if (
+            self.year_min is not None
+            and self.year_max is not None
+            and self.year_min > self.year_max
+        ):
+            raise ValueError("year_min must not be greater than year_max")
+
+    @cached_property
+    def allowed_languages(self) -> frozenset[str | None]:
+        """The allowed languages as ISO 639-2 codes (computed once, not per record)."""
+        return frozenset(normalize_language(a) for a in self.language_allow)
+
+    @cached_property
+    def unwanted_types(self) -> frozenset[str]:
+        """The excluded publication types in comparison form (computed once)."""
+        return frozenset(normalize_type(t) for t in self.type_exclude)
 
     @property
     def language_active(self) -> bool:
@@ -177,7 +221,7 @@ class PrefilterResult:
 def _language_hit(record: Record, config: PrefilterConfig, missing: Counter[str]) -> str | None:
     if not config.language_active:
         return None
-    allowed = {normalize_language(a) for a in config.language_allow}
+    allowed = config.allowed_languages
     codes, recognised = languages_of(record.language)
     if not recognised:
         if config.language_on_missing == "exclude":
@@ -216,7 +260,7 @@ def _type_hit(record: Record, config: PrefilterConfig, missing: Counter[str]) ->
             return "type: missing"
         missing["type"] += 1
         return None
-    unwanted = {normalize_type(t) for t in config.type_exclude}
+    unwanted = config.unwanted_types
     hits = [t for t in types if normalize_type(t) in unwanted]
     return f"type: {', '.join(hits)}" if hits else None
 

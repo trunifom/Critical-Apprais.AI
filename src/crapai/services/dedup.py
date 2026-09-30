@@ -13,7 +13,14 @@ from dataclasses import dataclass
 from crapai.config.loader import load_project_config
 from crapai.errors import SaraError
 from crapai.io.records_store import read_records, write_records
-from crapai.prisma.dedup import DedupConfig, DedupResult, Keep, Strategy, mark_duplicates
+from crapai.prisma.dedup import (
+    MIN_TITLE_WORDS,
+    DedupConfig,
+    DedupResult,
+    Keep,
+    Strategy,
+    mark_duplicates,
+)
 from crapai.project.workspace import Workspace
 from crapai.services.events import record_dedup
 
@@ -36,15 +43,16 @@ class DedupSummary:
     events_written: bool = True  # False: the PRISMA event could not be written
 
 
-def _configured_strategy(workspace: Workspace) -> Strategy | None:
-    """The strategy of ``project.yaml``, or None if the file is missing or invalid."""
+def _configured(workspace: Workspace) -> tuple[Strategy, int] | None:
+    """``(strategy, min_title_words)`` of ``project.yaml``, or None if missing or invalid."""
     if not workspace.project_yaml.exists():
         return None
     try:
-        return load_project_config(workspace.project_yaml).dedup.strategy
+        dedup = load_project_config(workspace.project_yaml).dedup
     except SaraError as exc:
-        logger.warning("project.yaml is not valid (%s); using the default dedup strategy", exc.code)
+        logger.warning("project.yaml is not valid (%s); using the default dedup settings", exc.code)
         return None
+    return dedup.strategy, dedup.min_title_words
 
 
 def dedup_project(
@@ -77,12 +85,14 @@ def apply_dedup(
 ) -> DedupSummary:
     """Mark duplicates; the caller holds the project lock (see :func:`dedup_project`)."""
     records = read_records(workspace.records_csv)
+    configured = _configured(workspace)
+    min_words = configured[1] if configured else MIN_TITLE_WORDS
     if strategy is not None:
         chosen, source = strategy, "cli"
     else:
-        configured = _configured_strategy(workspace)
-        chosen, source = (configured, "project") if configured else ("doi_or_title", "default")
-    result: DedupResult = mark_duplicates(records, DedupConfig(strategy=chosen, keep=keep))
+        chosen, source = (configured[0], "project") if configured else ("doi_or_title", "default")
+    config = DedupConfig(strategy=chosen, keep=keep, min_title_words=min_words)
+    result: DedupResult = mark_duplicates(records, config)
     written = result.records != records
     if written:
         write_records(workspace.records_csv, result.records, backup_dir=workspace.backup_dir)

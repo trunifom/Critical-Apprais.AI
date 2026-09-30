@@ -24,7 +24,7 @@ _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 _WHITESPACE = re.compile(r"\s+")
 _ENTITY = re.compile(r"&(?:#\d+|#[xX][0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]{1,31});")
 _DOI_PREFIX = re.compile(
-    r"^(?:https?://)?(?:dx\.)?doi\.org/|^doi\s*:\s*|^https?://dx\.doi\.org/", re.IGNORECASE
+    r"^(?:https?://)?(?:www\.)?(?:dx\.)?doi\.org/|^doi\s*:?\s*(?=10\.)", re.IGNORECASE
 )
 _DOI_SHAPE = re.compile(r"^10\.\d{4,9}/\S+$")
 _YEAR = re.compile(r"\b(1[4-9]\d{2}|20\d{2}|2100)\b")

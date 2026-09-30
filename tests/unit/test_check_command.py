@@ -100,7 +100,15 @@ def test_german_texts(project: Workspace, tmp_path: Path) -> None:
 
 
 def test_json_report_is_complete_and_stdout_only(project: Workspace, tmp_path: Path) -> None:
-    load(project, ris(tmp_path, "j.ris", [("A", ABSTRACT), ("A", ABSTRACT), ("C", "")]), "J")
+    load(
+        project,
+        ris(
+            tmp_path,
+            "j.ris",
+            [("Study A on one topic", ABSTRACT), ("Study A on one topic", ABSTRACT), ("C", "")],
+        ),
+        "J",
+    )
     result = CliRunner().invoke(app, ["check", str(project.root), "--json"])
     assert result.exit_code == 0  # 2 of 3 records have an abstract: 67 % is above the 60 % limit
     data = json.loads(result.stdout)
@@ -115,7 +123,15 @@ def test_json_report_is_complete_and_stdout_only(project: Workspace, tmp_path: P
 
 
 def test_read_only_leaves_records_untouched(project: Workspace, tmp_path: Path) -> None:
-    load(project, ris(tmp_path, "r.ris", [("Dup", ABSTRACT), ("Dup", ABSTRACT)]), "R")
+    load(
+        project,
+        ris(
+            tmp_path,
+            "r.ris",
+            [("Dup of one long title", ABSTRACT), ("Dup of one long title", ABSTRACT)],
+        ),
+        "R",
+    )
     before = project.records_csv.read_bytes()
     result = invoke("check", project.root, "--read-only", "--lang", "en")
     assert project.records_csv.read_bytes() == before

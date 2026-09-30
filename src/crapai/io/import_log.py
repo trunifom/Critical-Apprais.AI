@@ -30,9 +30,17 @@ HASH_CHUNK_BYTES = 1024 * 1024
 def sha256_file(path: Path) -> str:
     """SHA-256 of the file's bytes as a lower-case hex string (streamed, any file size)."""
     digest = hashlib.sha256()
-    with open(path, "rb") as handle:
-        for chunk in iter(lambda: handle.read(HASH_CHUNK_BYTES), b""):
-            digest.update(chunk)
+    try:
+        with open(path, "rb") as handle:
+            for chunk in iter(lambda: handle.read(HASH_CHUNK_BYTES), b""):
+                digest.update(chunk)
+    except OSError as exc:
+        raise ImportFailed(
+            f"{path.name} cannot be read ({type(exc).__name__})",
+            code="E101",
+            hint="Check that the file exists and is not open in another program.",
+            details={"path": str(path)},
+        ) from exc
     return digest.hexdigest()
 
 
@@ -72,7 +80,16 @@ def read_entries(log_path: Path) -> list[ImportLogEntry]:
     """
     if not log_path.exists():
         return []
-    lines = log_path.read_text(encoding="utf-8").split("\n")
+    try:
+        lines = log_path.read_text(encoding="utf-8").split("\n")
+    except (OSError, UnicodeDecodeError) as exc:
+        logger.error("Cannot read %s (%s)", log_path.name, type(exc).__name__)
+        raise StorageError(
+            f"{log_path.name} cannot be read ({type(exc).__name__})",
+            code="E404",
+            hint="The import log is unreadable or not UTF-8; restore it from a backup.",
+            details={"path": str(log_path)},
+        ) from exc
     if lines and lines[-1] == "":
         lines.pop()
     entries: list[ImportLogEntry] = []

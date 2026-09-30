@@ -320,12 +320,21 @@ def _map_fields(index: int, entry_type: str, key: str, fields: list[tuple[str, s
     notes: list[str] = []
 
     def first(*names: str) -> str:
-        for name in names:
-            used.add(name)
+        """The first non-empty value of the given field names, in priority order.
+
+        Only the field that supplied the value counts as consumed. Its other values (a repeated
+        field) and the lower-priority alternatives (``date`` next to ``year``, ``isbn`` next to
+        ``issn``) stay in ``extra``, so nothing in the entry is lost.
+        """
         for name in names:
             for value in by_name.get(name, []):
                 if value:
+                    used.add(name)
+                    rest = [v for v in by_name[name] if v and v != value]
+                    if rest:
+                        extra[f"bib_{name}"] = rest[0] if len(rest) == 1 else rest
                     return value
+        used.update(n for n in names if not any(by_name.get(n, [])))  # empty: nothing to keep
         return ""
 
     mapped["record_type"] = RECORD_TYPES.get(entry_type, DEFAULT_RECORD_TYPE)
@@ -346,7 +355,9 @@ def _map_fields(index: int, entry_type: str, key: str, fields: list[tuple[str, s
     editors = _split_authors(first("editor")) if by_name.get("editor") else []
     if editors:
         mapped["editors"] = join_values(unique_in_order(editors))
-    year = _year(first("year"), first("date"))
+    year = _year(first("year"))
+    if year is None:  # `date` only counts (and is only consumed) if there is no usable `year`
+        year = _year(first("date"))
     if year is not None:
         mapped["year"] = year
     journal = clean_latex(first("journal", "journaltitle", "booktitle")).strip()

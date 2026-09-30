@@ -89,14 +89,14 @@ def read_table(
         rows, options, notes = _read_xlsx_rows(path, sheet)
         used_encoding = None
     elif detected.format in (SourceFormat.CSV, SourceFormat.TSV):
-        chosen = delimiter or detected.delimiter or ","
+        chosen = _normalise_delimiter(delimiter) if delimiter else detected.delimiter or ","
         text, used_encoding = read_text_file(path, encoding)
         rows = _read_csv_rows(text, chosen)
         options = {"delimiter": chosen}
         notes = []
         replaced = text.count("�")
         if replaced:
-            notes.append(f"{replaced} replacement character(s) in the text (undecodable bytes)")
+            notes.append(f"{replaced} replacement character(s) in the text (damaged in the source)")
     else:
         raise ImportFailed(
             f"{path.name} is not a table (detected: {detected.format.value})",
@@ -113,6 +113,27 @@ def read_table(
 
 
 # --- raw rows -----------------------------------------------------------------------------
+
+
+DELIMITER_NAMES = {"\\t": "\t", "tab": "\t", "comma": ",", "semicolon": ";", "pipe": "|"}
+
+
+def _normalise_delimiter(value: str) -> str:
+    """One separator character from ``--delimiter``; accepts ``\\t``, ``tab``, ``semicolon`` ...
+
+    Raises:
+        ImportFailed: (E104) if the value is not exactly one character after the names are
+            resolved; ``csv`` would fail with a raw ``TypeError`` otherwise.
+    """
+    resolved = DELIMITER_NAMES.get(value.strip().lower(), value)
+    if len(resolved) != 1:
+        raise ImportFailed(
+            f"The field separator must be one character, got '{value}'",
+            code="E104",
+            hint="Use , or ; or | or a tab (write: tab), for example --delimiter semicolon.",
+            details={"delimiter": value},
+        )
+    return resolved
 
 
 def _read_csv_rows(text: str, delimiter: str) -> list[list[str]]:
@@ -179,11 +200,20 @@ def _read_xlsx_rows(
                 notes.append(f"workbook has {len(visible)} sheets; read '{chosen.title}'")
         else:
             raise ImportFailed(f"{path.name} has no visible worksheet", code="E102")
-        rows = [
-            [_cell_text(cell) for cell in row]
-            for row in chosen.iter_rows(values_only=True)
-            if any(cell is not None and str(cell).strip() for cell in row)
-        ]
+        try:
+            rows = [
+                [_cell_text(cell) for cell in row]
+                for row in chosen.iter_rows(values_only=True)
+                if any(cell is not None and str(cell).strip() for cell in row)
+            ]
+        except Exception as exc:  # noqa: BLE001 - openpyxl raises many types for damaged sheets
+            logger.error("Cannot read the rows of %s (%s)", path.name, type(exc).__name__)
+            raise ImportFailed(
+                f"{path.name}: the worksheet is damaged ({type(exc).__name__})",
+                code="E101",
+                hint="Open and save the file again in Excel, or export it as CSV.",
+                details={"path": str(path)},
+            ) from exc
         if len(rows) > LARGE_SHEET_ROWS:
             notes.append(f"large sheet ({len(rows)} rows)")
         return rows, {"sheet": chosen.title}, notes
@@ -270,7 +300,7 @@ def _rows_to_records(
             details={"columns": headers},
         )
     if "abstract" not in column_map:
-        notes.append("E104: no abstract column found; use --map abstract=<column>")
+        notes.append("no abstract column found; use --map abstract=<column>")
     mapped_headers = set(column_map.values())
     position = {header: index for index, header in enumerate(headers)}
     records: list[RawRecord] = []

@@ -65,5 +65,14 @@ def read_source(
         result = read_table(
             path, encoding=encoding, delimiter=delimiter, sheet=sheet, mapping=mapping
         )
+    if encoding is None and result.encoding not in (None, "utf-8", "utf-8-sig", "utf-16"):
+        # The file is not valid UTF-8, so a legacy code page was guessed. Accented letters are
+        # only right if the guess is right, hence a visible note (and --encoding to override).
+        note = (
+            f"the file is not valid UTF-8; it was decoded as {result.encoding} "
+            "(use --encoding if accented letters look wrong)"
+        )
+        result.notes.insert(0, note)
+        logger.warning("%s: %s", path.name, note)
     logger.info("%s: %s (%s)", path.name, result.format.value, detection.reason)
     return result, detection

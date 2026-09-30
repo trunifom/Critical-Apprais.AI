@@ -52,6 +52,10 @@ from crapai.prisma.reasons import (
 logger = logging.getLogger(__name__)
 
 QUALITY_OK = "ok"
+_UNSPACED_SCRIPTS = re.compile(
+    r"[\u0e00-\u0e7f\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]"
+)
+SHORT_ABSTRACT_CHARS_UNSPACED = 60  # about 20 words of English, counted in characters
 QUALITY_SHORT = "short"
 QUALITY_SUSPECT = "suspect_concat"
 
@@ -123,11 +127,24 @@ def is_not_screenable(title: str, config: ValidityConfig | None = None) -> bool:
     return normalize_title(title) in titles
 
 
+def _is_unspaced_script(text: str) -> bool:
+    """True if most letters belong to a script that is written without spaces between words."""
+    letters = [ch for ch in text if ch.isalpha()]
+    if not letters:
+        return False
+    wide = sum(1 for ch in letters if _UNSPACED_SCRIPTS.match(ch))
+    return wide / len(letters) > 0.5
+
+
 def classify_abstract(abstract: str) -> str:
     """Quality of an abstract: ``""`` (none), ``ok``, ``short`` or ``suspect_concat``."""
     text = abstract.strip()
     if not text:
         return ""
+    if _is_unspaced_script(text):
+        # Chinese, Japanese, Korean and Thai are written without spaces: a "word" is a whole
+        # sentence, so the word-based checks would call every abstract garbled or short.
+        return QUALITY_OK if len(text) >= SHORT_ABSTRACT_CHARS_UNSPACED else QUALITY_SHORT
     letters = [len(word) for word in _LETTER_WORDS.findall(text)]
     if letters and max(letters) > LONG_WORD_LETTERS:
         return QUALITY_SUSPECT

@@ -27,6 +27,7 @@ criteria:
 
 dedup:
   strategy: doi_or_title  # doi_or_title | strict_ids | title | title_authors
+  min_title_words: 4        # shorter titles ("Editorial", "Erratum") never match by title alone; 1 = off
   fuzzy: { enabled: false, threshold: 0.94 }
   reporting_mode: all_before_screening   # or between_databases_only
 

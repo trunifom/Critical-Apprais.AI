@@ -83,6 +83,8 @@ class Dedup(_Strict):
     """Duplicate marking strategy (records are marked, never deleted)."""
 
     strategy: Literal["doi_or_title", "strict_ids", "title", "title_authors"] = "doi_or_title"
+    # Titles with fewer words never match by title alone ("Editorial", "Erratum"); 1 = off.
+    min_title_words: PositiveInt = 4
     fuzzy: Fuzzy = Field(default_factory=Fuzzy)
     reporting_mode: Literal["all_before_screening", "between_databases_only"] = (
         "all_before_screening"

@@ -26,7 +26,12 @@ Improvements over the predecessor (``literature_database.py``):
 * all helpers exist once.
 
 Sensitivity first: when in doubt, records are *not* marked; a wrongly marked duplicate would
-silently hide a study from the screening.
+silently hide a study from the screening. Two more guards follow from that rule:
+
+* a title of fewer than :data:`MIN_TITLE_WORDS` words ("Editorial", "Erratum", "Letter") is too
+  generic to identify a paper and never matches by itself (a DOI or PMID still does);
+* DOIs are compared in their normalised form (lower case, without ``https://doi.org/``), so
+  records that were built by hand or by an older version still match.
 """
 
 from __future__ import annotations
@@ -38,6 +43,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from typing import Literal
 
+from crapai.io.normalize import normalize_doi
 from crapai.io.records_store import Record
 from crapai.prisma.reasons import REASON_DUPLICATE, REPLACEABLE_BY_DEDUP
 
@@ -53,12 +59,26 @@ METHOD_TITLE_AUTHORS = "title_authors"
 
 _NON_WORD = re.compile(r"[\W_]+", re.UNICODE)
 
+# Titles shorter than this (in words) are too generic to identify a paper (see module docstring).
+MIN_TITLE_WORDS = 4
+
 
 def normalize_title(title: str) -> str:
     """Comparison form of a title: NFKD, no accents or punctuation, lower case, single spaces."""
     decomposed = unicodedata.normalize("NFKD", title)
     without_marks = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
     return _NON_WORD.sub(" ", without_marks.casefold()).strip()
+
+
+def title_key(title: str, min_words: int = MIN_TITLE_WORDS) -> str:
+    """Normalised title for matching, or ``""`` if it is too short to identify a paper."""
+    normalised = normalize_title(title)
+    return normalised if len(normalised.split()) >= min_words else ""
+
+
+def doi_key(doi: str) -> str:
+    """Comparison form of a DOI: normalised like the import does, else just lower case."""
+    return normalize_doi(doi) or doi.strip().lower()
 
 
 def normalize_authors(authors: str) -> str:
@@ -74,10 +94,13 @@ class DedupConfig:
         strategy: One of the four strategies described in the module docstring.
         keep: Which record of a group stays unmarked: ``best`` (most complete, first on ties),
             ``first`` or ``last`` in import order.
+        min_title_words: A title with fewer words never matches by title alone (1 switches the
+            guard off).
     """
 
     strategy: Strategy = "doi_or_title"
     keep: Keep = "best"
+    min_title_words: int = MIN_TITLE_WORDS
 
 
 @dataclass
@@ -157,28 +180,30 @@ def _link_by_key(groups: _Groups, keys: dict[int, str]) -> None:
             first_with_key[key] = index
 
 
-def _link_titles_avoiding_doi_conflicts(groups: _Groups, records: list[Record]) -> None:
+def _link_titles_avoiding_doi_conflicts(
+    groups: _Groups, records: list[Record], min_words: int
+) -> None:
     """Union records with the same normalised title unless that joins different DOIs."""
     by_title: dict[str, list[int]] = defaultdict(list)
     for index, record in enumerate(records):
-        title = normalize_title(record.title)
+        title = title_key(record.title, min_words)
         if title:
             by_title[title].append(index)
     for members in by_title.values():
         if len(members) < 2:
             continue
-        dois = {records[index].doi for index in members if records[index].doi}
+        dois = {doi_key(records[index].doi) for index in members if records[index].doi}
         if len(dois) > 1:
             continue  # different papers with a common title: do not guess
         for index in members[1:]:
             groups.union(members[0], index)
 
 
-def _link_title_and_authors(groups: _Groups, records: list[Record]) -> None:
+def _link_title_and_authors(groups: _Groups, records: list[Record], min_words: int) -> None:
     keys = {
         index: (
-            f"{normalize_title(record.title)}\x1f{normalize_authors(record.authors)}"
-            if normalize_title(record.title)
+            f"{title_key(record.title, min_words)}\x1f{normalize_authors(record.authors)}"
+            if title_key(record.title, min_words)
             else ""
         )
         for index, record in enumerate(records)
@@ -191,7 +216,7 @@ def _method_for(strategy: Strategy, duplicate: Record, keeper: Record) -> str:
         return METHOD_TITLE
     if strategy == "title_authors":
         return METHOD_TITLE_AUTHORS
-    if duplicate.doi and duplicate.doi == keeper.doi:
+    if duplicate.doi and doi_key(duplicate.doi) == doi_key(keeper.doi):
         return METHOD_DOI
     if strategy == "strict_ids":
         return METHOD_PMID
@@ -234,19 +259,22 @@ def mark_duplicates(records: list[Record], config: DedupConfig | None = None) ->
         raise ValueError(f"unknown dedup strategy: {config.strategy!r}")
     if config.keep not in ("best", "first", "last"):
         raise ValueError(f"unknown keep rule: {config.keep!r}")
+    if config.min_title_words < 1:
+        raise ValueError("min_title_words must be at least 1")
+    min_words = config.min_title_words
 
     current = clear_duplicate_marks(records)
     groups = _Groups(len(current))
     if config.strategy == "doi_or_title":
-        _link_by_key(groups, {i: r.doi for i, r in enumerate(current)})
-        _link_titles_avoiding_doi_conflicts(groups, current)
+        _link_by_key(groups, {i: doi_key(r.doi) if r.doi else "" for i, r in enumerate(current)})
+        _link_titles_avoiding_doi_conflicts(groups, current, min_words)
     elif config.strategy == "strict_ids":
-        _link_by_key(groups, {i: r.doi for i, r in enumerate(current)})
+        _link_by_key(groups, {i: doi_key(r.doi) if r.doi else "" for i, r in enumerate(current)})
         _link_by_key(groups, {i: r.pmid for i, r in enumerate(current)})
     elif config.strategy == "title":
-        _link_by_key(groups, {i: normalize_title(r.title) for i, r in enumerate(current)})
+        _link_by_key(groups, {i: title_key(r.title, min_words) for i, r in enumerate(current)})
     else:
-        _link_title_and_authors(groups, current)
+        _link_title_and_authors(groups, current, min_words)
 
     result = DedupResult(records=list(current))
     by_method: Counter[str] = Counter()

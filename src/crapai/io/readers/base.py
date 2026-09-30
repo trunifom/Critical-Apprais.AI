@@ -9,6 +9,7 @@ column goes to ``extra`` and ends up in ``extra_json``.
 
 from __future__ import annotations
 
+import codecs
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -75,6 +76,12 @@ def decode_text(data: bytes, encoding: str | None = None) -> tuple[str, str]:
         ImportFailed: (E103) if an explicitly requested encoding cannot decode the file or is
             unknown.
     """
+    utf16_bom = data.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE))
+    if utf16_bom and (
+        encoding is None or encoding.lower().replace("_", "-") in {"utf-16", "utf16"}
+    ):
+        # Excel's "Unicode Text" export and some databases write UTF-16; the BOM says so.
+        return _normalise_newlines(data.decode("utf-16", errors="replace")), "utf-16"
     if encoding is not None:
         try:
             text = data.decode(encoding)
@@ -85,10 +92,10 @@ def decode_text(data: bytes, encoding: str | None = None) -> tuple[str, str]:
                 hint="Try another encoding, for example --encoding cp1252.",
                 details={"encoding": encoding},
             ) from exc
-        return _normalise_newlines(text), encoding
+        return _normalise_newlines(_strip_bom(text)), encoding
     for candidate in ENCODING_CHAIN:
         try:
-            return _normalise_newlines(data.decode(candidate)), candidate
+            return _normalise_newlines(_strip_bom(data.decode(candidate))), candidate
         except UnicodeDecodeError:
             continue
     raise AssertionError("latin-1 decodes every byte sequence")  # pragma: no cover
@@ -113,6 +120,11 @@ def read_text_file(path: Path, encoding: str | None = None) -> tuple[str, str]:
     text, used = decode_text(data, encoding)
     logger.info("Read %s as %s (%d characters)", path.name, used, len(text))
     return text, used
+
+
+def _strip_bom(text: str) -> str:
+    """Remove a leading byte-order mark (an explicit ``utf-8`` leaves it in the text)."""
+    return text.removeprefix("\ufeff")
 
 
 def _normalise_newlines(text: str) -> str:

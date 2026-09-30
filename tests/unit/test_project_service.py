@@ -52,7 +52,10 @@ def test_blank_template_takes_the_folder_name_and_needs_criteria(tmp_path: Path)
 
 def test_title_option_and_quote_safety(tmp_path: Path) -> None:
     workspace = create_project(tmp_path / "p", title='My "quoted" review')
-    assert "My 'quoted' review" in workspace.project_yaml.read_text(encoding="utf-8")
+    import yaml
+
+    data = yaml.safe_load(workspace.project_yaml.read_text(encoding="utf-8"))
+    assert data["project"]["title"] == 'My "quoted" review'
 
 
 def test_template_from_a_file_path(tmp_path: Path) -> None:

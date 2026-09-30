@@ -263,7 +263,8 @@ def test_an_unfinished_project_file_is_a_warning_not_a_crash(tmp_path: Path) -> 
 
 
 def test_update_false_reads_only(project: Workspace, tmp_path: Path) -> None:
-    rows = [("Dup", ABSTRACT), ("Dup", ABSTRACT), ("No abstract", "")]
+    dup = ("Dup of one long title", ABSTRACT)
+    rows = [dup, dup, ("No abstract", "")]
     add(project, tmp_path, "u.ris", rows, "U")
     before = project.records_csv.read_bytes()
     report = check_project(project, update=False)
@@ -275,7 +276,8 @@ def test_update_false_reads_only(project: Workspace, tmp_path: Path) -> None:
 
 
 def test_update_is_idempotent(project: Workspace, tmp_path: Path) -> None:
-    add(project, tmp_path, "i.ris", [("A", ABSTRACT), ("A", ABSTRACT), ("Front-matter", "")], "I")
+    rows = [("Study A on one topic", ABSTRACT)] * 2 + [("Front-matter", "")]
+    add(project, tmp_path, "i.ris", rows, "I")
     first = check_project(project)
     content = project.records_csv.read_bytes()
     second = check_project(project)

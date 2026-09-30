@@ -242,8 +242,14 @@ def backup_records(
     if not path.exists():
         return None
     backup_dir.mkdir(parents=True, exist_ok=True)
+    content = path.read_bytes()
+    existing = sorted(backup_dir.glob("records.*.csv"))
+    if existing and existing[-1].read_bytes() == content:
+        # Retrying a write that failed (file open in Excel) must not push real history out of
+        # the five kept copies with identical ones.
+        return existing[-1]
     target = backup_dir / f"records.{now.strftime('%Y%m%d-%H%M%S-%f')}.csv"
-    target.write_bytes(path.read_bytes())
+    target.write_bytes(content)
     backups = sorted(backup_dir.glob("records.*.csv"))
     for old in backups[:-keep] if keep > 0 else backups:
         old.unlink()
@@ -298,11 +304,27 @@ def read_records(path: Path) -> list[Record]:
     """Read ``records.csv`` (a missing file is an empty project).
 
     Raises:
-        StorageError: (E404) if the header differs from the contract or a row is invalid; the
-            message names the line so the file can be repaired.
+        StorageError: (E404) if the header differs from the contract, a row is invalid or the
+            file is not readable as UTF-8 CSV (saved in another encoding by a spreadsheet); the
+            message names the line where there is one so the file can be repaired.
     """
     if not path.exists():
         return []
+    try:
+        return _read_records(path)
+    except (UnicodeDecodeError, csv.Error, OSError) as exc:
+        logger.error("Cannot read %s (%s)", path.name, type(exc).__name__)
+        raise StorageError(
+            f"{path.name} cannot be read ({type(exc).__name__})",
+            code="E404",
+            hint="Restore records.csv from data/.backup/ (a spreadsheet may have re-saved it "
+            "in another encoding).",
+            details={"path": str(path)},
+        ) from exc
+
+
+def _read_records(path: Path) -> list[Record]:
+    """The parsing behind :func:`read_records`, without the translation of low-level errors."""
     csv.field_size_limit(max(csv.field_size_limit(), 50_000_000))
     with open(path, encoding="utf-8-sig", newline="") as handle:  # tolerate a BOM added by Excel
         reader = csv.reader(handle)

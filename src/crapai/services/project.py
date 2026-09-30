@@ -7,6 +7,7 @@ anything, so it is safe to call while another process works on the project.
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 from collections import Counter
@@ -79,8 +80,12 @@ def create_project(
     """
     text = read_template(template)  # fail before anything is created
     workspace = Workspace.create(root)
-    text = text.replace(TITLE_PLACEHOLDER, (title or root.name).replace('"', "'"))
-    if title and TITLE_PLACEHOLDER not in text:
+    has_placeholder = TITLE_PLACEHOLDER in text
+    # The placeholder sits inside a double-quoted YAML string; JSON escaping is valid there and
+    # handles quotes, backslashes and line breaks in the title.
+    escaped = json.dumps(title or root.name, ensure_ascii=False)[1:-1]
+    text = text.replace(TITLE_PLACEHOLDER, escaped)
+    if title and not has_placeholder:
         logger.info("Template has its own title; --title is ignored")
     atomic_write_text(workspace.project_yaml, text)
     logger.info("Created project %s from template %s", root, template)

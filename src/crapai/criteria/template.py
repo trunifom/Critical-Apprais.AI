@@ -1,12 +1,9 @@
-# PORTED from SARA-App: core/criteria_template.py
-# Only change: i18n import path.
-# Reference original (unchanged): reference/sara-app/core/criteria_template.py
-# core/criteria_template.py
-# -*- coding: utf-8 -*-
-"""
-CriteriaTemplate — framework-aware inclusion/exclusion criteria with optional i18n.
+"""Framework-aware inclusion/exclusion criteria with optional i18n.
 
-This module is UI-agnostic (no Streamlit import). It integrates with your i18n loader
+Ported from SARA-App (``core/criteria_template.py``, kept unchanged in ``reference/``) with the
+i18n import path changed and the custom-element methods fixed to keep ``fields`` in step.
+
+This module is UI-agnostic (no Streamlit import). It integrates with the project i18n loader
 (if present) to fetch:
   - framework field lists: screening.framework_fields.<FRAME>
   - prompt labels:         criteria.prompt.*
@@ -14,7 +11,7 @@ This module is UI-agnostic (no Streamlit import). It integrates with your i18n l
 If i18n (or YAML) is not available, robust Python defaults are used.
 
 Backwards compatibility:
-- Matches your previous public API (constructor params, methods).
+- Keeps the public API of the predecessor (constructor parameters, methods).
 - Adds optional i18n params: lang, texts_base_dir, texts.
 """
 
@@ -53,7 +50,7 @@ _DEFAULT_PROMPT_TEXTS: Dict[str, str] = {
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Minimal i18n access (optional)
-# We try to import your project-level i18n loader; if not available, we fall back.
+# We try to import the project-level i18n loader; if it is not available, we fall back.
 # ──────────────────────────────────────────────────────────────────────────────
 
 
@@ -70,7 +67,7 @@ def _deep_get(d: Dict[str, Any], dotted: str) -> Any:
 @lru_cache(maxsize=16)
 def _load_texts(lang: str = "en", base_dir: Optional[str] = None) -> Dict[str, Any]:
     """
-    Attempt to load the layered i18n dict using your project's i18n loader.
+    Attempt to load the layered i18n dict using the project's i18n loader.
     On failure (import error, runtime error, missing files), return a minimal dict
     containing only the keys this class cares about (with Python defaults).
     """
@@ -194,7 +191,7 @@ class CriteriaTemplate:
 
         # Resolve field names for this framework
         if self.template_type == "CUSTOM":
-            fields = self.custom_fields
+            fields = list(self.custom_fields)  # a copy: adding an element must not change the input
         else:
             # Prefer i18n-defined fields, fall back to Python defaults
             path = f"screening.framework_fields.{self.template_type}"
@@ -208,7 +205,7 @@ class CriteriaTemplate:
                 "No fields resolved for framework '%s'. Falling back to CUSTOM fields.",
                 self.template_type,
             )
-            fields = self.custom_fields
+            fields = list(self.custom_fields)
 
         # Build internal state (dicts preserve insertion order in Py3.7+)
         self.fields: List[str] = fields
@@ -225,7 +222,7 @@ class CriteriaTemplate:
                 if k in self.exclusion:
                     self.exclusion[k] = v
 
-        # Validate final template type (for parity with your previous class)
+        # Validate final template type (same rule as in the predecessor)
         if self.template_type not in {"PICOS", "SPIDER", "PECO", "PIRD", "CUSTOM"}:
             raise ValueError(f"Invalid template type: {self.template_type}")
 
@@ -246,11 +243,13 @@ class CriteriaTemplate:
     def add_custom_element(self, element_name: str) -> None:
         """
         Add a new custom element to both inclusion and exclusion dicts.
-        Mainly for backward compatibility with your previous API.
+        Mainly for backward compatibility with the API of the predecessor.
         """
         if element_name not in self.inclusion:
             self.inclusion[element_name] = ""
             self.exclusion[element_name] = ""
+            if element_name not in self.fields:
+                self.fields.append(element_name)  # the prompt is built from ``fields``
             if element_name not in self.selected_elements:
                 self.selected_elements.append(element_name)
 
@@ -260,6 +259,8 @@ class CriteriaTemplate:
             del self.inclusion[element_name]
         if element_name in self.exclusion:
             del self.exclusion[element_name]
+        if element_name in self.fields:
+            self.fields.remove(element_name)
         if element_name in self.selected_elements:
             self.selected_elements.remove(element_name)
 
@@ -271,7 +272,7 @@ class CriteriaTemplate:
 
     def is_complete(self) -> bool:
         """
-        Return True if all inclusion fields are non-empty (same logic as your previous class).
+        Return True if all inclusion fields are non-empty (same logic as the predecessor).
         """
         return all(isinstance(v, str) and bool(v.strip()) for v in self.inclusion.values())
 

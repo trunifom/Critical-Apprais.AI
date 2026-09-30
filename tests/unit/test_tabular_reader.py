@@ -168,7 +168,7 @@ def test_mapping_errors_name_the_available_columns(tmp_path: Path) -> None:
 
 def test_missing_abstract_column_is_a_note_not_an_error(tmp_path: Path) -> None:
     result = read_table(write_csv(tmp_path / "t.csv", "title,year\nA,2020\nB,2021\n"))
-    assert any(note.startswith("E104") for note in result.notes)
+    assert any(note.startswith("no abstract column found") for note in result.notes)
     assert "abstract" not in result.column_map
 
 

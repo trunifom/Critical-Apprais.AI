@@ -10,6 +10,7 @@ Only the first :data:`SNIFF_BYTES` of a file are examined, so detection is fast 
 
 from __future__ import annotations
 
+import codecs
 import csv
 import io
 import logging
@@ -57,8 +58,9 @@ EXTENSION_FORMATS: dict[str, SourceFormat] = {
 
 # Content signatures. RIS tags are "XX  - " (two characters, two spaces, dash); Cochrane writes
 # two spaces after the dash. MEDLINE/NBIB starts every record with "PMID- ".
-_RIS_TYPE = re.compile(r"^TY {2}- +\S", re.MULTILINE)
-_RIS_TAG = re.compile(r"^[A-Z][A-Z0-9] {2}- ", re.MULTILINE)
+# The RIS parser accepts one or two spaces before the dash, so the sniffer does too.
+_RIS_TYPE = re.compile(r"^TY {1,2}- +\S", re.MULTILINE)
+_RIS_TAG = re.compile(r"^[A-Z][A-Z0-9] {1,2}- ", re.MULTILINE)
 _NBIB_PMID = re.compile(r"^PMID- +\d", re.MULTILINE)
 _BIBTEX_ENTRY = re.compile(r"^\s*@[A-Za-z]+\s*[{(]", re.MULTILINE)
 
@@ -230,14 +232,21 @@ def detect_format(path: Path) -> DetectionResult:
         found, reason = binary
         return _finish(path, DetectionResult(found, 0.99, reason), by_extension)
 
-    if b"\x00" in head:
+    utf16 = head.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE))
+    if b"\x00" in head and not utf16:
         raise ImportFailed(
             f"{path.name} is a binary file of an unknown type",
             code="E101",
             hint="Export as RIS, NBIB, BibTeX, CSV or XLSX.",
             details={"path": str(path)},
         )
-    text, encoding = decode_head(head, truncated=truncated)
+    if utf16:
+        text, encoding = (
+            head[: len(head) - len(head) % 2].decode("utf-16", errors="replace"),
+            "utf-16",
+        )
+    else:
+        text, encoding = decode_head(head, truncated=truncated)
 
     sniffed = _sniff_bibliographic(text)
     if sniffed is not None:
@@ -249,10 +258,10 @@ def detect_format(path: Path) -> DetectionResult:
     table = _sniff_delimited(text, truncated=truncated)
     if table is not None:
         delimiter, width, rows = table
-        found = SourceFormat.TSV if delimiter == "	" else SourceFormat.CSV
+        found = SourceFormat.TSV if delimiter == "\t" else SourceFormat.CSV
         agrees = by_extension == found
         confidence = 0.9 if agrees else (0.8 if rows >= 5 else 0.6)
-        name = "tab" if delimiter == "	" else repr(delimiter)
+        name = "tab" if delimiter == "\t" else repr(delimiter)
         reason = f"content is a table with {width} columns separated by {name}"
         return _finish(
             path,
@@ -260,12 +269,21 @@ def detect_format(path: Path) -> DetectionResult:
             by_extension,
         )
 
-    if by_extension in (SourceFormat.RIS, SourceFormat.NBIB, SourceFormat.BIBTEX):
+    if by_extension in (
+        SourceFormat.RIS,
+        SourceFormat.NBIB,
+        SourceFormat.BIBTEX,
+        SourceFormat.CSV,
+        SourceFormat.TSV,
+    ):
+        # A table with a single column (only titles) or a first row cut off inside a quoted field
+        # shows no separator; the extension decides, and --map can still name the columns.
         return DetectionResult(
             by_extension,
             0.3,
             f"content is not conclusive; taking the extension {path.suffix.lower()}",
             encoding=encoding,
+            delimiter="\t" if by_extension == SourceFormat.TSV else None,
         )
     raise ImportFailed(
         f"The type of {path.name} was not recognised",

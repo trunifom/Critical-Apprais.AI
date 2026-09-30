@@ -68,17 +68,24 @@ def parse_nbib_text(text: str, *, encoding: str | None = None) -> ReadResult:
         elif current:
             current[-1][1] = f"{current[-1][1]} {line.strip()}".strip()  # wrapped value
         # else: stray text outside a record is ignored
-    records = [
-        _to_record(index, block)
-        for index, block in enumerate((b for b in blocks if _is_record(b)), start=1)
-    ]
+    # Blocks without PMID count as records only in a file that has PMID records at all; a RIS or
+    # prose file must not turn into MEDLINE records.
+    has_pmid = any(b and b[0][0] == "PMID" for b in blocks)
+    kept = [b for b in blocks if has_pmid and _is_record(b)]
+    records = [_to_record(index, block) for index, block in enumerate(kept, start=1)]
+    skipped = len(blocks) - len(kept) if kept else 0
     if not records:
         raise ImportFailed(
             "No MEDLINE records (PMID lines) were found in the file",
             code="E102",
             hint="In PubMed choose 'Send to' > 'Citation manager' or Format 'MEDLINE'.",
         )
-    return ReadResult(SourceFormat.NBIB, records, encoding=encoding)
+    result = ReadResult(SourceFormat.NBIB, records, encoding=encoding)
+    if skipped:
+        note = f"{skipped} block(s) without PMID, title or abstract were skipped"
+        result.notes.append(note)
+        logger.warning(note)
+    return result
 
 
 def read_nbib(path: Path, *, encoding: str | None = None) -> ReadResult:
@@ -94,8 +101,8 @@ def read_nbib(path: Path, *, encoding: str | None = None) -> ReadResult:
 
 
 def _is_record(block: list[list[str]]) -> bool:
-    """A real record starts with PMID; blocks without it are stray text."""
-    return bool(block) and block[0][0] == "PMID"
+    """A record starts with PMID, or (exports from other hosts) carries a title or abstract."""
+    return bool(block) and (block[0][0] == "PMID" or any(tag in ("TI", "AB") for tag, _ in block))
 
 
 def _to_record(index: int, block: list[list[str]]) -> RawRecord:
