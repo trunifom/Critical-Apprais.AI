@@ -37,7 +37,7 @@ Commit-Schema: `type(scope): Zusammenfassung (Karten-ID)`; Ende der Nachricht: d
 | Punkt | Stand |
 |---|---|
 | Branch | Nur `main`. Die frühen Task-Branches wurden fast-forward nach `main` gemergt und gelöscht. Push: `git push origin main` durch den Projektleiter |
-| Tests | 280 passed (`python -m pytest -q`) |
+| Tests | 371 passed (`python -m pytest -q`) |
 | Lint / Typen | `ruff` sauber (ohne `reference/`), `mypy src` sauber |
 | CI | `.github/workflows/ci.yml` geschrieben (Linux/Windows/macOS x Python 3.11-3.13), noch nie auf GitHub gelaufen |
 | Extras in `pyproject.toml` | `import` (rispy, pybtex, openpyxl, pymupdf, pdfplumber, pylatexenc), `cli` (typer, rich), `dev`, u. a. Neue Abhängigkeiten ausserhalb der Extras: vorher fragen |
@@ -84,8 +84,10 @@ Reihenfolge = empfohlene Arbeitsreihenfolge. Aufwand in Stunden (Schätzung der 
 | [x] | T-M1-06 | `io/readers/nbib.py`: NBIB/MEDLINE (100 und 62 Datensätze) | 4 | 2026-09-30 15:31 | `049310f` |
 | [x] | T-M1-07 | `io/readers/bibtex.py`: BibTeX (48, 706; 11,5-MB-Datei nur Marker `large`) | 6 | 2026-09-30 15:39 | `ddf0afc` |
 | [x] | T-M1-08 | `io/readers/tabular.py`: CSV/TSV/XLSX (Kodierung, Trennzeichen, Spaltenzuordnung) | 5 | 2026-09-30 15:43 | `bb7a7de` |
-| [ ] | T-M1-10 | `io/normalize.py`: Normalisierung auf das Schema von Kap. 26.1 | 5 | | |
-| [ ] | T-M1-10 | `io/records_store.py`: `records.csv` schreiben/lesen, SHA-256 der Quellen, Import-Log (E106) | | | |
+| [x] | T-M1-10 | `io/normalize.py`: `to_record`/`to_records` (RawRecord -> Record, EMPTY_RECORD, DOI, extra_json) | 5 | 2026-09-30 15:51 | `19c6399` |
+| [x] | T-M1-10 | `io/records_store.py`: `Record`-Modell, `records.csv` schreiben/lesen, Backups | | 2026-09-30 15:49 | `6e223c5` |
+| [x] | T-M1-10 | `io/normalize.py`: Hilfsfunktionen `clean_text`, `normalize_doi`, `coerce_year`, `normalize_list` | | 2026-09-30 15:46 | `d73e337` |
+| [x] | T-M1-10 | `io/import_log.py`: SHA-256 der Quellen, Import-Log (JSONL), Wiederimport-Erkennung E106 | | 2026-09-30 15:53 | `f2fc282` |
 | [ ] | T-M1-11 | `cli.py`: `sara init`, `sara import`, `sara status` (Exit-Codes Kap. 15.1) | 3 | | |
 | [ ] | T-M1-12 | `i18n/texts/de.yaml` + neue Schlüssel (kann jederzeit parallel; auf Wunsch des Projektleiters) | 4 | | |
 | [-] | T-M1-09 | PDF-ZIP-Reader (zurückgestellt, ADR 0015: kein Volltext in v1) | 4 | | |
@@ -102,7 +104,7 @@ M2: T-M2-01 Dedup, -02 Fuzzy (optional), -03 fehlende Abstracts/Flags, -04 Prefl
 
 ## 5. Nächster Schritt (bitte aktuell halten)
 
-**T-M1-10 (Normalisierung `io/normalize.py` und `io/records_store.py`: `records.csv` schreiben/lesen, SHA-256 der Quellen, Import-Log, E106)**; T-M1-01 bis T-M1-08 stehen (T-M1-09 zurückgestellt). Die vier Reader liefern `ReadResult`/`RawRecord` (`io/readers/base.py`). Felder ausserhalb von Kap. 26.1 (`notes`, `database_name`, `database_provider`, `title_translated`, `place`, `edition`, `short_title`, `publisher`, `editors`) muss T-M1-10 nach `extra_json` verschieben; `ReadResult.column_map` gehört in den Import-Log.
+**T-M1-11 (CLI `init`, `import`, `status` in `cli.py` plus Import-Dienst `services/importing.py`)**; T-M1-01 bis T-M1-10 stehen (T-M1-09 zurückgestellt). Bausteine: `Workspace`, `resolve_config`, `detect_format`, die Reader (`read_ris`, `read_nbib`, `read_bibtex`, `read_table`), `to_records`, `write_records(..., backup_dir=)`, `import_log.append_entry/ensure_not_imported`. `typer`/`rich` liegen im Extra `cli`; nur `cli.py` importiert `typer`.
 
 ## 6. Abweichungen und offene Punkte
 
