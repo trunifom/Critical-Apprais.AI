@@ -894,6 +894,8 @@ def compare_runs_command(
     with separate 'crapai screen' calls (the same model again, or a different one each time), then
     compare the finished runs. Writes the joined table to exports/ (one row per record, one column
     group per run) and prints the agreement numbers; nothing in the project is changed.
+    Exit code 0 = ok, 4 = the target file was locked (saved under another name), 1 = user error
+    (fewer than two runs, an unknown run), 2 = system error.
     Example: crapai compare-runs my-review --runs run-001,run-002,run-003
     """
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
@@ -989,7 +991,12 @@ def _resolution_exit_code(manifest: Any) -> int:
 
 
 def _print_resolution_result(
-    result: resolution_service.ResolutionResult, messages: Messages, *, as_json: bool
+    result: resolution_service.ResolutionResult,
+    folder: Path,
+    runs: str,
+    messages: Messages,
+    *,
+    as_json: bool,
 ) -> int:
     manifest = result.manifest
     code = _resolution_exit_code(manifest)
@@ -1035,6 +1042,20 @@ def _print_resolution_result(
             fg=colour,
             err=True,
         )
+    results_file = Workspace(folder).runs_dir / result.run_id / "screening.jsonl"
+    _echo(messages.text("cli.resolve.files", path=results_file), json_mode=as_json)
+    if manifest.state != "completed":
+        _echo(
+            messages.text(
+                "cli.resolve.resume_hint",
+                command=COMMAND,
+                method=manifest.kind,
+                folder=folder,
+                runs=runs,
+                run_id=result.run_id,
+            ),
+            json_mode=as_json,
+        )
     return code
 
 
@@ -1057,6 +1078,8 @@ def adjudicate_command(
     run); it sees the record, the criteria and every disagreeing run's decision and reasoning, and
     decides once, for itself. Only the disputed records are sent. The result is its own run (see
     'crapai runs'); records.csv is never touched.
+    Exit code 0 = completed, 4 = completed with failed records, 3 = paused or interrupted
+    (resumable with --resume), 1 = user error (bad input), 2 = system error.
     Example: crapai adjudicate my-review --runs run-001,run-002
     """
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
@@ -1074,7 +1097,8 @@ def adjudicate_command(
         raise
     except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
         raise _fail(error, messages, json_mode=as_json) from error
-    raise typer.Exit(_print_resolution_result(result, messages, as_json=as_json))
+    code = _print_resolution_result(result, folder, runs, messages, as_json=as_json)
+    raise typer.Exit(code)
 
 
 @app.command("discuss")
@@ -1107,15 +1131,19 @@ def discuss_command(
     project's current llm: settings, which may since have moved on). Without consensus,
     discussion.tie_break decides: the majority, or NO_CONSENSUS. Only the disputed records are
     sent. The result is its own run (see 'crapai runs'); records.csv is never touched.
+    Exit code 0 = completed, 4 = completed with failed records, 3 = paused or interrupted
+    (resumable with --resume), 1 = user error (bad input), 2 = system error.
     Example: crapai discuss my-review --runs run-001,run-002,run-003 --max-rounds 3
     """
-    if tie_break is not None and tie_break not in ("majority", "no_consensus"):
-        raise typer.BadParameter("--tie-break must be majority or no_consensus")
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
     _setup_file_log(folder)
     run_ids = [r.strip() for r in runs.split(",") if r.strip()]
     workspace = Workspace(folder)
     try:
+        if tie_break is not None and tie_break not in ("majority", "no_consensus"):
+            raise ConfigError(
+                f"Unknown --tie-break '{tie_break}' (valid: majority, no_consensus)", code="E203"
+            )
         if resume is None and not yes:
             count = len(resolution_service.disputed_items(workspace, run_ids))
             _confirm_resolution(count, messages, as_json=as_json)
@@ -1130,7 +1158,8 @@ def discuss_command(
         raise
     except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
         raise _fail(error, messages, json_mode=as_json) from error
-    raise typer.Exit(_print_resolution_result(result, messages, as_json=as_json))
+    code = _print_resolution_result(result, folder, runs, messages, as_json=as_json)
+    raise typer.Exit(code)
 
 
 def ui_command_line(

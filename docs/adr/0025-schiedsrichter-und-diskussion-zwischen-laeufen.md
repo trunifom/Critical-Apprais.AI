@@ -47,6 +47,43 @@ verschiedenen Modellen.
    Päckchen) - eine bewusste Vereinfachung, weil eine Klärung nur die (meist kleine) Menge der umstrittenen Datensätze
    umfasst, nicht das ganze Projekt.
 
+## Nachtrag: selbstständige Durchsicht (2026-10-02)
+
+Auf Wunsch der Projektleitung wurde der gesamte Code dieser und der vorangehenden Sitzung (Stichwort-Filter, Lauf-Vergleich,
+Schiedsrichter/Diskussion) nochmals auf Fehlerbehandlung, Protokollierung, Kommentare und Dokumentation durchgesehen. Gefunden
+und behoben:
+
+* **Validierungsreihenfolge bei `crapai discuss`:** `--runs` wurde erst geprüft, *nachdem* für jeden Teilnehmer schon ein
+  Anbieter gebaut wurde (inklusive Schlüsselprüfung). Ein einzelner ungültiger Lauf hätte so einen irreführenden
+  Schlüsselfehler erzeugt statt der klaren Meldung "mindestens zwei Läufe nötig". Jetzt wird zuerst `--runs` geprüft.
+* **Doppelte Lauf-IDs** (`--runs run-001,run-001`) waren weder bei `crapai compare-runs` noch bei `crapai adjudicate`/`discuss`
+  ausgeschlossen - ein Lauf "stimmt mit sich selbst überein" wäre eine stillschweigend bedeutungslose, aber unauffällige
+  Antwort gewesen (z. B. bei einem Tippfehler). Beide Stellen weisen das jetzt mit E203 zurück.
+  (`services/resolution.py::_check_source_runs`, `services/results.py::_check_runs_have_results`).
+* **`ResolutionOptions.max_rounds=0`/`tie_break=""` wurden von `or config.discussion...` verschluckt** (0 und "" sind in Python
+  falsch im Wahrheitswert, also wählte `options.max_rounds or config.discussion.max_rounds` still den Standardwert statt den
+  ausdrücklich übergebenen, ungültigen Wert zurückzuweisen). Jetzt `is not None`-geprüft, danach wird `max_rounds < 1` bzw. ein
+  unbekanntes `tie_break` ausdrücklich mit E203 abgelehnt (vorher hätte ein Tippfehler wie `"concensus"` sich unbemerkt wie
+  `"majority"` verhalten, weil nur exakt auf `"no_consensus"` geprüft wurde).
+* **`--resume` verlangte dieselbe Reihenfolge der `--runs`:** `run-002,run-001` konnte einen mit `run-001,run-002` begonnenen
+  Lauf nicht fortsetzen (E204, "compared different source runs"), obwohl es dieselben zwei Läufe sind. Der Vergleich beim
+  Fortsetzen ist jetzt mengenbasiert (Reihenfolge spielt nur beim *neuen* Start eine Rolle, für Anzeige/Verlauf).
+* **Eine beschädigte oder fehlende `resolution_plan.json`** liess `--resume` stillschweigend "alles erledigt" annehmen (leere
+  Liste → keine verbleibenden Datensätze → Zustand `completed`, ohne dass je ein fehlender Datensatz nachgeholt wurde). Eine
+  Klärung plant immer mindestens einen Datensatz, also ist eine leere Planliste beim Fortsetzen immer ein Zeichen von
+  Beschädigung, nie ein gültiger Leerzustand; das wird jetzt als `StorageError` E404 gemeldet statt verschluckt.
+* **CLI `discuss --tie-break falsch`** löste `typer.BadParameter` aus (eigener, nicht übersetzter Text, vermutlich ein anderer
+  Rückgabecode als die übrigen Befehle). Jetzt derselbe `ConfigError`/E203-Weg wie bei `--what` von `crapai export`: übersetzt,
+  Rückgabecode 1 wie jeder andere Benutzerfehler.
+* **Protokollierung fehlte vollständig** in `services/resolution.py` (jeder andere Dienst meldet Anfang/Ende/Abbruch). Ergänzt:
+  Start, Fortsetzung, Abbruch (Schlüssel-/Kontingentproblem), Pause/Stopp auf Wunsch, Abschluss - je mit Zähler, wie bei
+  `services/screening.py`/`services/dedup.py`.
+* **Fehlender Fortsetzungs-Hinweis:** `crapai adjudicate`/`discuss` nannten bei einer Pause/Unterbrechung nicht, mit welchem
+  genauen Befehl fortgesetzt werden kann (`crapai screen` tut das seit jeher). Ergänzt (`cli.resolve.resume_hint`).
+
+Keine der Korrekturen ändert das Datenformat oder eine bereits dokumentierte Option; alle sind durch neue Tests abgesichert
+(`tests/unit/test_resolution.py`, `tests/unit/test_cli_resolution.py`, `tests/unit/test_results.py`).
+
 ## Folgen
 * Neue Module `prompts/resolution.py` (Prompt-Bausteine, reines), `services/resolution.py` (Ablauf: `disputed_items`,
   `adjudicate_project`, `discuss_project`, `participant_config`, `resolvable_runs`).

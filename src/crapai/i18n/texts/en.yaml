@@ -229,6 +229,8 @@ cli:
       interrupted: "Run {run_id} was INTERRUPTED after {done} of {total} record(s)."
       failed: "Run {run_id} FAILED after {done} of {total} record(s)."
     error_line: "  last problem: {code} {message}"
+    files: "Result: {path}"
+    resume_hint: "Continue later with: {command} {method} {folder} --runs {runs} --resume {run_id}"
   runs:
     none: "No runs yet. Start one with: {command} screen {folder}"
     header: "Runs of this project:"

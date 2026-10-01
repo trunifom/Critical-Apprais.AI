@@ -5,13 +5,16 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from results_helpers import project_with_run
 from typer.testing import CliRunner
 
-from crapai.cli import app
+from crapai.cli import _print_resolution_result, app
+from crapai.i18n.messages import Messages
 from crapai.llm.mock_provider import MockProvider
-from crapai.screening.store import RunStore
+from crapai.screening.store import Manifest, RunStore
 from crapai.services import screening as svc
+from crapai.services.resolution import ResolutionResult
 from crapai.services.results import runs_with_results
 
 
@@ -80,7 +83,10 @@ def test_discuss_rejects_a_bad_tie_break(tmp_path: Path) -> None:
         app,
         ["discuss", str(root), "--runs", f"{run_a},{run_b}", "--tie-break", "nonsense", "--yes"],
     )
-    assert result.exit_code != 0
+    # A proper, i18n'd E203 (via ConfigError/_fail), not click's own English-only BadParameter exit.
+    assert result.exit_code == 1
+    lowered = result.output.lower()
+    assert "e203" in lowered or "tie-break" in lowered or "tie_break" in lowered
 
 
 def test_crapai_runs_lists_the_resolution_with_its_kind(tmp_path: Path) -> None:
@@ -88,3 +94,24 @@ def test_crapai_runs_lists_the_resolution_with_its_kind(tmp_path: Path) -> None:
     CliRunner().invoke(app, ["adjudicate", str(root), "--runs", f"{run_a},{run_b}", "--yes"])
     result = CliRunner().invoke(app, ["runs", str(root), "--lang", "en"])
     assert "adjudicate" in result.output
+
+
+def test_a_paused_result_prints_a_resume_hint_with_the_exact_command(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    manifest = Manifest(
+        run_id="2026-10-02T10-00_run-003",
+        kind="adjudicate",
+        state="paused",
+        counts={"total": 5, "done": 2, "ok": 2},
+        last_error={"code": "E307", "message": "The credit is used up"},
+    )
+    result = ResolutionResult(run_id=manifest.run_id, manifest=manifest, resumed=False)
+    code = _print_resolution_result(
+        result, Path("my-review"), "run-001,run-002", Messages("en"), as_json=False
+    )
+    captured = capsys.readouterr()
+    output = captured.out + captured.err
+    assert code == 3  # EXIT_INTERRUPTED: paused, resumable
+    assert "paused" in output.lower() and "E307" in output
+    assert "adjudicate my-review --runs run-001,run-002 --resume 2026-10-02T10-00_run-003" in output

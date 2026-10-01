@@ -43,6 +43,7 @@ from crapai.errors import (
     ParseError,
     ProviderError,
     QuotaExceeded,
+    StorageError,
 )
 from crapai.io.records_store import read_records
 from crapai.llm.base import LLMProvider, LLMRequest, LLMResponse
@@ -95,11 +96,26 @@ def resolvable_runs(workspace: Workspace) -> list[str]:
 
 
 def _check_source_runs(workspace: Workspace, run_ids: Sequence[str]) -> None:
+    """Validate ``run_ids`` before anything else happens (building a provider, opening a run).
+
+    Checked in this order so the clearest problem is reported first: too few runs, a repeated
+    run id (a run cannot disagree with itself), then an unknown or still-empty run.
+
+    Raises:
+        ConfigError: E203 for any of the three problems above.
+    """
     if len(run_ids) < 2:
         raise ConfigError(
             "A resolution needs at least two run ids",
             code="E203",
             hint="Name two or more --runs, for example --runs run-001,run-002.",
+        )
+    if len(set(run_ids)) < len(run_ids):
+        raise ConfigError(
+            "The same run id was named more than once",
+            code="E203",
+            hint="Each --runs entry must be a different run.",
+            details={"runs": list(run_ids)},
         )
     available = resolvable_runs(workspace)
     for run_id in run_ids:
@@ -148,6 +164,7 @@ def disputed_items(workspace: Workspace, run_ids: Sequence[str]) -> list[Dispute
         items.append(
             DisputedItem(record.study_uid, record.title, record.abstract, record.keywords, opinions)
         )
+    logger.info("%d disputed record(s) between run(s) %s", len(items), ", ".join(run_ids))
     return items
 
 
@@ -303,7 +320,15 @@ def participant_config(workspace: Workspace, run_id: str) -> ParticipantConfig:
 
 
 def _tie_break(decisions: Sequence[str], setting: str) -> tuple[str, str]:
-    """The decision ``setting`` gives, and the label that was actually applied."""
+    """The decision ``setting`` gives, and the label that was actually applied.
+
+    ``setting == "majority"`` only wins with a **strict** majority: the most common decision must
+    have strictly more votes than the runner-up (``ranked[0][1] > ranked[1][1]``), or there is only
+    one distinct decision at all (``len(ranked) == 1``). A real tie -- two decisions with the same
+    vote count, for example 1 against 1 with two participants, or 2 against 2 with four -- always
+    falls through to ``NO_CONSENSUS``/``"no_consensus"``, even when ``setting`` asked for a
+    majority: there is no majority to apply in a tie, per the project lead's explicit decision.
+    """
     if setting != "no_consensus":
         counts: dict[str, int] = {}
         for decision in decisions:
@@ -437,12 +462,21 @@ def _write_plan(store: RunStore, study_uids: list[str]) -> None:
 
 
 def _read_plan(store: RunStore) -> list[str]:
+    """The ``study_uid``s this resolution was planned for, or ``[]`` if the plan is unreadable.
+
+    A resolution always plans at least one record (an empty disagreement refuses to even start,
+    see :func:`_open_resolution`), so an empty result here always means the plan file is missing
+    or damaged, never that the plan was legitimately empty. The resume path in
+    :func:`_open_resolution` turns that into a clear error instead of silently treating every
+    planned record as already done.
+    """
     path = store.folder / PLAN_NAME
     if not path.exists():
         return []
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+    except (OSError, ValueError, UnicodeDecodeError) as exc:
+        logger.warning("%s is unreadable (%s); treating the plan as empty", path.name, exc)
         return []
     return [str(u) for u in data.get("uids", [])]
 
@@ -479,7 +513,11 @@ def _open_resolution(
             raise ConfigError(
                 f"Run '{resume}' is a '{manifest.kind}' run, not '{method}'", code="E203"
             )
-        if list(manifest.input.get("source_run_ids", [])) != run_ids:
+        # Compared as sets: --runs run-002,run-001 must resume a run started as run-001,run-002.
+        # The order still matters for a *fresh* run (it shapes history/labels), just not for
+        # recognising "same source runs" on resume.
+        stored_run_ids = set(manifest.input.get("source_run_ids", []))
+        if stored_run_ids != set(run_ids):
             raise ConfigError(
                 f"Run '{resume}' compared different source runs",
                 code="E204",
@@ -494,8 +532,20 @@ def _open_resolution(
             raise ConfigError(
                 f"Run '{resume}' is {manifest.state} and cannot be resumed", code="E203"
             )
+        planned = _read_plan(store)
+        if not planned:
+            raise StorageError(
+                f"The plan of run '{resume}' is missing or damaged",
+                code="E404",
+                hint="The run folder may be damaged; start a new resolution instead.",
+                details={"path": str(store.folder / PLAN_NAME)},
+            )
         done = {uid for uid, row in store.last_results().items() if row.is_ok}
-        remaining = [uid for uid in _read_plan(store) if uid not in done]
+        remaining = [uid for uid in planned if uid not in done]
+        logger.info(
+            "Resuming %s '%s': %d of %d disputed record(s) still to settle",
+            method, resume, len(remaining), len(planned),
+        )  # fmt: skip
         return store, manifest, remaining, True
     if not items:
         raise ConfigError(
@@ -515,6 +565,10 @@ def _open_resolution(
     )
     store.create(manifest)
     _write_plan(store, [i.study_uid for i in items])
+    logger.info(
+        "Started %s run '%s': %d disputed record(s) between %s",
+        method, run_id, len(items), ", ".join(run_ids),
+    )  # fmt: skip
     return store, manifest, [i.study_uid for i in items], False
 
 
@@ -535,16 +589,25 @@ async def _process_with_control(
         async with semaphore:
             await handle(item)
 
+    # control.json is only checked between chunks, not after every item: a resolution is usually
+    # a small, bounded set of disputed records, so this coarser granularity (compared to the
+    # screening engine's own batches) is a deliberate simplification, not an oversight (ADR 0025).
     chunk_size = max(1, concurrency * 2)
     for start in range(0, len(items), chunk_size):
         chunk = items[start : start + chunk_size]
         try:
             await asyncio.gather(*(bound(item) for item in chunk))
         except _Abort as exc:
+            logger.warning("Resolution aborted (%s): %s %s", exc.state, exc.code, exc.message)
             return exc.state, {"code": exc.code, "message": exc.message}
         command = store.read_control()
         if command in ("pause", "stop"):
             store.clear_control()
+            done_so_far = start + len(chunk)
+            logger.info(
+                "Resolution %s by request after %d of %d record(s)",
+                "stopped" if command == "stop" else "paused", done_so_far, len(items),
+            )  # fmt: skip
             state = RunState.INTERRUPTED.value if command == "stop" else RunState.PAUSED.value
             return state, {}
     return RunState.COMPLETED.value, {}
@@ -562,6 +625,10 @@ def _finish(
     manifest.counts["done"] = len(results)
     manifest.counts["ok"] = sum(1 for row in results.values() if row.is_ok)
     store.save_manifest(manifest)
+    logger.info(
+        "%s '%s' finished in state %s: %d of %d record(s) ok",
+        manifest.kind, manifest.run_id, state, manifest.counts["ok"], manifest.counts["done"],
+    )  # fmt: skip
     return manifest
 
 
@@ -571,6 +638,7 @@ async def _adjudicate_async(
     workspace = Workspace.open(workspace.root)
     with workspace.lock():
         config = load_project_config(workspace.project_yaml)
+        _check_source_runs(workspace, run_ids)
         items_all = disputed_items(workspace, run_ids) if options.resume is None else []
         provider = options.provider or build_provider(
             config.llm.provider,
@@ -589,6 +657,10 @@ async def _adjudicate_async(
             workspace, "adjudicate", run_ids, {}, llm_snapshot, items_all,
             project_title=config.project.title, resume=options.resume,
         )  # fmt: skip
+        # On a fresh start, items_all is already the full disputed set. On resume, it was never
+        # computed (the records only need to be the same, not recomputed), so recompute it here
+        # to turn "which study_uids are left" (remaining, from the plan file) back into the
+        # DisputedItem objects (title/abstract/opinions) _adjudicate_item needs.
         by_uid = {i.study_uid: i for i in (items_all or disputed_items(workspace, run_ids))}
         items = [by_uid[uid] for uid in remaining if uid in by_uid]
         manifest.state = RunState.RUNNING.value
@@ -628,8 +700,30 @@ async def _discuss_async(
     workspace = Workspace.open(workspace.root)
     with workspace.lock():
         config = load_project_config(workspace.project_yaml)
-        max_rounds = options.max_rounds or config.discussion.max_rounds
-        tie_break_setting = options.tie_break or config.discussion.tie_break
+        # Validate the run ids, the round count and the tie-break rule *before* touching any
+        # participant's manifest or building a provider: a bad --runs value should never fail
+        # halfway through (for example after a key for one participant was already rejected).
+        _check_source_runs(workspace, run_ids)
+        # "is not None", not "or": 0 (rejected below) or "" must stay the caller's explicit
+        # choice, not silently fall back to the configured default the way `or` would.
+        max_rounds = (
+            options.max_rounds if options.max_rounds is not None else config.discussion.max_rounds
+        )
+        if max_rounds < 1:
+            raise ConfigError(
+                "discussion.max_rounds must be at least 1",
+                code="E203",
+                hint="Set discussion.max_rounds in project.yaml, or pass --max-rounds >= 1.",
+            )
+        tie_break_setting = (
+            options.tie_break if options.tie_break is not None else config.discussion.tie_break
+        )
+        if tie_break_setting not in ("majority", "no_consensus"):
+            raise ConfigError(
+                f"Unknown discussion.tie_break '{tie_break_setting}'",
+                code="E203",
+                hint="Use 'majority' or 'no_consensus'.",
+            )
         participants = {run_id: participant_config(workspace, run_id) for run_id in run_ids}
         providers = options.providers or {
             run_id: build_provider(
@@ -652,6 +746,7 @@ async def _discuss_async(
             workspace, "discuss", run_ids, settings, llm_snapshot, items_all,
             project_title=config.project.title, resume=options.resume,
         )  # fmt: skip
+        # See the matching comment in _adjudicate_async: recomputed on resume only.
         by_uid = {i.study_uid: i for i in (items_all or disputed_items(workspace, run_ids))}
         items = [by_uid[uid] for uid in remaining if uid in by_uid]
         manifest.state = RunState.RUNNING.value

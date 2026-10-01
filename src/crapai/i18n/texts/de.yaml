@@ -221,6 +221,8 @@ cli:
       interrupted: "Lauf {run_id} wurde UNTERBROCHEN nach {done} von {total} Datensätzen."
       failed: "Lauf {run_id} ist FEHLGESCHLAGEN nach {done} von {total} Datensätzen."
     error_line: "  letztes Problem: {code} {message}"
+    files: "Ergebnis: {path}"
+    resume_hint: "Später fortsetzen mit: {command} {method} {folder} --runs {runs} --resume {run_id}"
   runs:
     none: "Noch keine Läufe. Starten mit: {command} screen {folder}"
     header: "Läufe dieses Projekts:"

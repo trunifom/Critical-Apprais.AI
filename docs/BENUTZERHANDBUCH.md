@@ -391,10 +391,10 @@ crapai adjudicate mein-review --runs run-001,run-002
 crapai discuss mein-review --runs run-001,run-002,run-003 --max-rounds 3 --tie-break majority
 ```
 
-* `--runs id1,id2,...`: zwei oder mehr abgeschlossene Läufe (durch Komma getrennt).
+* `--runs id1,id2,...`: zwei oder mehr **verschiedene**, abgeschlossene Läufe (durch Komma getrennt); dieselbe Lauf-ID doppelt zu nennen wird abgelehnt (E203) statt stillschweigend "perfekte Übereinstimmung mit sich selbst" zu melden.
 * `--max-rounds N` (nur `discuss`): überschreibt `discussion.max_rounds` für diesen Aufruf.
 * `--tie-break majority|no_consensus` (nur `discuss`): überschreibt `discussion.tie_break`. `majority`: die Entscheidung, auf die sich die meisten Modelle festlegen, gewinnt; ein echtes Patt (z. B. 1 zu 1) gilt weiterhin als kein Konsens. `no_consensus`: nie einen Sieger küren, auch bei klarer Mehrheit.
-* `--resume LAUF-ID`: einen unterbrochenen oder pausierten Schiedsrichter-/Diskussionslauf fortsetzen (wie bei `crapai screen --resume`); bereits geklärte Datensätze werden nicht erneut gesendet.
+* `--resume LAUF-ID`: einen unterbrochenen oder pausierten Schiedsrichter-/Diskussionslauf fortsetzen (wie bei `crapai screen --resume`); bereits geklärte Datensätze werden nicht erneut gesendet. `--runs` muss dieselben Läufe nennen (die Reihenfolge spielt dabei keine Rolle), sonst wird die Fortsetzung mit `E204` abgelehnt. Bei einer Pause oder Unterbrechung nennt die Ausgabe den genauen Befehl zum Fortsetzen.
 * `--yes`: ohne Rückfrage starten (sonst wird die Anzahl der umstrittenen Datensätze angezeigt und nachgefragt, wie bei `crapai screen`).
 * Wie bei jedem Modellaufruf: kann Geld kosten. Ein Datensatz, den (noch) nicht alle gewählten Läufe bewertet haben, zählt nicht als Uneinigkeit.
 * Das Ergebnis trägt je Datensatz eine Entscheidung (`INCLUDE`/`EXCLUDE`/`UNCERTAIN`) und bei `discuss` zusätzlich, ob Konsens erreicht wurde, wie viele Runden gebraucht wurden und - ohne Konsens - `NO_CONSENSUS` oder die per Mehrheit gewählte Entscheidung samt der Entscheidungsregel, die gegriffen hat.

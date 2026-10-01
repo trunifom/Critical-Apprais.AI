@@ -7,6 +7,18 @@ Jeder Eintrag verweist auf die Aufgabenkarte; die genauen Commits stehen in `doc
 
 ## [Unveröffentlicht] - 0.0.1
 
+### Durchsicht: Fehlerbehandlung, Protokolle, Dokumentation (Stichwort-Filter, Lauf-Vergleich, Schiedsrichter/Diskussion)
+
+Auf Wunsch der Projektleitung wurden die drei Funktionen der letzten beiden Sitzungen nochmals vertieft durchgesehen (ADR 0025, Nachtrag). Behoben:
+
+* `crapai discuss` prüfte `--runs` erst, nachdem für jeden Teilnehmer schon ein Anbieter (inkl. Schlüsselprüfung) gebaut wurde; ein ungültiger Lauf konnte so einen irreführenden Schlüsselfehler statt der klaren "mindestens zwei Läufe"-Meldung auslösen. Geprüft wird jetzt zuerst.
+* Doppelte Lauf-IDs (`--runs run-001,run-001`) waren weder bei `crapai compare-runs` noch bei `adjudicate`/`discuss` ausgeschlossen (ein Lauf "stimmt mit sich selbst überein"); beide weisen das jetzt mit E203 zurück.
+* `--max-rounds 0` und ein leerer `--tie-break` wurden von einer `or`-Verknüpfung verschluckt (fielen auf den Standardwert zurück statt abgelehnt zu werden); ein unbekanntes `tie_break` (Tippfehler) verhielt sich unbemerkt wie `majority`. Beides wird jetzt ausdrücklich mit E203 abgelehnt.
+* `crapai discuss --resume` verlangte dieselbe Reihenfolge der `--runs` wie beim ursprünglichen Start; der Vergleich ist jetzt mengenbasiert.
+* Eine beschädigte oder fehlende `resolution_plan.json` liess `--resume` stillschweigend "alles erledigt" annehmen; das ist jetzt ein klarer `StorageError` E404.
+* `discuss --tie-break <falsch>` löste `typer.BadParameter` aus (eigener, nicht übersetzter Fehlerweg); jetzt derselbe `ConfigError`/E203-Weg wie bei den übrigen Befehlen.
+* `services/resolution.py` protokolliert jetzt Start, Fortsetzung, Abbruch und Abschluss (fehlte vollständig); `crapai adjudicate`/`discuss` nennen bei einer Pause/Unterbrechung den genauen Fortsetzungsbefehl (wie `crapai screen` es schon tat).
+
 ### Uneinigkeit zwischen Läufen klären: Schiedsrichter und Diskussion (ADR 0025)
 
 * **Neuer Befehl `crapai adjudicate --runs <id1,id2,...>`**: ein zusätzliches "Master"-Modell (die aktuellen `llm:`-Einstellungen) liest Datensatz, Kriterien und jede uneinige Meinung (Lauf/Modell, Entscheidung, Begründung) und entscheidet einmal, selbst; gleiches Antwortschema und dieselbe Garantie wie beim Screening (eine unlesbare Antwort wird nie zu einem Entscheid).

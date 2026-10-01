@@ -9,7 +9,7 @@ import pytest
 import yaml
 from results_helpers import project_with_run
 
-from crapai.errors import ConfigError
+from crapai.errors import ConfigError, StorageError
 from crapai.llm.base import Capabilities, LLMResponse
 from crapai.llm.mock_provider import MockProvider, answer_json
 from crapai.project.workspace import Workspace
@@ -273,3 +273,59 @@ def test_participant_config_reads_the_runs_own_manifest_not_the_current_config(
     workspace.project_yaml.write_text(yaml.safe_dump(data), encoding="utf-8")
     participant = res.participant_config(workspace, run_id)
     assert participant.model == "S12"  # not S9: the run's own model, not the live config
+
+
+# --- validation hardening ------------------------------------------------------------------------
+
+
+def test_disputed_items_rejects_a_repeated_run_id(tmp_path: Path) -> None:
+    workspace, run_a, _run_b = two_mock_runs(tmp_path)
+    with pytest.raises(ConfigError) as info:
+        res.disputed_items(workspace, [run_a, run_a])
+    assert info.value.code == "E203"
+
+
+def test_discuss_rejects_an_invalid_tie_break_even_without_the_cli(tmp_path: Path) -> None:
+    workspace, run_a, run_b = two_mock_runs(tmp_path)
+    flip_one(workspace, run_b)
+    with pytest.raises(ConfigError) as info:
+        res.discuss_project(workspace, [run_a, run_b], res.ResolutionOptions(tie_break="maybe"))
+    assert info.value.code == "E203"
+
+
+def test_discuss_rejects_fewer_than_one_round(tmp_path: Path) -> None:
+    workspace, run_a, run_b = two_mock_runs(tmp_path)
+    flip_one(workspace, run_b)
+    with pytest.raises(ConfigError) as info:
+        res.discuss_project(workspace, [run_a, run_b], res.ResolutionOptions(max_rounds=0))
+    assert info.value.code == "E203"
+
+
+def test_resume_accepts_the_runs_in_a_different_order(tmp_path: Path) -> None:
+    workspace, run_a, run_b = two_mock_runs(tmp_path)
+    flip_one(workspace, run_b)
+    first = res.adjudicate_project(
+        workspace, [run_a, run_b], res.ResolutionOptions(provider=MockProvider("S14", after=0))
+    )
+    assert first.manifest.state == "paused"
+    # Same two runs, named in the opposite order: still recognised as the same resolution.
+    second = res.adjudicate_project(
+        workspace, [run_b, run_a],
+        res.ResolutionOptions(resume=first.run_id, provider=ScriptedProvider(["INCLUDE"])),
+    )  # fmt: skip
+    assert second.resumed and second.manifest.state == "completed"
+
+
+def test_resume_refuses_a_damaged_plan_file(tmp_path: Path) -> None:
+    workspace, run_a, run_b = two_mock_runs(tmp_path)
+    flip_one(workspace, run_b)
+    first = res.adjudicate_project(
+        workspace, [run_a, run_b], res.ResolutionOptions(provider=MockProvider("S14", after=0))
+    )
+    (workspace.runs_dir / first.run_id / res.PLAN_NAME).unlink()
+    with pytest.raises(StorageError) as info:
+        res.adjudicate_project(
+            workspace, [run_a, run_b],
+            res.ResolutionOptions(resume=first.run_id, provider=ScriptedProvider(["INCLUDE"])),
+        )  # fmt: skip
+    assert info.value.code == "E404"

@@ -330,6 +330,13 @@ def test_compare_runs_rejects_an_unknown_run(tmp_path: Path) -> None:
         compare_runs(workspace, [run_a, "nope"])
 
 
+def test_compare_runs_rejects_the_same_run_id_twice(tmp_path: Path) -> None:
+    workspace, run_a, _run_b = two_runs(tmp_path)
+    with pytest.raises(ConfigError) as info:
+        compare_runs(workspace, [run_a, run_a])
+    assert info.value.code == "E203"
+
+
 def test_identical_runs_agree_completely(tmp_path: Path) -> None:
     workspace, run_a, run_b = two_runs(tmp_path)
     rows, summary = compare_runs(workspace, [run_a, run_b])

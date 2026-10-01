@@ -94,11 +94,24 @@ def results_table(
 
 
 def _check_runs_have_results(workspace: Workspace, run_ids: Sequence[str]) -> None:
+    """Raises E203 for too few runs, a repeated run id, or a run without results.
+
+    A repeated id is rejected explicitly (not just left to produce a trivial, misleading
+    comparison): comparing a run against itself always "agrees perfectly" and would silently
+    mask a typo in --runs.
+    """
     if len(run_ids) < 2:
         raise ConfigError(
             "Comparing runs needs at least two run ids",
             code="E203",
             hint="Name two or more runs, for example --runs run-001,run-002.",
+        )
+    if len(set(run_ids)) < len(run_ids):
+        raise ConfigError(
+            "The same run id was named more than once",
+            code="E203",
+            hint="Each --runs entry must be a different run.",
+            details={"runs": list(run_ids)},
         )
     available = runs_with_results(workspace)
     for run_id in run_ids:
