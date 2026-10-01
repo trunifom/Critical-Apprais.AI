@@ -291,6 +291,14 @@ Die Oberfläche läuft **nur auf Ihrem Rechner** (Adresse `127.0.0.1`) und sende
 * **Fehler** erscheinen mit Code, Erklärung und nächstem Schritt, nie als Programmfehler-Text; unter „Einzelheiten“ steht ein Text zum Kopieren für eine Fehlermeldung.
 * Die Oberfläche verwendet dieselben Funktionen wie die Befehlszeile; es gibt nichts, was nur in einer der beiden geht. Ein Projekt kann gleichzeitig nur von einem Prozess geändert werden (Sperre, Abschnitt 6f).
 
+### Bedienung der Oberfläche: Menü, Anzeige und Hilfe
+
+* **Menü:** Die Seitenleiste beginnt mit dem Titel. Darunter stehen die **Schaltflächen** der Seiten, in Gruppen: *Startseite*; *Arbeitsablauf* in der Reihenfolge der Arbeit (1 Projekt, 2 Daten importieren, 3 Daten prüfen, 4 Screening starten, 5 PRISMA-Fluss, 6 Ergebnisse exportieren) mit Symbolen für den Stand (✅ erledigt, 🔵 als Nächstes, ⚠️ erledigt mit Hinweis, ⚪ noch nicht möglich); *Weiteres* (Einstellungen, Hilfe). Die gerade offene Seite ist farbig gefüllt. Es gibt keine weiteren technischen Menüpunkte.
+* **Anzeige:** Direkt unter dem Titel stehen die Sprachauswahl und zwei Schalter: **Hell/Dunkel** und **Schrift gross/klein**. Die Beschriftung nennt, wohin der Klick wechselt. Alle Farben sind auf Lesbarkeit geprüft (mindestens 4,5:1 Kontrast, in beiden Designs). Tabellen werden im anderen Design automatisch angepasst.
+* **Gespeichert:** Sprache, Design und Schriftgrösse bleiben beim Seitenwechsel und beim nächsten Start erhalten (Datei `ui_prefs.json` neben der Liste der zuletzt verwendeten Projekte, `~/.config/crapai/`). Ohne gespeicherte Wahl folgt das Design der Einstellung Ihres Browsers.
+* **Hilfe zu jedem Bedienelement:** Neben jeder Beschriftung steht ein kleines **?**; fahren Sie mit der Maus darüber (oder tippen Sie darauf) und Sie sehen, was das Feld bewirkt, mit Beispielen. Bei Schaltflächen erscheint der Hilfetext beim Darüberfahren. Das gilt auch für alle Einstellungen im Formular.
+* **Hinweise** (Erfolg, Warnung, Fehler) erscheinen als farbige Kästen mit Symbol; die Farben passen zum gewählten Design.
+
 ## 6j. Einstellungen ändern: `project.yaml`, Oberfläche, `crapai config`
 
 Fast nichts ist im Programm fest verdrahtet: Schwellen, Grenzen und Annahmen sind Einstellungen. Es gibt drei Wege, sie zu ändern, die sich ergänzen:

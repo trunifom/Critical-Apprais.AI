@@ -49,6 +49,10 @@ class Context:
         """The interface text for ``key`` (see ``ui.*`` in the text files)."""
         return self.messages.text(f"ui.{key}", **values)
 
+    def help_for(self, ident: str) -> str | None:
+        """The help text ``ui.tip.<ident>`` or None (see :mod:`crapai.ui.kit`)."""
+        return self.messages.maybe(f"ui.tip.{ident}")
+
 
 def initial_folder() -> Path | None:
     """The folder named by the command line (``crapai ui FOLDER``), if any."""

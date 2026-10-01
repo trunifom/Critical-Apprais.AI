@@ -34,6 +34,14 @@ Jeder Eintrag verweist auf die Aufgabenkarte; die genauen Commits stehen in `doc
 * **Lizenz:** PolyForm Noncommercial 1.0.0 (`LICENSE`, ADR 0016, `license` in `pyproject.toml`): nicht kommerzielle Nutzung erlaubt, kommerzielle ausgeschlossen (T-M0-01).
 * **Dokumentation:** Benutzerhandbuch, Entwicklerdokumentation, Architektur, ausführliches README, dieses Änderungsprotokoll, Umsetzungsplan mit Fortschrittsliste.
 
+### Oberfläche überarbeitet (2026-10-01)
+
+* **Menü:** Schaltflächen statt Text, in Gruppen (Startseite, Arbeitsablauf 1 bis 6, Weiteres) mit verständlichen Namen; die technischen Seitennamen (`streamlit app`, `check`, `common` ...) sind weg (Ursache war der Ordner `pages/`, den Streamlit selbst als Menü anzeigt; `crapai ui` schaltet das mit `--client.showSidebarNavigation false` aus). Titel steht oben.
+* **Sprache bleibt erhalten:** beim Seitenwechsel und beim nächsten Start (`ui_prefs.json`).
+* **Hell/Dunkel und Schrift gross/klein** per Schalter; eigenes Stylesheet (`ui/theme.py`), Kontrast jeder Farbpaarung per Test ≥ 4,5:1; einheitliche Schriftgrössen, lange Werte in den Kacheln werden umgebrochen statt abgeschnitten; Tabellen im anderen Design angepasst.
+* **Hilfetext zu jedem Bedienelement** (`ui.tip.*`, Deutsch und Englisch, mit Beispielen, auch für alle 47 Einstellungen); ein Test stellt sicher, dass kein Element der Seiten ohne Hilfetext bleibt. Eigene Hinweisboxen (`ui/kit.py`) statt der Streamlit-Meldungen, damit die Farben zum Design passen.
+* Neue Dateien: `src/crapai/ui/theme.py`, `src/crapai/ui/kit.py`; neue Datei im Benutzerordner: `ui_prefs.json`.
+
 ### Screening mit dem Sprachmodell (M3, ADR 0022)
 
 * **Anbieter-Schicht** (`llm/`): Protokoll `LLMProvider` mit Fehlerklassen, die die Wiederholungsregel tragen (T-M3-01); `MockProvider` mit den 15 Szenarien S1-S15, deterministisch, ohne Netz und Schlüssel; Anbieter für OpenAI und OpenAI-kompatible Dienste wie SwissGPT (T-M3-02, Schlüssel nur aus der Umgebung, SDK-Wiederholungen aus); Wiederholen mit Backoff und `Retry-After` (T-M3-03); gleitender Limiter für Anfragen und Tokens pro Minute, adaptive Parallelität, Schutzschalter (T-M3-04).

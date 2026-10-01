@@ -865,6 +865,7 @@ def ui_command_line(
         "--server.address", "127.0.0.1",
         "--server.port", str(port),
         "--browser.gatherUsageStats", "false",
+        "--client.showSidebarNavigation", "false",  # the interface has its own menu
         "--server.headless", "true" if headless else "false",
     ]  # fmt: skip
     environment = dict(os.environ)

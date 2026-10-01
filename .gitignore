@@ -32,3 +32,6 @@ runs/
 # Large / third-party fixtures: keep out of Git (use Git LFS or copy manually if needed)
 tests/data_large/*
 !tests/data_large/README.md
+
+# Local test project (my own playground, never committed)
+/testprojekt/

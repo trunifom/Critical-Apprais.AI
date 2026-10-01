@@ -54,7 +54,7 @@ def fresh(monkeypatch: pytest.MonkeyPatch, folder: Path | None = None) -> AppTes
 
 
 def goto(at: AppTest, page: str) -> AppTest:
-    at.sidebar.radio(key="page").set_value(page)
+    at.sidebar.button(key=f"nav_{page}").click()
     return at.run()
 
 
@@ -77,7 +77,7 @@ def test_the_start_page_renders_without_errors(monkeypatch: pytest.MonkeyPatch) 
     assert not at.exception
     assert "Open or create a project" in page_text(at)
     assert "Results are proposals" in page_text(at)
-    assert at.sidebar.radio(key="page").value == "start"
+    assert at.session_state["page"] == "start"
     assert "No project open" in page_text(at)
 
 
@@ -96,7 +96,7 @@ def test_a_project_named_on_the_command_line_opens_on_the_project_page(
 ) -> None:
     at = fresh(monkeypatch, empty_project).run()
     assert not at.exception
-    assert at.sidebar.radio(key="page").value == "project"
+    assert at.session_state["page"] == "project"
     assert "Demo review" in page_text(at)
     assert at.text_area(key="yaml_text").value.startswith("#")
 
@@ -113,7 +113,7 @@ def test_creating_a_project_in_the_interface(
     at.run()
     assert not at.exception
     assert (target / "project.yaml").exists()
-    assert at.sidebar.radio(key="page").value == "project"
+    assert at.session_state["page"] == "project"
     assert "My own review" in page_text(at) + texts(at.metric)
 
 
@@ -247,7 +247,7 @@ def test_the_language_can_be_switched(monkeypatch: pytest.MonkeyPatch, empty_pro
     at.sidebar.selectbox(key="lang").set_value("de")
     at.run()
     assert not at.exception
-    assert any("Prüfen" in option for option in at.sidebar.radio(key="page").options)
+    assert "Daten prüfen" in " ".join(b.label for b in at.sidebar.button)
     goto(at, "check")
     assert "Importieren Sie zuerst" in page_text(at)
 
@@ -283,7 +283,7 @@ def test_closing_the_project_returns_to_the_start_page(
     at.sidebar.button(key="close_project").click()
     at.run()
     assert not at.exception
-    assert at.sidebar.radio(key="page").value == "start" and "No project open" in page_text(at)
+    assert at.session_state["page"] == "start" and "No project open" in page_text(at)
 
 
 def test_a_project_that_disappears_is_reported_and_the_start_page_returns(
@@ -490,3 +490,127 @@ def test_a_run_that_stopped_saving_is_reported_as_stalled_not_working(
     goto(at, "run")
     assert not at.exception
     assert "has not saved anything" in page_text(at) and "_run-001 is working" not in page_text(at)
+
+
+# --- menu, language, design, text size and help ---------------------------------------------------------
+
+
+def css_of(at: AppTest) -> str:
+    """The style sheet the page inserted."""
+    return " ".join(str(getattr(m, "value", "")) for m in at.markdown if "<style>" in str(m.value))
+
+
+def test_the_menu_is_made_of_buttons_with_clear_names_and_no_streamlit_page_names(
+    monkeypatch: pytest.MonkeyPatch, filled_project: Path
+) -> None:
+    at = fresh(monkeypatch, filled_project).run()
+    assert not at.exception
+    assert not at.sidebar.radio  # no plain-text menu any more
+    keys = {b.key for b in at.sidebar.button}
+    assert {
+        f"nav_{page}"
+        for page in (
+            "start",
+            "project",
+            "data",
+            "check",
+            "run",
+            "flow",
+            "export",
+            "settings",
+            "help",
+        )
+    } <= keys
+    labels = " | ".join(b.label for b in at.sidebar.button)
+    assert "Import data" in labels and "Run screening" in labels and "Export results" in labels
+    for technical in ("streamlit app", "common"):
+        assert technical not in labels.lower()
+
+
+def test_the_title_comes_first_in_the_sidebar(
+    monkeypatch: pytest.MonkeyPatch, filled_project: Path
+) -> None:
+    at = fresh(monkeypatch, filled_project).run()
+    first = str(at.sidebar.markdown[0].value)
+    assert "Critical Apprais.AI" in first and "crapai-brand" in first
+
+
+def test_the_language_stays_when_the_page_changes_and_after_a_restart(
+    monkeypatch: pytest.MonkeyPatch, filled_project: Path
+) -> None:
+    at = fresh(monkeypatch, filled_project).run()
+    at.sidebar.selectbox(key="lang").set_value("de")
+    at.run()
+    for page in ("check", "data", "settings", "run"):
+        goto(at, page)
+        assert at.session_state["lang"] == "de", page
+        assert at.sidebar.selectbox(key="lang").value == "de"
+    assert "Daten prüfen" in " ".join(b.label for b in at.sidebar.button)
+    again = fresh(monkeypatch, filled_project).run()  # a new session: the choice was remembered
+    assert again.session_state["lang"] == "de"
+    assert "Daten importieren" in " ".join(b.label for b in again.sidebar.button)
+
+
+def test_light_and_dark_can_be_switched_and_are_remembered(
+    monkeypatch: pytest.MonkeyPatch, filled_project: Path
+) -> None:
+    at = fresh(monkeypatch, filled_project).run()
+    assert at.session_state["theme"] == "light" and "#FFFFFF" in css_of(at)
+    at.sidebar.button(key="theme_toggle").click()
+    at.run()
+    assert at.session_state["theme"] == "dark" and "#0F141B" in css_of(at)
+    goto(at, "check")
+    assert at.session_state["theme"] == "dark"  # the page change keeps it
+    assert fresh(monkeypatch, filled_project).run().session_state["theme"] == "dark"
+    at.sidebar.button(key="theme_toggle").click()
+    at.run()
+    assert at.session_state["theme"] == "light"
+
+
+def test_the_text_size_can_be_switched_and_is_remembered(
+    monkeypatch: pytest.MonkeyPatch, filled_project: Path
+) -> None:
+    at = fresh(monkeypatch, filled_project).run()
+    assert "font-size: 16px" in css_of(at)
+    at.sidebar.button(key="size_toggle").click()
+    at.run()
+    assert at.session_state["size"] == "large" and "font-size: 19px" in css_of(at)
+    assert fresh(monkeypatch, filled_project).run().session_state["size"] == "large"
+
+
+def test_a_damaged_choice_file_does_not_break_the_start(
+    monkeypatch: pytest.MonkeyPatch, filled_project: Path
+) -> None:
+    from crapai.ui.theme import UiPrefs
+
+    prefs = UiPrefs()
+    prefs.path.parent.mkdir(parents=True, exist_ok=True)
+    prefs.path.write_text('{"theme": "neon"', encoding="utf-8")
+    at = fresh(monkeypatch, filled_project).run()
+    assert not at.exception and at.session_state["theme"] == "light"
+
+
+@pytest.mark.parametrize("lang", ["en", "de"])
+def test_every_control_of_every_page_has_a_help_text(
+    monkeypatch: pytest.MonkeyPatch, filled_project: Path, lang: str
+) -> None:
+    use_mock_provider(filled_project)
+    at = fresh(monkeypatch, filled_project).run()
+    at.sidebar.selectbox(key="lang").set_value(lang)
+    at.run()
+    for page in ("start", "project", "data", "check", "run", "flow", "export", "settings", "help"):
+        goto(at, page)
+        assert not at.exception, page
+        assert at.session_state["missing_help"] == set(), (page, at.session_state["missing_help"])
+
+
+def test_notices_are_drawn_as_own_boxes(
+    monkeypatch: pytest.MonkeyPatch, empty_project: Path
+) -> None:
+    at = fresh(monkeypatch, empty_project).run()
+    at.text_area(key="yaml_text").set_value("project: [broken")
+    at.run()
+    at.button(key="save_yaml").click()
+    at.run()
+    boxes = [str(m.value) for m in at.markdown if "crapai-notice" in str(m.value)]
+    assert any("crapai-error" in b and "E203" in b for b in boxes)

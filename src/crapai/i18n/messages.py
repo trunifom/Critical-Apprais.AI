@@ -85,6 +85,13 @@ class Messages:
             logger.warning("Text %s has unusable placeholders", key)
             return template
 
+    def maybe(self, key: str) -> str | None:
+        """The text for ``key`` as it is written (no placeholders), or None if there is none.
+
+        Used for optional texts such as help; a missing one is not an error and is not logged.
+        """
+        return self._i18n.t(key) or None
+
     def error_codes(self) -> list[str]:
         """The codes that have a text (``E101`` ...), sorted; the list behind the help page."""
         node = self._i18n._get_nested("errors")  # noqa: SLF001 - same package

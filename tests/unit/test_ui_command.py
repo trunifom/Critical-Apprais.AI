@@ -41,6 +41,8 @@ def test_the_command_line_is_local_only_and_without_telemetry(tmp_path: Path) ->
     assert "--server.address 127.0.0.1" in flat and "--server.port 8765" in flat
     assert "--browser.gatherUsageStats false" in flat and "--server.headless true" in flat
     assert environment[PROJECT_ENV] == str(tmp_path.resolve())
+    # The pages/ folder next to the script must not become a second, technical menu.
+    assert "--client.showSidebarNavigation false" in flat
 
 
 def test_without_a_folder_the_environment_names_no_project(monkeypatch: pytest.MonkeyPatch) -> None:

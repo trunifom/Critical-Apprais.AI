@@ -327,9 +327,9 @@ def test_read_project_yaml_of_a_missing_file_is_empty(tmp_path: Path) -> None:
 
 def test_context_text_uses_the_ui_prefix(messages: Messages, tmp_path: Path) -> None:
     ctx = Context(None, None, "en", messages, RecentProjects(tmp_path / "r.json"))
-    assert ctx.t("nav.start") == "Start" and "Open or create" in ctx.t("locked.needs_project")
+    assert ctx.t("nav.start") == "Home" and "Open or create" in ctx.t("locked.needs_project")
     german = Context(None, None, "de", Messages("de"), RecentProjects(tmp_path / "r.json"))
-    assert german.t("nav.check") == "Prüfen"
+    assert german.t("nav.check") == "3 · Daten prüfen"
 
 
 # --- screening runs: view models and actions --------------------------------------------------------

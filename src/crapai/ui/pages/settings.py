@@ -84,7 +84,9 @@ def _form(st: Any, ctx: Context, folder: Path) -> None:
                     )
                     if setting and setting.source == "overrides":
                         st.caption("↳ " + ctx.t("settings_form.changed_here"))
-        saved = st.form_submit_button(ctx.t("settings_form.save"), type="primary")
+        saved = st.form_submit_button(
+            ctx.t("settings_form.save"), type="primary", key="save_settings"
+        )
     if saved:
         outcome = actions.save_settings(ctx.messages, folder, edited)
         if outcome.error is not None:

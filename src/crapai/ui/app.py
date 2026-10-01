@@ -8,6 +8,7 @@ changes, and each page draws itself.
 
 from __future__ import annotations
 
+import html
 import importlib
 import logging
 from pathlib import Path
@@ -25,7 +26,9 @@ from crapai.ui.context import (
     initial_language,
     lock_reason,
 )
+from crapai.ui.kit import Themed
 from crapai.ui.pages.common import metric_row, show_error, show_locked
+from crapai.ui.theme import SIZES, THEMES, UiPrefs, build_css
 from crapai.ui.viewmodels import Overview, RecentProjects, build_stepper, percent
 
 logger = logging.getLogger(__name__)
@@ -79,43 +82,103 @@ def current_overview(
     return outcome.value, None
 
 
-def render_sidebar(st: Any, ctx: Context) -> None:
-    """Language, workflow pages with their state, and the button that closes the project."""
+#: sidebar menu: (group title text key or "", pages); every page is a button
+NAV_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("", ("start",)),
+    ("nav_group.work", ("project", "data", "check", "run", "flow", "export")),
+    ("nav_group.more", ("settings", "help")),
+)
+PAGE_ICONS = {"start": "🏠", "settings": "⚙️", "help": "❓"}
+
+
+def _go(st: Any, page: str) -> None:
+    st.session_state["goto"] = page
+    st.rerun()
+
+
+def render_sidebar(st: Any, ui: Any, ctx: Context, prefs: UiPrefs) -> None:
+    """Title, display choices, the menu as buttons in groups, and the open project.
+
+    Args:
+        st: Streamlit itself (for the sidebar block and state).
+        ui: The cover around it (:class:`~crapai.ui.kit.Themed`) that adds help and notices.
+        ctx: The session context.
+        prefs: Where the choices of language, design and text size are remembered.
+    """
+    state = st.session_state
     with st.sidebar:
-        st.title(PRODUCT_NAME)
-        st.selectbox(
+        st.markdown(
+            f'<div class="crapai-brand">{PRODUCT_NAME}</div>'
+            f'<div class="crapai-brand-sub">{ctx.t("tagline")}</div>',
+            unsafe_allow_html=True,
+        )
+        ui.selectbox(
             ctx.t("language"),
             SUPPORTED_LANGUAGES,
             format_func=lambda code: LANGUAGE_NAMES[code],
             key="lang",
         )
+        dark = state["theme"] == "dark"
+        if ui.button(
+            ctx.t("theme.to_light" if dark else "theme.to_dark"),
+            key="theme_toggle",
+            use_container_width=True,
+        ):
+            state["theme"] = "light" if dark else "dark"
+            st.rerun()
+        large = state["size"] == "large"
+        if ui.button(
+            ctx.t("size.to_small" if large else "size.to_large"),
+            key="size_toggle",
+            use_container_width=True,
+        ):
+            state["size"] = "normal" if large else "large"
+            st.rerun()
         icons = {step.key: step.icon for step in build_stepper(ctx.overview)}
-        st.radio(
-            ctx.t("navigation"),
-            PAGES,
-            format_func=lambda page: f"{icons.get(page, '')} {ctx.t(f'nav.{page}')}".strip(),
-            key="page",
-        )
+        for group, pages in NAV_GROUPS:
+            if group:
+                st.markdown(
+                    f'<div class="crapai-nav-title">{ctx.t(group)}</div>', unsafe_allow_html=True
+                )
+            for page in pages:
+                icon = icons.get(page) or PAGE_ICONS.get(page, "")
+                current = state["page"] == page
+                if ui.button(
+                    f"{icon} {ctx.t(f'nav.{page}')}".strip(),
+                    key=f"nav_{page}",
+                    type="primary" if current else "secondary",
+                    use_container_width=True,
+                ):
+                    _go(st, page)
         if ctx.folder is not None:
-            st.caption(f"📁 {ctx.folder}")
-            if st.button(ctx.t("close_project"), key="close_project"):
-                st.session_state["folder"] = None
+            st.markdown(
+                f'<div class="crapai-project">📁 {html.escape(str(ctx.folder))}</div>',
+                unsafe_allow_html=True,
+            )
+            if ui.button(ctx.t("close_project"), key="close_project"):
+                state["folder"] = None
                 _reset_project_state(st)
-                st.session_state["goto"] = "start"
-                st.rerun()
+                _go(st, "start")
+    chosen = {"lang": state["lang"], "theme": state["theme"], "size": state["size"]}
+    if state.get("_prefs_saved") != chosen:  # remember the choices for the next session
+        prefs.save(**chosen)
+        state["_prefs_saved"] = chosen
 
 
 def render_status_bar(st: Any, ctx: Context) -> None:
-    """The numbers every page shows at its top (plan chapter 27.3)."""
+    """The project name and the numbers every page shows at its top (plan chapter 27.3)."""
     overview = ctx.overview
     if overview is None:
         st.caption(ctx.t("bar.no_project"))
         return
     valid = overview.valid_for_model if overview.valid_for_model is not None else 0
+    st.markdown(
+        f'<div class="crapai-title">{html.escape(overview.title or overview.folder.name)}</div>',
+        unsafe_allow_html=True,
+    )
     metric_row(
         st,
         [
-            (ctx.t("bar.project"), overview.title or overview.folder.name),
             (ctx.t("bar.records"), overview.records),
             (ctx.t("bar.abstracts"), percent(overview.with_abstract, overview.records)),
             (ctx.t("bar.duplicates"), overview.duplicates),
@@ -126,19 +189,38 @@ def render_status_bar(st: Any, ctx: Context) -> None:
         st.warning(ctx.t("bar.in_use"))
 
 
+def browser_theme(st: Any) -> str | None:
+    """The theme Streamlit is drawn in (``light``/``dark``) or None if it cannot be told."""
+    try:
+        value = st.context.theme.type
+    except Exception:  # noqa: BLE001 - older Streamlit, tests, no browser yet
+        return None
+    return value if value in THEMES else None
+
+
 def main(st: Any) -> None:
     """Draw one run of the interface."""
     st.set_page_config(page_title=PRODUCT_NAME, page_icon="📚", layout="wide")
     state = st.session_state
-    state.setdefault("lang", initial_language())
+    prefs = UiPrefs()
+    saved = prefs.load()
+    state.setdefault("lang", saved.get("lang") or initial_language())
+    state.setdefault("theme", saved.get("theme") or browser_theme(st) or "light")
+    state.setdefault("size", saved.get("size") or "normal")
+    if state["theme"] not in THEMES or state["size"] not in SIZES:
+        state["theme"], state["size"] = "light", "normal"
     state.setdefault("folder", initial_folder())
     state.setdefault("page", "start" if state["folder"] is None else "project")
-    if "goto" in state:  # a page asked to go elsewhere; the radio widget may only be set up here
+    if "goto" in state:  # a button asked to go elsewhere
         state["page"] = state.pop("goto")
     if state.get("_last_folder") != state["folder"]:
         _reset_project_state(st)
         state["_last_folder"] = state["folder"]
 
+    st.markdown(
+        f"<style>{build_css(state['theme'], state['size'], browser_theme(st))}</style>",
+        unsafe_allow_html=True,
+    )
     messages = Messages(state["lang"])
     folder: Path | None = state["folder"]
     overview, error = current_overview(st, messages, folder)
@@ -149,15 +231,17 @@ def main(st: Any) -> None:
     ctx = Context(folder, overview, state["lang"], messages, RecentProjects())
     if state["page"] not in PAGES:
         state["page"] = "start"
+    ui = Themed(st, ctx.help_for)
+    state["missing_help"] = ui.missing  # filled while the pages draw; read by the tests
 
-    render_sidebar(st, ctx)
-    render_status_bar(st, ctx)
+    render_sidebar(st, ui, ctx, prefs)
+    render_status_bar(ui, ctx)
     if "load_error" in state:
-        show_error(st, ctx, state.pop("load_error"))
+        show_error(ui, ctx, state.pop("load_error"))
     page = state["page"]
     reason = lock_reason(page, overview, folder)
     if reason is not None:
-        st.header(ctx.t(f"nav.{page}"))
-        show_locked(st, ctx, reason)
+        ui.header(ctx.t(f"nav.{page}"))
+        show_locked(ui, ctx, reason)
         return
-    page_module(page).render(st, ctx)
+    page_module(page).render(ui, ctx)
