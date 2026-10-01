@@ -7,8 +7,8 @@ sets them, so the steps agree on who may replace whom:
 * import sets ``EMPTY_RECORD`` and ``IMPORT_ERROR``;
 * dedup sets ``DUPLICATE`` and may replace a validity or pre-filter reason (PRISMA removes
   duplicates first);
-* the pre-filters set ``PREFILTER_LANGUAGE``, ``PREFILTER_YEAR`` and ``PREFILTER_TYPE`` and may
-  replace a validity reason;
+* the pre-filters set ``PREFILTER_LANGUAGE``, ``PREFILTER_YEAR``, ``PREFILTER_TYPE`` and
+  ``PREFILTER_KEYWORD`` and may replace a validity reason;
 * the validity check sets ``NOT_SCREENABLE``, ``RETRACTED`` and ``NO_ABSTRACT`` and never replaces
   another step's reason.
 
@@ -26,10 +26,12 @@ REASON_NO_ABSTRACT = "NO_ABSTRACT"
 REASON_PREFILTER_LANGUAGE = "PREFILTER_LANGUAGE"
 REASON_PREFILTER_YEAR = "PREFILTER_YEAR"
 REASON_PREFILTER_TYPE = "PREFILTER_TYPE"
+REASON_PREFILTER_KEYWORD = "PREFILTER_KEYWORD"
 
 VALIDITY_REASONS = frozenset({REASON_NOT_SCREENABLE, REASON_RETRACTED, REASON_NO_ABSTRACT})
 PREFILTER_REASONS = frozenset(
-    {REASON_PREFILTER_LANGUAGE, REASON_PREFILTER_YEAR, REASON_PREFILTER_TYPE}
-)
+    {REASON_PREFILTER_LANGUAGE, REASON_PREFILTER_YEAR, REASON_PREFILTER_TYPE,
+     REASON_PREFILTER_KEYWORD}
+)  # fmt: skip
 # Reasons that a later step in the order may replace (dedup replaces both groups).
 REPLACEABLE_BY_DEDUP = VALIDITY_REASONS | PREFILTER_REASONS

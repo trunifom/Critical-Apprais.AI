@@ -108,6 +108,11 @@ def eligible_records(records: list[Record], config: ProjectConfig) -> list[Recor
     return [r for r in records if not r.exclusion_reason and (r.abstract.strip() or title_only)]
 
 
+def _plan_item(record: Record, config: ProjectConfig) -> PlanItem:
+    keywords = record.keywords if config.screening.include_keywords_in_prompt else ""
+    return PlanItem(record.study_uid, record.title, record.abstract, keywords)
+
+
 def plan_items(
     records: list[Record], config: ProjectConfig, *, sample: int | None = None
 ) -> list[PlanItem]:
@@ -119,7 +124,7 @@ def plan_items(
     if sample is not None and 0 < sample < len(chosen):
         drawn = random.Random(config.run.sample_seed).sample(range(len(chosen)), sample)
         chosen = [chosen[i] for i in sorted(drawn)]
-    return [PlanItem(r.study_uid, r.title, r.abstract) for r in chosen]
+    return [_plan_item(r, config) for r in chosen]
 
 
 def settings_from_config(config: ProjectConfig, *, keep_raw: bool | None = None) -> EngineSettings:
@@ -170,6 +175,7 @@ def fingerprint_parts(config: ProjectConfig, builder: PromptBuilder) -> dict[str
         "prompt_hash": builder.prefix_hash,
         "schema_version": builder.schema_version,
         "reasoning_language": config.screening.reasoning_language,
+        "include_keywords_in_prompt": config.screening.include_keywords_in_prompt,
     }
 
 
@@ -413,9 +419,7 @@ def screen_project(workspace: Workspace, options: RunOptions | None = None) -> R
             _check_resumable(manifest, config, builder, store)
             by_uid = {r.study_uid: r for r in records}
             items = [
-                PlanItem(u, by_uid[u].title, by_uid[u].abstract)
-                for u in _read_plan(store)
-                if u in by_uid
+                _plan_item(by_uid[u], config) for u in _read_plan(store) if u in by_uid
             ]
         else:
             items = plan_items(records, config, sample=options.sample)

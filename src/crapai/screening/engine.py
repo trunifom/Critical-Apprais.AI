@@ -84,6 +84,7 @@ class PlanItem:
     uid: str
     title: str
     abstract: str
+    keywords: str = ""
 
 
 @dataclass
@@ -675,7 +676,7 @@ class ScreeningEngine:
         Raises:
             RunAbort: only for problems that concern the whole run (key refused, credit used up).
         """
-        parts = self.builder.build(item.title, item.abstract)
+        parts = self.builder.build(item.title, item.abstract, item.keywords)
         base = ResultRow(
             study_uid=item.uid,
             run_id=self.manifest.run_id,

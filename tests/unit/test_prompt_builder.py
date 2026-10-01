@@ -83,6 +83,22 @@ def test_a_record_cannot_break_out_of_its_block_by_shape_alone() -> None:
     assert parts.user.rstrip().endswith("</record>") and parts.user.count("<record>") == 1
 
 
+def test_keywords_are_added_to_the_record_only_when_given() -> None:
+    builder = builder_for(make_config())
+    without = builder.build("t", "a")
+    assert "Keywords:" not in without.user
+    with_keywords = builder.build("t", "a", "diabetes; insulin")
+    assert "<record>\nTitle: t\nAbstract: a\nKeywords: diabetes; insulin\n</record>" in (
+        with_keywords.user
+    )
+    assert builder.build("t", "a", "  ").user == without.user  # blank keywords: same as none
+
+
+def test_keywords_do_not_change_the_prefix_hash() -> None:
+    builder = builder_for(make_config())
+    assert builder.build("t", "a").prefix_hash == builder.build("t", "a", "kw").prefix_hash
+
+
 def test_a_variant_with_another_output_format_than_the_config_is_refused() -> None:
     config = make_config(output_format="legacy_xxx_yyy")
     with pytest.raises(ConfigError) as info:

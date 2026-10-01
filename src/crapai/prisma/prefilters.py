@@ -7,6 +7,8 @@ model and never consume tokens. Records are marked, never removed:
 ``PREFILTER_LANGUAGE``  the record's language is not in ``allow``
 ``PREFILTER_YEAR``      the year is outside ``min``/``max`` (bounds inclusive)
 ``PREFILTER_TYPE``      a publication type is in ``exclude``
+``PREFILTER_KEYWORD``   title/abstract/keywords matches ``exclude_any``, or matches none of
+                        ``include_any`` when that list is not empty
 
 If several filters apply, the first in this order is the reason and the details name all of them.
 Retracted publications are handled by the validity check (``exclude_retracted``), not here.
@@ -39,6 +41,7 @@ from typing import Literal
 from crapai.io.records_store import Record
 from crapai.prisma.reasons import (
     PREFILTER_REASONS,
+    REASON_PREFILTER_KEYWORD,
     REASON_PREFILTER_LANGUAGE,
     REASON_PREFILTER_TYPE,
     REASON_PREFILTER_YEAR,
@@ -149,6 +152,11 @@ class PrefilterConfig:
         year_on_missing: What to do with records without a year.
         type_exclude: Publication types to exclude; empty = no type filter.
         type_on_missing: What to do with records without any publication type.
+        keyword_include: Terms of which at least one must be present (an allow-list); empty = no
+            requirement.
+        keyword_exclude: Terms that exclude a record if present; empty = no keyword filter.
+        keyword_case_sensitive: Compare terms exactly as written; default is case-insensitive.
+        keyword_on_missing: What to do when title, abstract and keywords are all empty.
     """
 
     language_allow: tuple[str, ...] = ()
@@ -158,6 +166,10 @@ class PrefilterConfig:
     year_on_missing: OnMissing = "pass"
     type_exclude: tuple[str, ...] = ()
     type_on_missing: OnMissing = "pass"
+    keyword_include: tuple[str, ...] = ()
+    keyword_exclude: tuple[str, ...] = ()
+    keyword_case_sensitive: bool = False
+    keyword_on_missing: OnMissing = "pass"
 
     def __post_init__(self) -> None:
         if (
@@ -192,10 +204,28 @@ class PrefilterConfig:
         """True if a publication-type filter is configured."""
         return bool(self.type_exclude)
 
+    @cached_property
+    def keyword_include_terms(self) -> tuple[str, ...]:
+        """The allow-list terms, normalised for comparison (computed once)."""
+        return tuple(self._normalise_keyword(t) for t in self.keyword_include if t.strip())
+
+    @cached_property
+    def keyword_exclude_terms(self) -> tuple[str, ...]:
+        """The block-list terms, normalised for comparison (computed once)."""
+        return tuple(self._normalise_keyword(t) for t in self.keyword_exclude if t.strip())
+
+    def _normalise_keyword(self, term: str) -> str:
+        return term if self.keyword_case_sensitive else term.lower()
+
+    @property
+    def keyword_active(self) -> bool:
+        """True if a keyword filter is configured."""
+        return bool(self.keyword_include or self.keyword_exclude)
+
     @property
     def active(self) -> bool:
         """True if at least one filter is configured."""
-        return self.language_active or self.year_active or self.type_active
+        return self.language_active or self.year_active or self.type_active or self.keyword_active
 
 
 @dataclass
@@ -265,6 +295,33 @@ def _type_hit(record: Record, config: PrefilterConfig, missing: Counter[str]) ->
     return f"type: {', '.join(hits)}" if hits else None
 
 
+def _searchable_text(record: Record) -> str:
+    """Title, abstract and both keyword fields as one text, for the keyword filter."""
+    return " ".join(
+        part for part in (record.title, record.abstract, record.keywords, record.keywords_mesh)
+        if part
+    )
+
+
+def _keyword_hit(record: Record, config: PrefilterConfig, missing: Counter[str]) -> str | None:
+    if not config.keyword_active:
+        return None
+    text = _searchable_text(record)
+    if not text.strip():
+        if config.keyword_on_missing == "exclude":
+            return "keyword: missing"
+        missing["keyword"] += 1
+        return None
+    haystack = text if config.keyword_case_sensitive else text.lower()
+    hits = [t for t in config.keyword_exclude_terms if t in haystack]
+    if hits:
+        return f"keyword exclude: {', '.join(sorted(set(hits)))}"
+    required = config.keyword_include_terms
+    if required and not any(t in haystack for t in required):
+        return f"keyword include: none of ({', '.join(config.keyword_include)}) found"
+    return None
+
+
 def mark_prefilters(
     records: list[Record], config: PrefilterConfig | None = None
 ) -> PrefilterResult:
@@ -294,6 +351,7 @@ def mark_prefilters(
                 (REASON_PREFILTER_LANGUAGE, _language_hit(record, config, missing)),
                 (REASON_PREFILTER_YEAR, _year_hit(record, config, missing)),
                 (REASON_PREFILTER_TYPE, _type_hit(record, config, missing)),
+                (REASON_PREFILTER_KEYWORD, _keyword_hit(record, config, missing)),
             )
             if text
         ]

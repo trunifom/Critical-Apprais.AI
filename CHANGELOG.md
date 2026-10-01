@@ -7,6 +7,13 @@ Jeder Eintrag verweist auf die Aufgabenkarte; die genauen Commits stehen in `doc
 
 ## [Unveröffentlicht] - 0.0.1
 
+### Stichwort-Filter (ADR 0023)
+
+* **Neuer Vorfilter `prefilters.keywords`** (`KeywordFilter` in `config/models.py`, `prisma/prefilters.py`): durchsucht Title, Abstract und die Felder `keywords`/`keywords_mesh` als einen Text; `exclude_any` schliesst bei Treffer aus, `include_any` ist eine Positivliste (ausgeschlossen, wenn keiner der Begriffe vorkommt), standardmässig ohne Gross-/Kleinschreibung (`case_sensitive`); läuft wie die bestehenden Vorfilter vor dem Modell, ohne Kosten. **Neuer Grund** `PREFILTER_KEYWORD` (Katalog `prisma/reasons.py`, `records_store.EXCLUSION_REASONS`). Aus und ohne Wirkung, solange nichts eingetragen ist.
+* **Neue Einstellung `screening.include_keywords_in_prompt`** (Standard `false`): zeigt dem Modell zusätzlich die Stichwörter im `<record>`-Block (`PromptBuilder.build` nimmt neu ein optionales `keywords`-Argument). Ändert den Prompt-Hash nicht, geht aber in den Lauf-Fingerabdruck ein (ein Wechsel während eines Laufs verweigert die Fortsetzung mit E204). Die Kostenschätzung zählt die Stichwörter nur mit, wenn der Schalter an ist.
+* Oberfläche (Seite Einstellungen): `prefilters.keywords.include_any`/`exclude_any` als Listenfelder, `screening.include_keywords_in_prompt` als Schalter; `case_sensitive` nur in `project.yaml`.
+* Keine Schema-Version-Änderung: `keywords`/`keywords_mesh` waren bereits Spalten von `records.csv`.
+
 ### Hinzugefügt
 
 * **Grundlagen (M0):** Lint-Konfiguration (`reference/` ausgenommen), Schichtentest für den Kern (ohne GUI-, CLI- und LLM-Importe), CI-Workflow für Windows/Linux/macOS und Python 3.11-3.13 (T-M0-02).

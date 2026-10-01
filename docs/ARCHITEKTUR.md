@@ -57,7 +57,7 @@ So bleibt der Kern ohne Oberfläche testbar und später von Streamlit und CLI ge
 | `prisma.events` | PRISMA-Ereignisse: Modell `PrismaEvent` und reine Fabrikfunktionen (Import, Dedup je Quelle, Zusammenführung, globales Dedup, Gültigkeit, Vorfilter, Screening); Zeilenformat JSON | `PrismaEvent`, `source_imported`, `dedup_within_source`, `dedup_global`, `to_json_line` |
 | `prisma.flow` | Zahlen des PRISMA-2020-Flussdiagramms, **abgeleitet** aus den Ereignissen (Portierung von `to_prisma_flow` und `validate_rollup`, beide Berichtsmodi) | `build_flow`, `validate_flow`, `PrismaFlow` |
 | `services.events` | Ereignisdatei `data/events.jsonl` lesen und anhängen, die Ereignisse von Import, Dedup und Gültigkeit schreiben, Fluss eines Projekts | `append_events`, `read_events`, `project_flow`, `record_dedup` |
-| `prisma.prefilters` | deterministische Vorfilter vor dem Modell: Sprache (ISO 639-2), Jahr, Publikationstyp; fehlende Angaben nach `on_missing` | `mark_prefilters`, `PrefilterConfig`, `normalize_language` |
+| `prisma.prefilters` | deterministische Vorfilter vor dem Modell: Sprache (ISO 639-2), Jahr, Publikationstyp, optional Stichwörter (Title/Abstract/Keywords als ein Text, Positiv- und Negativliste); fehlende Angaben nach `on_missing` | `mark_prefilters`, `PrefilterConfig`, `normalize_language` |
 | `services.prefilter` | Vorfilter aus `project.yaml` im Projekt anwenden, Ereignis schreiben | `prefilter_project` |
 | `prisma.validity` | Gültigkeit: fehlende Abstracts, Front-Matter, zurückgezogene Studien, Abstract-Qualität | `mark_validity`, `ValidityConfig`, `classify_abstract`, `is_not_screenable` |
 | `services.validity` | Gültigkeit im Projekt anwenden | `validate_project` |
@@ -88,7 +88,7 @@ So bleibt der Kern ohne Oberfläche testbar und später von Streamlit und CLI ge
 | `llm.resilience` | Wiederholen mit Backoff und `Retry-After`, gleitendes Fenster für Anfragen/Tokens pro Minute, adaptive Parallelität (halbieren bei 429, langsam steigern), Sicherung bei Fehlern in Folge; Uhr und Schlaf einsetzbar (Tests ohne Wartezeit) | `RetryPolicy`, `call_with_retry`, `RateLimiter`, `AdaptiveConcurrency`, `CircuitBreaker` |
 | `llm.mock_provider` | Anbieter ohne Netz und ohne Schlüssel mit den 15 Fehlerszenarien S1-S15 (deterministisch); die ganze Engine wird dagegen getestet | `MockProvider`, `SCENARIOS`, `answer_json` |
 | `llm.openai_provider` | OpenAI und OpenAI-kompatible Dienste (SwissGPT): Fehlerübersetzung in die eigenen Klassen, SDK-Wiederholungen aus, Schlüssel nie in Meldungen oder Logs | `OpenAICompatibleProvider`, `translate` |
-| `prompts.builder` | Prompt je Datensatz: stabiler Anfang (System, Projekt, Kriterien, Anweisungen) und `<record>`-Block, Fingerabdruck des stabilen Teils; Varianten aus YAML (Paket und Projekt) | `PromptBuilder`, `PromptVariant`, `builder_for`, `load_variant`, `hash_text` |
+| `prompts.builder` | Prompt je Datensatz: stabiler Anfang (System, Projekt, Kriterien, Anweisungen) und `<record>`-Block (Title/Abstract, optional Keywords per `screening.include_keywords_in_prompt`), Fingerabdruck des stabilen Teils (Keywords im Datensatz-Teil ändern ihn nicht); Varianten aus YAML (Paket und Projekt) | `PromptBuilder`, `PromptVariant`, `builder_for`, `load_variant`, `hash_text` |
 | `screening.answer` | Antwort des Modells prüfen: Schema, Entscheidung zuletzt, Gegenprobe aus den Urteilen, Zitate im Datensatz, altes XXX/YYY-Format; unlesbar ist ein Fehler, nie ein Einschluss | `ANSWER_SCHEMA`, `parse_answer`, `derive_decision`, `check_quotes`, `parse_legacy` |
 | `screening.store` | Dateien eines Laufs: `manifest.json` (atomar), `screening.jsonl` (nur anhängen, letzte Zeile je Datensatz gilt), `control.json` (Pause/Stopp von aussen) | `RunStore`, `Manifest`, `ResultRow`, `RunState`, `BatchInfo` |
 | `screening.engine` | Verarbeitung in Päckchen mit Prüfung auf der Platte, Arbeiter, Fristen, Fehlerquote je Päckchen, Sicherung, Kostenlimit, Schonfrist beim Stopp; jeder Halt hat einen Zustand und einen Code | `ScreeningEngine`, `EngineSettings`, `PlanItem`, `Progress`, `RunSummary` |
@@ -188,7 +188,8 @@ Unveränderlich: `tests/data/**`, `tests/legacy_runs/**`, `tests/expected/**`, `
 ## 9. Wichtige Entscheide (ADR)
 
 Siehe `docs/adr/`: 0001 Projektordner statt Datenbank · 0002 CSV/JSONL kanonisch, XLSX nur Export · 0003 Append-only-Checkpoint ·
-0004 asyncio · 0005 strukturierte Antworten · 0006 UI und Worker getrennt · 0007 Pydantic + YAML · 0013 Streamlit · 0014 SwissGPT als Hauptanbieter · 0015 kein Volltext in v1.
+0004 asyncio · 0005 strukturierte Antworten · 0006 UI und Worker getrennt · 0007 Pydantic + YAML · 0013 Streamlit · 0014 SwissGPT als Hauptanbieter · 0015 kein Volltext in v1 ·
+0019 Vorfilter-Reihenfolge · 0023 Keyword-Vorfilter und Prompt-Kontext.
 
 Umsetzungsentscheide, die im Code gefallen sind (auch in `docs/UMSETZUNGSPLAN_UND_FORTSCHRITT.md`, Abschnitt 6):
 

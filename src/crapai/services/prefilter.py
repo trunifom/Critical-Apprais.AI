@@ -41,6 +41,7 @@ class PrefilterSummary:
 def config_from_settings(settings: Prefilters) -> PrefilterConfig:
     """Translate the ``prefilters`` block of ``project.yaml`` into the filter configuration."""
     language, year, types = settings.language, settings.year, settings.publication_types
+    keywords = settings.keywords
     return PrefilterConfig(
         language_allow=tuple(language.allow) if language else (),
         language_on_missing=language.on_missing if language else "pass",
@@ -49,6 +50,10 @@ def config_from_settings(settings: Prefilters) -> PrefilterConfig:
         year_on_missing=year.on_missing if year else "pass",
         type_exclude=tuple(types.exclude) if types else (),
         type_on_missing=types.on_missing if types else "pass",
+        keyword_include=tuple(keywords.include_any) if keywords else (),
+        keyword_exclude=tuple(keywords.exclude_any) if keywords else (),
+        keyword_case_sensitive=keywords.case_sensitive if keywords else False,
+        keyword_on_missing=keywords.on_missing if keywords else "pass",
     )
 
 

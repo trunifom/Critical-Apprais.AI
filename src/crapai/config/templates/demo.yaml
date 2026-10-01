@@ -41,6 +41,8 @@ prefilters:
   language: { allow: [eng, ger], on_missing: pass }     # uses the record field `language` (RIS LA / NBIB LA)
   year: { min: 2015, max: null, on_missing: pass }
   publication_types: { exclude: [Editorial, Letter, Comment], on_missing: pass }
+  # Optional keyword filter: matches title, abstract and the keyword fields as one text.
+  # keywords: { include_any: [], exclude_any: [animal model, in vitro], case_sensitive: false, on_missing: pass }
   exclude_retracted: true
 
 screening:
@@ -50,6 +52,7 @@ screening:
   decision_source: model                 # model | rule
   reasoning_language: en
   include_title_only: false
+  include_keywords_in_prompt: false      # also show the record's keywords to the model
   fulltext:
     strategy: truncate                   # truncate | sections | map_reduce
     repeat_criteria_after_text: false

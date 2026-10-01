@@ -154,6 +154,33 @@ def test_year_filter_bounds_must_be_ordered() -> None:
         ProjectConfig.model_validate(data)
 
 
+def test_keyword_filter_defaults_are_off() -> None:
+    config = ProjectConfig.model_validate(example())
+    assert config.prefilters.keywords is None
+    assert config.screening.include_keywords_in_prompt is False
+
+
+def test_keyword_filter_is_validated_like_the_other_filters() -> None:
+    data = example()
+    data["prefilters"]["keywords"] = {
+        "include_any": ["diabetes"],
+        "exclude_any": ["animal model"],
+        "case_sensitive": True,
+        "on_missing": "exclude",
+    }
+    config = ProjectConfig.model_validate(data)
+    assert config.prefilters.keywords is not None
+    assert config.prefilters.keywords.include_any == ["diabetes"]
+    assert config.prefilters.keywords.on_missing == "exclude"
+
+
+def test_keyword_filter_rejects_unknown_keys() -> None:
+    data = example()
+    data["prefilters"]["keywords"] = {"include_any": [], "typo": True}
+    with pytest.raises(ValidationError):
+        ProjectConfig.model_validate(data)
+
+
 def test_schema_version_must_be_1() -> None:
     data = example()
     data["schema"] = 2

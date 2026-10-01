@@ -637,7 +637,7 @@ Befehle melden `E402`. `crapai unlock` entfernt sie nur, wenn sie **veraltet** i
 Gehört sie einem laufenden Prozess, wird nichts geändert (Rückgabecode 2). Ohne Terminal und ohne `--yes` wird nichts entfernt (Rückgabecode 1). Die Sperre darf **nie** von Hand
 gelöscht werden, während ein Lauf aktiv ist.
 
-## 6e. Vorfilter: Sprache, Jahr, Publikationstyp
+## 6e. Vorfilter: Sprache, Jahr, Publikationstyp, Stichwörter
 
 Manche Kriterien sind Metadaten, die das Sprachmodell nicht zuverlässig beurteilt (zum Beispiel die Sprache einer Studie). Sie prüfen diese im Programm, **vor** dem Modell und ohne Kosten. Die Einstellung steht in der `project.yaml`:
 
@@ -646,16 +646,20 @@ prefilters:
   language: { allow: [eng, ger], on_missing: pass }
   year: { min: 2015, max: null, on_missing: pass }
   publication_types: { exclude: [Editorial, Letter, Comment], on_missing: pass }
+  keywords: { include_any: [], exclude_any: [animal model, in vitro], case_sensitive: false, on_missing: pass }
   exclude_retracted: true
 ```
 
-* Die Filter laufen automatisch bei `crapai check` (nach den Duplikaten, vor der Gültigkeitsprüfung). Datensätze, die durchfallen, werden **markiert, nicht gelöscht**: `PREFILTER_LANGUAGE`, `PREFILTER_YEAR`, `PREFILTER_TYPE` (Tabelle in 7a); `exclusion_details` sagt genau warum, zum Beispiel `language: fre (allowed: eng, ger)`.
-* **Fehlende Angaben:** Fehlt Sprache, Jahr oder Typ, gilt `on_missing`. Mit `pass` (Standard) geht der Datensatz ans Modell, damit nichts wegen fehlender Daten verloren geht; mit `exclude` wird er markiert. Ein Sprachtext wie "n/a" zählt als fehlend.
+* Die Filter laufen automatisch bei `crapai check` (nach den Duplikaten, vor der Gültigkeitsprüfung). Datensätze, die durchfallen, werden **markiert, nicht gelöscht**: `PREFILTER_LANGUAGE`, `PREFILTER_YEAR`, `PREFILTER_TYPE`, `PREFILTER_KEYWORD` (Tabelle in 7a); `exclusion_details` sagt genau warum, zum Beispiel `language: fre (allowed: eng, ger)`.
+* **Fehlende Angaben:** Fehlt Sprache, Jahr, Typ oder (bei den Stichwörtern) der ganze Text, gilt `on_missing`. Mit `pass` (Standard) geht der Datensatz ans Modell, damit nichts wegen fehlender Daten verloren geht; mit `exclude` wird er markiert. Ein Sprachtext wie "n/a" zählt als fehlend.
 * **Sprache:** `de`, `deu`, `ger` und `German` sind dasselbe, ebenso `en-US` und `en_GB` für Englisch. Hat ein Datensatz mehrere Sprachen ("eng; fre"), genügt eine erlaubte. Die Marken `und` (unbestimmt), `mul` (mehrere), `zxx`, `unk`, `nan` sagen nichts über die Sprache und zählen als fehlend.
 * **Jahr:** Grenzen gelten einschliesslich; `null` heisst offen.
 * **Publikationstyp:** Ein Datensatz wird ausgeschlossen, wenn irgendeiner seiner Typen in der Liste steht (Gross-/Kleinschreibung egal). Steht `Editorial` in der Liste, verfällt auch "Journal Article; Editorial".
+* **Stichwörter (optional, standardmässig aus):** durchsucht Titel, Abstract und die Felder `keywords`/`keywords_mesh` als einen Text (Teilwort-Suche, standardmässig ohne Gross-/Kleinschreibung; `case_sensitive: true` schaltet das ab). `exclude_any`: ein Treffer schliesst aus. `include_any`: der Datensatz wird ausgeschlossen, wenn **keines** der Wörter vorkommt (eine Positivliste, wie bei der Sprache). Beide leer = Filter aus; sind beide gesetzt, hat `exclude_any` Vorrang. Die Oberfläche (Seite Einstellungen) bietet `include_any`/`exclude_any` als Listenfelder; `case_sensitive` wird nur in `project.yaml` eingestellt.
 * Ändern Sie eine Einstellung, berechnet der nächste `crapai check` alles neu; alte Markierungen verschwinden, wenn sie nicht mehr zutreffen.
 * Im PRISMA-Fluss zählen diese Datensätze (und ausgeschlossene zurückgezogene Studien) unter "vor dem Screening aus anderen Gründen entfernt" (Abschnitt 6d).
+
+Unabhängig vom Vorfilter kann das Modell die Stichwörter zusätzlich als Kontext sehen (`screening.include_keywords_in_prompt: true`, Standard `false`): Title, Abstract **und** Keywords gehen dann in den Prompt. Das schliesst allein nichts aus - das Modell entscheidet weiterhin selbst; für einen harten, kostenlosen Ausschluss den Vorfilter oben verwenden. Beide Schalter sind unabhängig voneinander und lassen sich kombinieren.
 
 ## 6d. Ereignisse und PRISMA-Zahlen
 
@@ -698,6 +702,7 @@ Jeder Datensatz hat höchstens einen Grund; er wird **markiert, nie gelöscht**.
 | `PREFILTER_LANGUAGE` | Sprache nicht in `prefilters.language.allow` (Abschnitt 6e) | Vorfilter |
 | `PREFILTER_YEAR` | Jahr ausserhalb von `prefilters.year.min`/`max` | Vorfilter |
 | `PREFILTER_TYPE` | ein Publikationstyp steht in `prefilters.publication_types.exclude` | Vorfilter |
+| `PREFILTER_KEYWORD` | Titel/Abstract/Keywords enthalten ein Wort aus `prefilters.keywords.exclude_any`, oder keines aus `include_any` (Abschnitt 6e) | Vorfilter |
 | `NOT_SCREENABLE` | kein Studieninhalt, der Titel ist nur "Front-matter", "Index", "Table of contents", "Cover" u. ä. | Gültigkeitsprüfung |
 | `RETRACTED` | zurückgezogene Publikation, nur wenn `prefilters.exclude_retracted: true` gesetzt ist | Gültigkeitsprüfung |
 | `NO_ABSTRACT` | kein Abstract (ausser bei `screening.include_title_only: true`, dann geht der Titel allein ans Modell) | Gültigkeitsprüfung |

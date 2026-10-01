@@ -155,6 +155,7 @@ neue Module in die Architektur, Änderungen ins `CHANGELOG.md`, Stand ins `READM
 ## 5. Nächster Schritt (bitte aktuell halten)
 
 **Meilenstein A ist erreicht und M1 ist vollständig** (T-M1-09 bleibt zurückgestellt). M2: `T-M2-01` (Duplikate), `T-M2-03` (Gültigkeit) , `T-M2-04` (Preflight, `crapai check`) und `T-M2-05` (Kostenschätzung), `T-M2-07` (PRISMA-Ereignisse) und `T-M2-08` (Vorfilter) und `T-M2-06` (Dauer, Kostenausgabe) sind fertig; **Meilenstein M2 ist vollständig bis auf das zurückgestellte `T-M2-02`**. **Meilenstein M3 (Screening-Kern) ist umgesetzt** (Anbieter, Wiederholung, Limiter, Prompt, Antwortprüfung, Engine mit Päckchen und Fortsetzen, `crapai screen`, Seite „Lauf“, Akzeptanztests AT2-AT4, ADR 0022). **Nächste Schritte:** Live-Test mit echtem Schlüssel (Schlüssel folgt von der Projektleitung), danach M4 (Ergebnistabelle, Test-Retest, Vergleich mit Menschen). **Zurückgestellt, nicht vergessen:** `T-M2-02` unscharfe Duplikatsuche (braucht `rapidfuzz`). Pflege der Dokumentation: Benutzerhandbuch, Entwicklerdokumentation, Architektur, README, CHANGELOG nach jeder Aufgabe mitführen.
+**Laufend (2026-10-01, Wunsch der Projektleitung):** Stichwort-Filter ist fertig (siehe Abschnitt "Zusatzfunktionen"); als Nächstes die Vergleichsschicht für Mehrfachbewertung/Modellvergleich (`stats/agreement.py`, Befehl, Dashboard).
 
 ## 6. Abweichungen und offene Punkte
 
@@ -184,6 +185,15 @@ Alle bestätigten Fehler sind behoben und mit Tests abgesichert; die Entscheide 
 | [x] | `crapai export` (CSV, XLSX, RIS, PRISMA-Fluss), Formatierung, CI, Dokumentation | siehe `git log` |
 
 Offen aus der Prüfung (bewusst nicht geändert, siehe ADR 0020): ungenutzte Aufzählungen in `enums.py`; `tiktoken` wird in der CI nicht installiert.
+
+## Zusatzfunktionen auf Wunsch der Projektleitung (2026-10-01)
+
+Zwei Funktionen ausserhalb der Aufgabenkarten, auf Wunsch der Projektleitung im Chat; Rückfrage per `AskUserQuestion` geklärt: Stichwort-Filter als **beides** (harter Vorfilter und optionaler Prompt-Kontext, unabhängig zuschaltbar), Mehrfachbewertung als **mehrere separate `crapai screen`-Aufrufe** plus neue Vergleichsschicht.
+
+| Status | Schritt | Datum / Uhrzeit | Commit |
+|---|---|---|---|
+| [x] | Stichwort-Vorfilter `prefilters.keywords` (neuer Grund `PREFILTER_KEYWORD`) und `screening.include_keywords_in_prompt` (Prompt-Kontext, ändert den Prompt-Hash nicht, geht aber in den Lauf-Fingerabdruck ein); ADR 0023 | 2026-10-01 | *(folgt)* |
+| [ ] | Mehrfachbewertung/Modellvergleich: Vergleichsschicht `stats/agreement.py` (Cohen's/Fleiss' Kappa, Landis & Koch, instabile Datensätze), `services.results.compare_runs`, Befehl, Dashboard-Erweiterung (Plan Kap. 14.1) | | |
 
 ## Oberfläche, Protokoll-System und Arbeitsablauf (2026-10-01)
 

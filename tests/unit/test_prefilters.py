@@ -162,6 +162,67 @@ def test_missing_type_follows_on_missing() -> None:
     assert reasons([rec()], excluded) == ["PREFILTER_TYPE"]
 
 
+# --- keywords -----------------------------------------------------------------------------------
+
+
+def test_keyword_exclude_matches_title_abstract_and_keywords() -> None:
+    config = PrefilterConfig(keyword_exclude=("zebrafish",))
+    records = [
+        rec("a", title="A study of zebrafish embryos"),
+        rec("b", abstract="We studied Zebrafish models of disease. " * 3),
+        rec("c", keywords="cardiology; zebrafish; genetics"),
+        rec("d", title="Human trial", abstract="No match here.", keywords="oncology"),
+    ]
+    assert reasons(records, config) == [
+        "PREFILTER_KEYWORD",
+        "PREFILTER_KEYWORD",
+        "PREFILTER_KEYWORD",
+        "",
+    ]
+
+
+def test_keyword_include_requires_at_least_one_match() -> None:
+    config = PrefilterConfig(keyword_include=("diabetes", "insulin"))
+    records = [
+        rec("a", abstract="A trial about insulin resistance. " * 3),
+        rec("b", keywords="diabetes mellitus"),
+        rec("c", title="Unrelated topic", abstract="Nothing relevant. " * 3),
+    ]
+    assert reasons(records, config) == ["", "", "PREFILTER_KEYWORD"]
+
+
+def test_keyword_exclude_wins_over_include() -> None:
+    config = PrefilterConfig(keyword_include=("diabetes",), keyword_exclude=("animal model",))
+    record = rec(abstract="Diabetes in an animal model. " * 3)
+    assert reasons([record], config) == ["PREFILTER_KEYWORD"]
+
+
+def test_keyword_matching_is_case_insensitive_by_default() -> None:
+    config = PrefilterConfig(keyword_exclude=("Zebrafish",))
+    assert reasons([rec(title="ZEBRAFISH study")], config) == ["PREFILTER_KEYWORD"]
+
+
+def test_keyword_case_sensitive_requires_exact_case() -> None:
+    config = PrefilterConfig(keyword_exclude=("Zebrafish",), keyword_case_sensitive=True)
+    assert reasons([rec(title="zebrafish study")], config) == [""]
+    assert reasons([rec(title="Zebrafish study")], config) == ["PREFILTER_KEYWORD"]
+
+
+def test_missing_text_follows_keyword_on_missing() -> None:
+    record = rec(title="", abstract="", keywords="", keywords_mesh="")
+    config = PrefilterConfig(keyword_include=("x",))
+    assert reasons([record], config) == [""]
+    assert mark_prefilters([record], config).passed_on_missing == {"keyword": 1}
+    excluded = PrefilterConfig(keyword_include=("x",), keyword_on_missing="exclude")
+    assert reasons([record], excluded) == ["PREFILTER_KEYWORD"]
+
+
+def test_keyword_filter_is_off_by_default_and_counted_in_active() -> None:
+    assert not PrefilterConfig().keyword_active
+    assert PrefilterConfig(keyword_exclude=("x",)).active
+    assert PrefilterConfig(keyword_include=("x",)).active
+
+
 # --- combination and ownership ----------------------------------------------------------------
 
 

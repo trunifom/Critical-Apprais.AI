@@ -102,6 +102,7 @@ EXCLUSION_REASONS = frozenset(
         "PREFILTER_LANGUAGE",
         "PREFILTER_YEAR",
         "PREFILTER_TYPE",
+        "PREFILTER_KEYWORD",
     }
 )
 

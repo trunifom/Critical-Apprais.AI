@@ -71,6 +71,8 @@ SECTIONS: tuple[Section, ...] = (
         (
             Field("prefilters.language.allow", "list"),
             Field("prefilters.exclude_retracted", "bool"),
+            Field("prefilters.keywords.include_any", "list"),
+            Field("prefilters.keywords.exclude_any", "list"),
         ),
     ),
     Section(
@@ -90,6 +92,7 @@ SECTIONS: tuple[Section, ...] = (
         "screening",
         (
             Field("screening.include_title_only", "bool"),
+            Field("screening.include_keywords_in_prompt", "bool"),
             Field("screening.uncertain_policy", "choice", ("include", "exclude", "keep_separate")),
             Field("screening.decision_source", "choice", ("model", "rule")),
             Field("screening.reasoning_language", "choice", ("en", "de")),

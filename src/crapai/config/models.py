@@ -132,12 +132,32 @@ class PublicationTypeFilter(_Strict):
     on_missing: Literal["pass", "exclude"] = "pass"
 
 
+class KeywordFilter(_Strict):
+    """Deterministic keyword filter (optional; off unless a list is given).
+
+    Matches title, abstract and the keyword fields (``keywords``, ``keywords_mesh``) as one text.
+
+    Attributes:
+        include_any: The record is excluded unless at least one of these terms is present
+            (an allow-list). Empty = no requirement.
+        exclude_any: The record is excluded if any of these terms is present. Empty = off.
+        case_sensitive: Compare terms exactly as written; default is case-insensitive.
+        on_missing: What to do when title, abstract and keywords are all empty.
+    """
+
+    include_any: list[str] = Field(default_factory=list)
+    exclude_any: list[str] = Field(default_factory=list)
+    case_sensitive: bool = False
+    on_missing: Literal["pass", "exclude"] = "pass"
+
+
 class Prefilters(_Strict):
     """Filters that run in code before the LLM (plan chapter 35.4, U3). All off by default."""
 
     language: LanguageFilter | None = None
     year: YearFilter | None = None
     publication_types: PublicationTypeFilter | None = None
+    keywords: KeywordFilter | None = None
     exclude_retracted: bool = False
 
 
@@ -158,6 +178,8 @@ class ScreeningOptions(_Strict):
     decision_source: Literal["model", "rule"] = "model"
     reasoning_language: Literal["en", "de"] = "en"
     include_title_only: bool = False
+    # Optional: give the model the record's keywords too (title/abstract alone otherwise).
+    include_keywords_in_prompt: bool = False
     fulltext: FulltextOptions = Field(default_factory=FulltextOptions)
 
 

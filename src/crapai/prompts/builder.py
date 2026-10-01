@@ -256,11 +256,17 @@ class PromptBuilder:
         parts.append(self.variant.instructions)
         return "\n\n".join(part for part in parts if part)
 
-    def build(self, title: str, abstract: str) -> PromptParts:
-        """The prompt for one record (title and abstract are inserted as they are)."""
-        record = (
-            f"{RECORD_OPEN}\nTitle: {title.strip()}\nAbstract: {abstract.strip()}\n{RECORD_CLOSE}"
-        )
+    def build(self, title: str, abstract: str, keywords: str = "") -> PromptParts:
+        """The prompt for one record (title, abstract and optional keywords, as they are).
+
+        ``keywords`` is part of the variable record, not the stable prefix: adding it never
+        changes :attr:`prefix_hash`. Pass it only when ``screening.include_keywords_in_prompt``
+        is on (see :func:`crapai.services.screening.plan_items`).
+        """
+        lines = [f"Title: {title.strip()}", f"Abstract: {abstract.strip()}"]
+        if keywords.strip():
+            lines.append(f"Keywords: {keywords.strip()}")
+        record = f"{RECORD_OPEN}\n" + "\n".join(lines) + f"\n{RECORD_CLOSE}"
         return PromptParts(self.system, f"{self.prefix}\n\n{record}", self.prefix_hash)
 
     @property

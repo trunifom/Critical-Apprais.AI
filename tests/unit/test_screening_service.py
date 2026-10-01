@@ -140,6 +140,33 @@ def test_changed_settings_refuse_the_resume_with_e204_and_name_the_change(
     )
 
 
+def test_changing_the_keyword_prompt_toggle_refuses_the_resume(project: Workspace) -> None:
+    first = svc.screen_project(project, options(provider=MockProvider("S14", after=5)))
+    edit_yaml(project, screening={"include_keywords_in_prompt": True})
+    with pytest.raises(ConfigError) as info:
+        svc.screen_project(project, options(resume=first.run_id, provider=MockProvider("S1")))
+    assert info.value.code == "E204" and any(
+        "include_keywords_in_prompt" in c for c in info.value.details["changed"]
+    )
+
+
+def test_plan_items_carry_keywords_only_when_switched_on(project: Workspace) -> None:
+    from crapai.config.loader import load_project_config
+
+    records = read_records(project.records_csv)
+    records[0] = records[0].model_copy(update={"keywords": "exercise; fatigue"})
+    from crapai.io.records_store import write_records
+
+    write_records(project.records_csv, records)
+    config = load_project_config(project.project_yaml)
+    assert all(item.keywords == "" for item in svc.plan_items(records, config))
+    edit_yaml(project, screening={"include_keywords_in_prompt": True})
+    config = load_project_config(project.project_yaml)
+    items = svc.plan_items(records, config)
+    assert items[0].keywords == "exercise; fatigue"
+    assert all(item.keywords == "" for item in items[1:])
+
+
 def test_settings_that_do_not_shape_the_answers_may_change_between_sessions(
     project: Workspace,
 ) -> None:
@@ -334,3 +361,18 @@ def test_the_estimate_counts_the_real_prompt_of_the_run(project: Workspace) -> N
     expected = tokenizer.count(builder.system + "\n\n" + builder.prefix)
     assert estimate.estimate.shared_tokens == expected
     assert expected > 400  # system prompt with schema + criteria + instructions, not a stub
+
+
+def test_the_estimate_counts_keywords_only_when_switched_on(project: Workspace) -> None:
+    from crapai.io.records_store import write_records
+    from crapai.services.cost import estimate_project
+
+    records = read_records(project.records_csv)
+    write_records(
+        project.records_csv,
+        [r.model_copy(update={"keywords": "exercise; fatigue; cohort study"}) for r in records],
+    )
+    without = estimate_project(project).estimate.item_tokens
+    edit_yaml(project, screening={"include_keywords_in_prompt": True})
+    with_keywords = estimate_project(project).estimate.item_tokens
+    assert with_keywords > without

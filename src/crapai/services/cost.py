@@ -99,7 +99,16 @@ def estimate_project(workspace: Workspace, *, instructions: str = "") -> Project
     workspace = Workspace.open(workspace.root)
     config = load_project_config(workspace.project_yaml)
     records = read_records(workspace.records_csv)
-    items = [(r.title, r.abstract) for r in records if not r.exclusion_reason]
+    include_keywords = config.screening.include_keywords_in_prompt
+    items = [
+        (
+            r.title,
+            f"{r.abstract}\nKeywords: {r.keywords}" if include_keywords and r.keywords.strip()
+            else r.abstract,
+        )
+        for r in records
+        if not r.exclusion_reason
+    ]
     builder = builder_for(config, workspace.prompts_dir)
     shared_text = builder.system + "\n\n" + builder.prefix
     provider, model = config.llm.provider, config.llm.model

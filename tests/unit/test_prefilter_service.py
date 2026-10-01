@@ -71,6 +71,22 @@ def test_the_block_of_project_yaml_becomes_the_configuration(project: Workspace)
     assert config.type_exclude == ("Editorial", "Letter", "Comment") and config.active
 
 
+def test_the_keyword_block_becomes_the_configuration(project: Workspace) -> None:
+    set_prefilters(
+        project,
+        {"keywords": {"exclude_any": ["French"], "include_any": [], "case_sensitive": False}},
+    )
+    config = config_from_settings(load_project_config(project.project_yaml).prefilters)
+    assert config.keyword_exclude == ("French",) and config.keyword_active
+
+
+def test_keyword_filter_marks_records_through_crapai_check(project: Workspace) -> None:
+    set_prefilters(project, {"keywords": {"exclude_any": ["French"]}})
+    summary = prefilter_project(project)
+    assert summary.by_reason == {"PREFILTER_KEYWORD": 1}
+    assert reasons_of(project)["French"] == "PREFILTER_KEYWORD"
+
+
 def test_an_empty_block_gives_inactive_filters() -> None:
     from crapai.config.models import Prefilters
 
