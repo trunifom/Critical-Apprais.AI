@@ -206,3 +206,13 @@ Zwei Funktionen ausserhalb der Aufgabenkarten, auf Wunsch der Projektleitung im 
 | [x] | `scripts/qa.py`, schnellere und von der Maschine unabhängige Tests, CI mit Extra `ui` | `bfccaa5` |
 
 Nicht Teil dieser Version (bewusst): Kriterien-Editor nach Rahmenwerk (bearbeitet wird vorerst `project.yaml` direkt), PRISMA-Grafik (PNG/SVG, Export M8).
+
+## Zweite Gesamtprüfung auf Wunsch der Projektleitung (2026-10-01)
+
+Erneute Durchsicht des gesamten Codes (Ablauf, Architektur, Prozesse, Funktionen, Import/Export, Datenstrukturen, Fehlerbehandlung/Protokolle, Dokumentation, Oberfläche); sieben unabhängige Prüfer, danach Behebung mit Tests.
+
+| Status | Schritt | Datum / Uhrzeit | Commit |
+|---|---|---|---|
+| [x] | Sperre (Race in `acquire()`, stille Alternativdatei in `heartbeat()`), Oberfläche (Preistabellen-Lesefehler, Try/Except aus Seitencode entfernt), `resolution.py` (verwaistes `asyncio.gather`-Teilziel), `engine.py` (übersprungene Prüfung bei Teil-Päckchen, überschriebener Stop-Grund), Reader (stiller Jahr/Datum-Verlust), Prompt-Injection-Schutz (Unicode-Ausweichzeichen statt HTML-Entities) in `prompts/builder.py`/`prompts/resolution.py`; JSON-Gleichstand `adjudicate`/`discuss` mit `screen`; Farbkontrast `RUN_COLORS` (hell); `README.md`/`ARCHITEKTUR.md`/`BENUTZERHANDBUCH.md` auf den tatsächlichen Stand gebracht | 2026-10-01 | `b11de723` |
+
+Bewusst nicht geändert: `SYSTEM_ERROR_CODES` in `cli.py` (E404/E405 sehen wie eine Lücke aus, aber 9 bestehende Tests verlangen ausdrücklich Rückgabecode 1 dafür; Kommentar statt Änderung). Zurückgestellt: Kosten-/Dauerschätzung vor `crapai adjudicate`/`crapai discuss` (zeigt bisher nur die Anzahl umstrittener Datensätze) - bei `discuss` mit mehreren Läufen, Modellen und Preisen wäre eine schnelle Schätzung eher still falsch als einfach fehlend. Weitere, kleinere Funde (u. a. `enums.py`-Drift, RIS-Feinheiten, XLSX-Randfall, Fuzzy-Logik in `prisma/events.py`/`dedup.py`) sind notiert, aber nicht Teil dieser Runde.
