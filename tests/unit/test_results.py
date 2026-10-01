@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 from pathlib import Path
 from typing import Any
 
@@ -13,10 +14,30 @@ from typer.testing import CliRunner
 
 from crapai.cli import app
 from crapai.errors import ConfigError
-from crapai.services.results import export_results, results_table, runs_with_results
+from crapai.llm.mock_provider import MockProvider
+from crapai.screening.store import RunStore
+from crapai.services import screening as svc
+from crapai.services.results import (
+    compare_runs,
+    export_comparison,
+    export_results,
+    results_table,
+    runs_with_results,
+)
 from crapai.stats import results as stats
 from crapai.ui import charts
 from crapai.ui.theme import PALETTES, contrast_ratio
+
+
+def two_runs(tmp_path: Path, scenario: str = "S12") -> tuple[Any, str, str]:
+    """A project with two finished runs of the same scenario (so decisions start out identical)."""
+    workspace = project_with_run(tmp_path, scenario=scenario)
+    run_a = runs_with_results(workspace)[0]
+    svc.screen_project(
+        workspace, svc.RunOptions(provider=MockProvider(scenario), install_signal_handler=False)
+    )
+    run_b = next(r for r in runs_with_results(workspace) if r != run_a)
+    return workspace, run_a, run_b
 
 # --- outcome and table ----------------------------------------------------------------------------
 
@@ -290,3 +311,88 @@ def test_specs_are_plain_json() -> None:
 
     json.dumps(charts.donut({"INCLUDE": 1}, "light", label))
     json.dumps(charts.histogram([], "light", label, x_title="a", y_title="b"))
+
+
+# --- comparing several runs (plan chapter 14.1) ---------------------------------------------------
+
+
+def test_compare_runs_needs_at_least_two_run_ids(tmp_path: Path) -> None:
+    workspace = project_with_run(tmp_path)
+    run_id = runs_with_results(workspace)[0]
+    with pytest.raises(ConfigError) as info:
+        compare_runs(workspace, [run_id])
+    assert info.value.code == "E203"
+
+
+def test_compare_runs_rejects_an_unknown_run(tmp_path: Path) -> None:
+    workspace, run_a, _run_b = two_runs(tmp_path)
+    with pytest.raises(ConfigError):
+        compare_runs(workspace, [run_a, "nope"])
+
+
+def test_identical_runs_agree_completely(tmp_path: Path) -> None:
+    workspace, run_a, run_b = two_runs(tmp_path)
+    rows, summary = compare_runs(workspace, [run_a, run_b])
+    assert len(rows) == 24 and summary.n_common > 0
+    assert all(p.agreement == 1.0 and p.kappa == pytest.approx(1.0) for p in summary.pairwise)
+    assert summary.fleiss_kappa == pytest.approx(1.0) and summary.unstable == []
+    assert all(row["agreement"] in ("", "unanimous") for row in rows)
+    assert any(row["agreement"] == "unanimous" for row in rows)
+
+
+def test_a_disagreement_is_flagged_split_and_unstable(tmp_path: Path) -> None:
+    workspace, run_a, run_b = two_runs(tmp_path)
+    store_b = RunStore(workspace.runs_dir / run_b)
+    uid, decided = next(
+        (u, r) for u, r in store_b.last_results().items() if r.status == "ok" and r.decision
+    )
+    flipped = "EXCLUDE" if decided.decision != "EXCLUDE" else "INCLUDE"
+    store_b.append_result(decided.model_copy(update={"decision": flipped}))
+    rows, summary = compare_runs(workspace, [run_a, run_b])
+    changed = next(r for r in rows if r["study_uid"] == uid)
+    assert changed["agreement"] == "split"
+    assert {u.study_uid for u in summary.unstable} == {uid}
+    assert summary.fleiss_kappa is not None and summary.fleiss_kappa < 1.0
+
+
+def test_export_comparison_writes_one_column_group_per_run(tmp_path: Path) -> None:
+    workspace, run_a, run_b = two_runs(tmp_path)
+    summary = export_comparison(workspace, [run_a, run_b], "csv")
+    assert summary.what == "compare" and summary.records == 24
+    header = summary.path.read_text(encoding="utf-8-sig").splitlines()[0]
+    assert f"decision__{run_a}" in header and f"decision__{run_b}" in header and "agreement" in header
+
+
+def test_export_comparison_rejects_an_unknown_format(tmp_path: Path) -> None:
+    workspace, run_a, run_b = two_runs(tmp_path)
+    with pytest.raises(ConfigError):
+        export_comparison(workspace, [run_a, run_b], "ris")
+
+
+def test_the_command_line_compares_runs_and_writes_a_file(tmp_path: Path) -> None:
+    workspace, run_a, run_b = two_runs(tmp_path)
+    result = CliRunner().invoke(
+        app,
+        ["compare-runs", str(workspace.root), "--runs", f"{run_a},{run_b}", "--lang", "en"],
+    )
+    assert result.exit_code == 0, result.output
+    assert "kappa" in result.output.lower()
+    assert any((workspace.root / "exports").glob("compare-*.csv"))
+
+
+def test_the_command_line_as_json(tmp_path: Path) -> None:
+    workspace, run_a, run_b = two_runs(tmp_path)
+    result = CliRunner().invoke(
+        app, ["compare-runs", str(workspace.root), "--runs", f"{run_a},{run_b}", "--json"]
+    )
+    assert result.exit_code == 0, result.output
+    data = json.loads(result.stdout)
+    assert data["run_ids"] == [run_a, run_b]
+    assert "fleiss_kappa" in data and "pairwise" in data and len(data["pairwise"]) == 1
+
+
+def test_the_command_line_refuses_a_single_run(tmp_path: Path) -> None:
+    workspace = project_with_run(tmp_path)
+    run_id = runs_with_results(workspace)[0]
+    result = CliRunner().invoke(app, ["compare-runs", str(workspace.root), "--runs", run_id])
+    assert result.exit_code == 1

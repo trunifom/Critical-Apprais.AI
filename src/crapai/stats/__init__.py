@@ -1,1 +1,3 @@
-"""Evaluation statistics: test-retest, comparison with human decisions (plan chapter 14)."""
+"""Evaluation statistics: results table (:mod:`crapai.stats.results`), test-retest/inter-rater
+agreement (:mod:`crapai.stats.agreement`); comparison with human decisions is not yet built
+(plan chapter 14)."""

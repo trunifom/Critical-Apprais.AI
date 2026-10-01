@@ -109,6 +109,56 @@ def build_table(
     return rows
 
 
+COMPARE_BASE_COLUMNS: tuple[str, ...] = (
+    "study_uid", "title", "year", "journal", "exclusion_reason",
+)  # fmt: skip
+COMPARE_RUN_FIELDS: tuple[str, ...] = ("status", "decision", "reasoning", "model_returned")
+
+
+def compare_columns(run_ids: Sequence[str]) -> tuple[str, ...]:
+    """Column names of :func:`compare_table` for the given runs, in file order."""
+    per_run = tuple(f"{field}__{run_id}" for run_id in run_ids for field in COMPARE_RUN_FIELDS)
+    return (*COMPARE_BASE_COLUMNS, *per_run, "agreement")
+
+
+def compare_table(
+    records: Iterable[Any], results_by_run: Mapping[str, Mapping[str, Any]], run_ids: Sequence[str]
+) -> list[dict[str, Any]]:
+    """One row per record of the project, with one group of columns per run.
+
+    Args:
+        records: ``Record`` objects (``crapai.io.records_store``).
+        results_by_run: ``run_id`` to ``RunStore.last_results()`` of that run.
+        run_ids: The runs to compare, and their column order.
+
+    The ``agreement`` column is ``""`` if fewer than two runs decided the record yet, ``"partial"``
+    if some but not all of ``run_ids`` decided it, ``"unanimous"`` if every run that decided it
+    chose the same decision, ``"split"`` otherwise.
+    """
+    rows: list[dict[str, Any]] = []
+    for record in records:
+        row: dict[str, Any] = {name: getattr(record, name) for name in COMPARE_BASE_COLUMNS}
+        decisions: list[str] = []
+        for run_id in run_ids:
+            result = results_by_run.get(run_id, {}).get(record.study_uid)
+            row[f"status__{run_id}"] = result.status if result else ""
+            row[f"decision__{run_id}"] = result.decision if result else ""
+            row[f"reasoning__{run_id}"] = result.reasoning if result else ""
+            row[f"model_returned__{run_id}"] = result.model_returned if result else ""
+            if result and result.status == "ok" and result.decision in DECISIONS:
+                decisions.append(result.decision)
+        if len(decisions) < 2:
+            row["agreement"] = ""
+        elif len(decisions) < len(run_ids):
+            row["agreement"] = "partial"
+        elif len(set(decisions)) == 1:
+            row["agreement"] = "unanimous"
+        else:
+            row["agreement"] = "split"
+        rows.append(row)
+    return rows
+
+
 def _number(value: Any, convert: type) -> Any:
     if value is None:
         return None

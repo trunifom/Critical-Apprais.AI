@@ -40,7 +40,9 @@ from crapai.services.export import ExportSummary, export_flow, export_records
 from crapai.services.importing import ImportRequest, ImportSummary, import_source
 from crapai.services.preflight import PreflightFileResult, ProjectReport, check_file, check_project
 from crapai.services.project import DEFAULT_TEMPLATE, create_project, project_status
+from crapai.services.results import compare_runs as compare_runs_service
 from crapai.services.results import export_results, results_table
+from crapai.stats.agreement import ComparisonSummary
 from crapai.stats.results import read_table_file
 from crapai.ui import definition as definition_module
 from crapai.ui.definition import Definition
@@ -529,3 +531,12 @@ def load_results(
 def read_results_file(messages: Messages, name: str, data: bytes) -> Outcome[list[dict[str, Any]]]:
     """A results table from an uploaded CSV or XLSX file (checked; nothing is stored)."""
     return guarded(messages, lambda: read_table_file(name, data), name="read results file")
+
+
+def compare_runs(
+    messages: Messages, folder: Path, run_ids: list[str]
+) -> Outcome[tuple[list[dict[str, Any]], ComparisonSummary]]:
+    """Join and compare several finished runs of the project (plan chapter 14.1)."""
+    return guarded(
+        messages, lambda: compare_runs_service(Workspace(folder), run_ids), name="compare runs"
+    )

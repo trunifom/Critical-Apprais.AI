@@ -356,6 +356,25 @@ Die Datei hat eine Zeile je Datensatz des Projekts. Wichtige Spalten: `outcome` 
 
 Die Farben der Ergebnisse sind in beiden Designs unterscheidbar; die Diagramme folgen dem gewählten Design und der Schriftgrösse. Zeigen Sie mit der Maus auf Balken oder Punkte, um die Zahlen zu sehen.
 
+## 6m. Mehrfachbewertung und Modellvergleich: `crapai compare-runs`
+
+Dasselbe Projekt kann mehrfach bewertet werden - mit demselben Modell (Test-Retest) oder mit verschiedenen Modellen (Modellvergleich). Jede Bewertung ist ein **eigener, unabhängiger Lauf** (`crapai screen`): einfach `project.yaml` zwischen den Läufen anpassen (`llm.provider`/`llm.model`, auf der Befehlszeile oder in der Oberfläche) und `crapai screen` erneut ausführen. Die Läufe teilen sich nur die Eingabedaten, sonst nichts; jeder hat sein eigenes Manifest und seinen eigenen Ordner `runs/<lauf-id>/`.
+
+```powershell
+crapai screen mein-review                      # Lauf 1: z. B. SwissGPT Neotron
+# project.yaml anpassen: llm.model auf das zweite Modell setzen (z. B. ChatGPT GPT-4o)
+crapai screen mein-review                      # Lauf 2
+crapai runs mein-review                        # zeigt die Lauf-IDs
+crapai compare-runs mein-review --runs run-001,run-002 --format xlsx
+```
+
+`crapai compare-runs` vergleicht zwei oder mehr abgeschlossene Läufe:
+
+* **Tabelle** (`exports/compare-<läufe>-<zeitstempel>.csv`/`.xlsx`): eine Zeile je Datensatz des Projekts, mit `study_uid`, `title`, `year`, `journal`, `exclusion_reason` und je Lauf vier Spalten (`status__<lauf-id>`, `decision__<lauf-id>`, `reasoning__<lauf-id>`, `model_returned__<lauf-id>`); zusätzlich `agreement`: leer (weniger als zwei Läufe haben entschieden), `partial` (nicht alle Läufe haben entschieden), `unanimous` (alle einig) oder `split` (uneinig).
+* **Übereinstimmung auf der Befehlszeile:** je Lauf-Paar die prozentuale Übereinstimmung und Cohens Kappa (nur auf den Datensätzen, die **beide** Läufe bewertet haben); bei drei oder mehr Läufen zusätzlich Fleiss' Kappa über alle Läufe zusammen (nur auf den Datensätzen, die **alle** Läufe bewertet haben) und die Zahl der uneinigen Datensätze. Die Einstufung (schwach, mässig, gut, …) folgt Landis und Koch (1977).
+* Nur Entscheidungen zählen (`INCLUDE`/`EXCLUDE`/`UNCERTAIN` mit Status `ok`); ein Datensatz, den ein Lauf noch nicht erreicht hat oder bei dem die Antwort fehlerhaft war, zählt nirgends als Uneinigkeit.
+* Nichts im Projekt wird verändert; der Befehl braucht keine Sperre.
+
 ## 6j. Einstellungen ändern: `project.yaml`, Oberfläche, `crapai config`
 
 Fast nichts ist im Programm fest verdrahtet: Schwellen, Grenzen und Annahmen sind Einstellungen. Es gibt drei Wege, sie zu ändern, die sich ergänzen:

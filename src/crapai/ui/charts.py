@@ -28,6 +28,15 @@ CHART_COLORS: dict[str, dict[str, str]] = {
         "ERROR": "#A5AFBF", "PRE_EXCLUDED": "#7B8DB0", "NOT_SCREENED": "#4A586C",
     },
 }  # fmt: skip
+#: colour per run (comparing runs, not outcomes), cycled if there are more runs than colours
+RUN_COLORS: dict[str, tuple[str, ...]] = {
+    "light": (
+        "#1B5FAE", "#B3261E", "#1B7F3B", "#B26A00", "#6E4E9E", "#0E7C86", "#A3338C", "#55606E",
+    ),
+    "dark": (
+        "#7FB4F2", "#FF8A80", "#5BD28A", "#FFC857", "#C7A8FF", "#5FE0E8", "#F2A8E0", "#C3CBD6",
+    ),
+}  # fmt: skip
 SCHEMA = "https://vega.github.io/schema/vega-lite/v5.json"
 HEIGHT = 300
 
@@ -64,6 +73,13 @@ def outcome_scale(theme: str, label: Label, present: Sequence[str] | None = None
     names = [name for name in OUTCOMES if present is None or name in present]
     colours = CHART_COLORS[_theme(theme)]
     return {"domain": [label(n) for n in names], "range": [colours[n] for n in names]}
+
+
+def run_scale(theme: str, run_ids: Sequence[str]) -> dict[str, Any]:
+    """A stable, distinguishable colour per run id (cycles if there are more runs than colours)."""
+    palette = RUN_COLORS[_theme(theme)]
+    colours = [palette[i % len(palette)] for i in range(len(run_ids))]
+    return {"domain": list(run_ids), "range": colours}
 
 
 def _base(theme: str, data: list[dict[str, Any]], height: int = HEIGHT) -> dict[str, Any]:
@@ -272,5 +288,48 @@ def boxplot(
             "scale": outcome_scale(theme, label, present),
             "legend": None,
         },
+    }
+    return spec
+
+
+def run_bars(
+    counts_by_run: Mapping[str, Mapping[str, int]],
+    theme: str,
+    label: Label,
+    *,
+    run_ids: Sequence[str],
+    category_title: str,
+    count_title: str,
+    legend_title: str | None = None,
+) -> dict[str, Any]:
+    """Grouped bars of a category (for example the decision) per run, one colour per run.
+
+    Args:
+        counts_by_run: ``run_id -> category -> count`` (for example the decision counts of a run).
+        run_ids: The runs, in the order of the colour scale and the groups within each category.
+    """
+    data = [
+        {"category": label(category), "run": run_id, "count": count}
+        for run_id in run_ids
+        for category, count in counts_by_run.get(run_id, {}).items()
+        if count
+    ]
+    spec = _base(theme, data)
+    spec["mark"] = "bar"
+    spec["encoding"] = {
+        "x": {"field": "category", "type": "nominal", "title": category_title},
+        "xOffset": {"field": "run", "sort": list(run_ids)},
+        "y": {"field": "count", "type": "quantitative", "title": count_title},
+        "color": {
+            "field": "run",
+            "type": "nominal",
+            "scale": run_scale(theme, run_ids),
+            "legend": {"title": legend_title},
+        },
+        "tooltip": [
+            {"field": "run", "type": "nominal"},
+            {"field": "category", "type": "nominal"},
+            {"field": "count", "type": "quantitative"},
+        ],
     }
     return spec

@@ -751,6 +751,31 @@ def test_the_results_page_draws_charts_for_the_run_of_the_project(
     assert not at.exception
 
 
+def test_the_results_page_compares_two_runs(
+    monkeypatch: pytest.MonkeyPatch, run_project: Path
+) -> None:
+    from crapai.llm.mock_provider import MockProvider
+    from crapai.project.workspace import Workspace
+    from crapai.services import screening as svc
+
+    svc.screen_project(
+        Workspace(run_project),
+        svc.RunOptions(provider=MockProvider("S12"), install_signal_handler=False),
+    )
+    at = fresh(monkeypatch, run_project).run()
+    goto(at, "results")
+    assert not at.exception
+    expander = next(e for e in at.expander if "Compare runs" in e.label)
+    assert expander.proto.expanded is False
+    at.multiselect(key="results_compare_runs").set_value(
+        at.multiselect(key="results_compare_runs").options[:2]
+    )
+    at.run()
+    assert not at.exception
+    assert at.session_state["missing_help"] == set()
+    assert any("Fleiss" in m.label for m in at.metric)
+
+
 def test_the_results_page_reads_an_uploaded_export_and_refuses_other_files(
     monkeypatch: pytest.MonkeyPatch, run_project: Path
 ) -> None:

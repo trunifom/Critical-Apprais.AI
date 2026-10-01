@@ -47,7 +47,8 @@ from crapai.services.export import (
 from crapai.services.importing import ImportRequest, ImportSummary, import_source
 from crapai.services.preflight import ProjectReport, check_project
 from crapai.services.project import DEFAULT_TEMPLATE, create_project, project_status
-from crapai.services.results import export_results
+from crapai.services.results import compare_runs, export_comparison, export_results
+from crapai.stats.agreement import ComparisonSummary
 from crapai.ui.context import PROJECT_ENV
 
 logger = logging.getLogger("crapai.cli")
@@ -859,6 +860,101 @@ def _print_export(summary: ExportSummary, messages: Messages) -> None:
             ),
             fg="green",
         )
+    if summary.used_alternative:
+        typer.secho(
+            messages.text("cli.export.alternative", wanted=summary.requested_path.name),
+            fg="yellow",
+            err=True,
+        )
+
+
+@app.command("compare-runs")
+def compare_runs_command(
+    folder: Annotated[Path, typer.Argument(help="Project folder.")],
+    runs: Annotated[str, typer.Option("--runs", help="Two or more run ids, comma separated.")],
+    fmt: Annotated[str, typer.Option("--format", help="csv or xlsx.")] = "csv",
+    output: Annotated[
+        Path | None,
+        typer.Option("--output", help="Target file (default: exports/ in the project)."),
+    ] = None,
+    delimiter: Annotated[
+        str, typer.Option(help="CSV separator, for example ; for German Excel.")
+    ] = ",",
+    raw: Annotated[
+        bool,
+        typer.Option("--raw", help="Do not protect cells that start like a spreadsheet formula."),
+    ] = False,
+    as_json: JsonOption = False,
+    lang: LangOption = None,
+) -> None:
+    """Compare two or more screening runs: agreement, Cohen's/Fleiss' kappa, unstable records.
+
+    Test-retest or a model comparison (plan chapter 14.1): screen the same records several times
+    with separate 'crapai screen' calls (the same model again, or a different one each time), then
+    compare the finished runs. Writes the joined table to exports/ (one row per record, one column
+    group per run) and prints the agreement numbers; nothing in the project is changed.
+    Example: crapai compare-runs my-review --runs run-001,run-002,run-003
+    """
+    messages = Messages(resolve_language(lang, folder / "project.yaml"))
+    _setup_file_log(folder)
+    run_ids = [r.strip() for r in runs.split(",") if r.strip()]
+    try:
+        separator = {"tab": "\t", "semicolon": ";", "comma": ","}.get(delimiter.lower(), delimiter)
+        _, agreement_summary = compare_runs(Workspace(folder), run_ids)
+        summary = export_comparison(
+            Workspace(folder),
+            run_ids,
+            fmt,
+            output=output,
+            delimiter=separator,
+            guard_formulas=not raw,
+        )
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        raise _fail(error, messages, json_mode=as_json) from error
+    if as_json:
+        data = {
+            "run_ids": list(agreement_summary.run_ids),
+            "n_common": agreement_summary.n_common,
+            "fleiss_kappa": agreement_summary.fleiss_kappa,
+            "fleiss_label": agreement_summary.fleiss_label,
+            "unstable": len(agreement_summary.unstable),
+            "pairwise": [dataclasses.asdict(p) for p in agreement_summary.pairwise],
+            "path": str(summary.path),
+        }
+        typer.echo(json.dumps(data, ensure_ascii=False, indent=2))
+        raise typer.Exit(EXIT_WARNINGS if summary.used_alternative else EXIT_OK)
+    _print_compare(agreement_summary, summary, messages)
+    raise typer.Exit(EXIT_WARNINGS if summary.used_alternative else EXIT_OK)
+
+
+def _print_compare(
+    agreement_summary: ComparisonSummary, summary: ExportSummary, messages: Messages
+) -> None:
+    typer.secho(
+        messages.text("cli.compare.done", records=summary.records, path=summary.path), fg="green"
+    )
+    for pair in agreement_summary.pairwise:
+        typer.echo(
+            messages.text(
+                "cli.compare.pair",
+                run_a=pair.run_a,
+                run_b=pair.run_b,
+                n=pair.n,
+                agreement=f"{pair.agreement * 100:.1f}",
+                kappa=f"{pair.kappa:.3f}" if pair.kappa is not None else "-",
+                label=pair.label or "-",
+            )
+        )
+    if agreement_summary.fleiss_kappa is not None:
+        typer.echo(
+            messages.text(
+                "cli.compare.fleiss",
+                n=agreement_summary.n_common,
+                kappa=f"{agreement_summary.fleiss_kappa:.3f}",
+                label=agreement_summary.fleiss_label,
+            )
+        )
+    typer.echo(messages.text("cli.compare.unstable", count=len(agreement_summary.unstable)))
     if summary.used_alternative:
         typer.secho(
             messages.text("cli.export.alternative", wanted=summary.requested_path.name),

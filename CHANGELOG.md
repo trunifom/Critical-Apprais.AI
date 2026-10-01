@@ -7,6 +7,14 @@ Jeder Eintrag verweist auf die Aufgabenkarte; die genauen Commits stehen in `doc
 
 ## [Unveröffentlicht] - 0.0.1
 
+### Mehrfachbewertung und Modellvergleich (ADR 0024, Plan Kap. 14.1)
+
+* **Keine Änderung an der Engine:** ein Lauf bleibt ein Provider/Modell; Mehrfachbewertung (Test-Retest oder verschiedene Modelle) bedeutet mehrere separate `crapai screen`-Aufrufe mit angepasster `project.yaml`, jeder mit eigenem `runs/<lauf-id>/` (bestand bereits).
+* **Neues Modul `stats/agreement.py`**: paarweise Übereinstimmung und Cohens Kappa je Lauf-Paar, Fleiss' Kappa über alle gewählten Läufe, Einstufung nach Landis & Koch (1977), Liste der uneinigen Datensätze; rein, ohne Dateizugriff. Nur Datensätze mit gültiger Entscheidung (Status `ok`) zählen.
+* **Neue Vergleichstabelle** (`stats.results.compare_table`/`compare_columns`): eine Zeile je Datensatz, vier Spalten je Lauf (`status__`, `decision__`, `reasoning__`, `model_returned__<lauf-id>`), Spalte `agreement` (leer/`partial`/`unanimous`/`split`).
+* **Neuer Befehl `crapai compare-runs <projekt> --runs <id1,id2,...>`** (`services.results.compare_runs`/`export_comparison`): schreibt `exports/compare-*.csv`/`.xlsx` und gibt die Übereinstimmungszahlen aus; liest nur, ändert nichts.
+* **Oberfläche:** neuer Abschnitt „Läufe vergleichen“ auf der Seite Auswertung (ab zwei abgeschlossenen Läufen): Mehrfachauswahl, Tabelle der paarweisen Kennzahlen, Fleiss' Kappa, gruppiertes Balkendiagramm der Entscheidungen **je Lauf in eigener Farbe** (`ui.charts.run_bars`/`run_scale`, neue Farbskala unabhängig von den Ergebniskategorien), Liste der uneinigen Datensätze.
+
 ### Stichwort-Filter (ADR 0023)
 
 * **Neuer Vorfilter `prefilters.keywords`** (`KeywordFilter` in `config/models.py`, `prisma/prefilters.py`): durchsucht Title, Abstract und die Felder `keywords`/`keywords_mesh` als einen Text; `exclude_any` schliesst bei Treffer aus, `include_any` ist eine Positivliste (ausgeschlossen, wenn keiner der Begriffe vorkommt), standardmässig ohne Gross-/Kleinschreibung (`case_sensitive`); läuft wie die bestehenden Vorfilter vor dem Modell, ohne Kosten. **Neuer Grund** `PREFILTER_KEYWORD` (Katalog `prisma/reasons.py`, `records_store.EXCLUSION_REASONS`). Aus und ohne Wirkung, solange nichts eingetragen ist.

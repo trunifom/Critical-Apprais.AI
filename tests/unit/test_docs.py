@@ -56,7 +56,7 @@ def test_paths_named_in_backticks_in_the_readme_table_exist() -> None:
 
 COMMANDS = (
     "init", "import", "status", "dedup", "check", "unlock", "export", "ui",
-    "screen", "runs", "pause", "stop",
+    "screen", "runs", "pause", "stop", "compare-runs",
 )  # fmt: skip
 
 

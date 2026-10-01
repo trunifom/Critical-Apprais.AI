@@ -12,6 +12,7 @@ Nothing in the project is changed; no lock is needed.
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -23,7 +24,15 @@ from crapai.project.workspace import Workspace
 from crapai.screening.store import RunStore
 from crapai.services.export import ExportSummary, _target
 from crapai.services.screening import list_runs
-from crapai.stats.results import RESULT_COLUMNS, build_table
+from crapai.stats import agreement
+from crapai.stats.agreement import ComparisonSummary
+from crapai.stats.results import (
+    DECISIONS,
+    RESULT_COLUMNS,
+    build_table,
+    compare_columns,
+    compare_table,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +84,115 @@ def results_table(
     store = RunStore(workspace.runs_dir / run_id)
     rows = build_table(read_records(workspace.records_csv), store.last_results(), run_id)
     return run_id, rows
+
+
+def _check_runs_have_results(workspace: Workspace, run_ids: Sequence[str]) -> None:
+    if len(run_ids) < 2:
+        raise ConfigError(
+            "Comparing runs needs at least two run ids",
+            code="E203",
+            hint="Name two or more runs, for example --runs run-001,run-002.",
+        )
+    available = runs_with_results(workspace)
+    for run_id in run_ids:
+        if run_id not in available:
+            raise ConfigError(
+                f"The run '{run_id}' has no results",
+                code="E203",
+                hint="Runs with results: " + (", ".join(available) or "none"),
+            )
+
+
+def compare_runs(
+    workspace: Workspace, run_ids: Sequence[str]
+) -> tuple[list[dict[str, Any]], ComparisonSummary]:
+    """Join the records of the project with the results of several runs, and their agreement.
+
+    Args:
+        workspace: The project.
+        run_ids: Two or more runs to compare (test-retest or different models/settings).
+
+    Returns:
+        ``(rows, summary)``: one row per record (:func:`crapai.stats.results.compare_table`) and
+        the pairwise/Fleiss agreement over the decided records (plan chapter 14.1).
+
+    Raises:
+        ConfigError: E203 for fewer than two runs, or a run without results.
+    """
+    workspace = Workspace.open(workspace.root)
+    _check_runs_have_results(workspace, run_ids)
+    run_ids = tuple(run_ids)
+    records = read_records(workspace.records_csv)
+    results_by_run = {
+        run_id: RunStore(workspace.runs_dir / run_id).last_results() for run_id in run_ids
+    }
+    rows = compare_table(records, results_by_run, run_ids)
+    decisions_by_run = {
+        run_id: {
+            uid: row.decision
+            for uid, row in results.items()
+            if row.status == "ok" and row.decision in DECISIONS
+        }
+        for run_id, results in results_by_run.items()
+    }
+    summary = agreement.compare(decisions_by_run, run_ids)
+    logger.info(
+        "Compared %d run(s): %d record(s) decided by all of them, Fleiss' kappa %s",
+        len(run_ids),
+        summary.n_common,
+        summary.fleiss_kappa,
+    )
+    return rows, summary
+
+
+def export_comparison(
+    workspace: Workspace,
+    run_ids: Sequence[str],
+    fmt: str = "csv",
+    *,
+    output: Path | None = None,
+    delimiter: str = ",",
+    guard_formulas: bool = True,
+    now: datetime | None = None,
+) -> ExportSummary:
+    """Write the comparison table of several runs to ``exports/compare-<runs>-<timestamp>.<fmt>``.
+
+    Raises:
+        ConfigError: E203 for an unknown format, fewer than two runs, or a run without results.
+        StorageError: E404/E401/E403 for damaged or unwritable files.
+    """
+    if fmt not in RESULT_FORMATS:
+        raise ConfigError(
+            f"Unknown format '{fmt}' for the comparison (valid: {', '.join(RESULT_FORMATS)})",
+            code="E203",
+            hint="Use csv or xlsx.",
+        )
+    rows, summary = compare_runs(workspace, run_ids)
+    columns = compare_columns(summary.run_ids)
+    stamp = (now or datetime.now()).strftime("%Y%m%d-%H%M%S")
+    label = "-".join(run_id[:12] for run_id in summary.run_ids)
+    target = _target(Workspace(workspace.root), output, f"compare-{label}-{stamp}.{fmt}")
+    body = ([_cell(row.get(name)) for name in columns] for row in rows)
+    if fmt == "csv":
+        written = write_csv(
+            target, columns, body, delimiter=delimiter, guard_formulas=guard_formulas
+        )
+    else:
+        written = write_xlsx(
+            target, columns, body, sheet="compare", guard_formulas=guard_formulas
+        )
+    logger.info(
+        "Exported a comparison of %d run(s), %d row(s), as %s", len(run_ids), len(rows), fmt
+    )
+    return ExportSummary(
+        what="compare",
+        format=fmt,
+        path=written.path,
+        requested_path=target,
+        records=len(rows),
+        scope=",".join(summary.run_ids),
+        used_alternative=written.used_alternative,
+    )
 
 
 def _cell(value: Any) -> str:

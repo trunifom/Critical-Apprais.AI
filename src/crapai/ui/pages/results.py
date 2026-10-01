@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import csv
 import io
+from collections import Counter
 from typing import Any
 
 from crapai.project.workspace import Workspace
@@ -286,6 +287,83 @@ def _table(st: Any, ctx: Context, rows: list[dict[str, Any]]) -> None:
         )
 
 
+def _compare(st: Any, ctx: Context, folder: Any, available: list[str], theme: str) -> None:
+    with st.expander(ctx.t("results.s_compare"), expanded=False):
+        st.caption(ctx.t("results.s_compare_hint"))
+        options = list(reversed(available))
+        chosen = st.multiselect(
+            ctx.t("results.compare_pick"),
+            options,
+            default=options[:2],
+            key="results_compare_runs",
+        )
+        if len(chosen) < 2:
+            st.info(ctx.t("results.compare_need_two"))
+            return
+        outcome = actions.compare_runs(ctx.messages, folder, chosen)
+        if outcome.error is not None:
+            show_error(st, ctx, outcome.error)
+            return
+        assert outcome.value is not None
+        rows, summary = outcome.value
+        st.dataframe(
+            [
+                {
+                    ctx.t("results.compare_run_a"): p.run_a,
+                    ctx.t("results.compare_run_b"): p.run_b,
+                    ctx.t("results.compare_n"): p.n,
+                    ctx.t("results.compare_agreement"): f"{p.agreement * 100:.1f} %",
+                    ctx.t("results.compare_kappa"): "-" if p.kappa is None else f"{p.kappa:.3f}",
+                    ctx.t("results.compare_label"): p.label or "-",
+                }
+                for p in summary.pairwise
+            ],
+            width="stretch",
+            hide_index=True,
+        )
+        if summary.fleiss_kappa is not None:
+            metric_row(
+                st,
+                [
+                    (
+                        ctx.t("results.compare_fleiss"),
+                        f"{summary.fleiss_kappa:.3f} ({summary.fleiss_label})",
+                    ),
+                    (ctx.t("results.compare_n_common"), summary.n_common),
+                    (ctx.t("results.compare_unstable_count"), len(summary.unstable)),
+                ],
+            )
+        label = _label(ctx)
+        counts_by_run: dict[str, Counter[str]] = {run_id: Counter() for run_id in chosen}
+        for row in rows:
+            for run_id in chosen:
+                decision = row.get(f"decision__{run_id}")
+                if decision:
+                    counts_by_run[run_id][str(decision)] += 1
+        st.markdown(f"**{ctx.t('results.compare_chart')}**")
+        _chart(
+            st,
+            charts.run_bars(
+                counts_by_run,
+                theme,
+                label,
+                run_ids=chosen,
+                category_title=ctx.t("results.outcome"),
+                count_title=ctx.t("results.count"),
+                legend_title=ctx.t("results.compare_run_legend"),
+            ),
+        )
+        if summary.unstable:
+            with st.expander(
+                ctx.t("results.compare_unstable", count=len(summary.unstable)), expanded=False
+            ):
+                unstable_rows = [
+                    {"study_uid": u.study_uid, **u.decisions}
+                    for u in summary.unstable[:TABLE_ROWS]
+                ]
+                st.dataframe(unstable_rows, width="stretch", hide_index=True)
+
+
 def render(st: Any, ctx: Context) -> None:
     """Draw the evaluation page for the open project or for an uploaded results file."""
     st.header(ctx.t("results.title"))
@@ -296,3 +374,7 @@ def render(st: Any, ctx: Context) -> None:
     analysis = stats.analyse(rows)
     theme = st.session_state.get("theme", "light")
     _sections(st, ctx, rows, analysis, theme)
+    if ctx.folder is not None:
+        available = runs_with_results(Workspace(ctx.folder))
+        if len(available) >= 2:
+            _compare(st, ctx, ctx.folder, available, theme)

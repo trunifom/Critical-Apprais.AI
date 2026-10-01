@@ -155,7 +155,7 @@ neue Module in die Architektur, Änderungen ins `CHANGELOG.md`, Stand ins `READM
 ## 5. Nächster Schritt (bitte aktuell halten)
 
 **Meilenstein A ist erreicht und M1 ist vollständig** (T-M1-09 bleibt zurückgestellt). M2: `T-M2-01` (Duplikate), `T-M2-03` (Gültigkeit) , `T-M2-04` (Preflight, `crapai check`) und `T-M2-05` (Kostenschätzung), `T-M2-07` (PRISMA-Ereignisse) und `T-M2-08` (Vorfilter) und `T-M2-06` (Dauer, Kostenausgabe) sind fertig; **Meilenstein M2 ist vollständig bis auf das zurückgestellte `T-M2-02`**. **Meilenstein M3 (Screening-Kern) ist umgesetzt** (Anbieter, Wiederholung, Limiter, Prompt, Antwortprüfung, Engine mit Päckchen und Fortsetzen, `crapai screen`, Seite „Lauf“, Akzeptanztests AT2-AT4, ADR 0022). **Nächste Schritte:** Live-Test mit echtem Schlüssel (Schlüssel folgt von der Projektleitung), danach M4 (Ergebnistabelle, Test-Retest, Vergleich mit Menschen). **Zurückgestellt, nicht vergessen:** `T-M2-02` unscharfe Duplikatsuche (braucht `rapidfuzz`). Pflege der Dokumentation: Benutzerhandbuch, Entwicklerdokumentation, Architektur, README, CHANGELOG nach jeder Aufgabe mitführen.
-**Laufend (2026-10-01, Wunsch der Projektleitung):** Stichwort-Filter ist fertig (siehe Abschnitt "Zusatzfunktionen"); als Nächstes die Vergleichsschicht für Mehrfachbewertung/Modellvergleich (`stats/agreement.py`, Befehl, Dashboard).
+**Erledigt (2026-10-01, Wunsch der Projektleitung):** beide Zusatzfunktionen sind fertig (siehe Abschnitt "Zusatzfunktionen"): Stichwort-Filter und die Vergleichsschicht für Mehrfachbewertung/Modellvergleich (`crapai compare-runs`, Dashboard-Abschnitt „Läufe vergleichen“).
 
 ## 6. Abweichungen und offene Punkte
 
@@ -193,7 +193,7 @@ Zwei Funktionen ausserhalb der Aufgabenkarten, auf Wunsch der Projektleitung im 
 | Status | Schritt | Datum / Uhrzeit | Commit |
 |---|---|---|---|
 | [x] | Stichwort-Vorfilter `prefilters.keywords` (neuer Grund `PREFILTER_KEYWORD`) und `screening.include_keywords_in_prompt` (Prompt-Kontext, ändert den Prompt-Hash nicht, geht aber in den Lauf-Fingerabdruck ein); ADR 0023 | 2026-10-01 | `cfd1929f` |
-| [ ] | Mehrfachbewertung/Modellvergleich: Vergleichsschicht `stats/agreement.py` (Cohen's/Fleiss' Kappa, Landis & Koch, instabile Datensätze), `services.results.compare_runs`, Befehl, Dashboard-Erweiterung (Plan Kap. 14.1) | | |
+| [x] | Mehrfachbewertung/Modellvergleich: Vergleichsschicht `stats/agreement.py` (Cohen's/Fleiss' Kappa, Landis & Koch, instabile Datensätze), `services.results.compare_runs`/`export_comparison`, Befehl `crapai compare-runs`, Dashboard-Abschnitt „Läufe vergleichen“ (Farbe je Lauf); ADR 0024 | 2026-10-01 | *(folgt)* |
 
 ## Oberfläche, Protokoll-System und Arbeitsablauf (2026-10-01)
 
