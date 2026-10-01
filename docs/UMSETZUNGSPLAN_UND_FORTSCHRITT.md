@@ -192,7 +192,7 @@ Zwei Funktionen ausserhalb der Aufgabenkarten, auf Wunsch der Projektleitung im 
 
 | Status | Schritt | Datum / Uhrzeit | Commit |
 |---|---|---|---|
-| [x] | Stichwort-Vorfilter `prefilters.keywords` (neuer Grund `PREFILTER_KEYWORD`) und `screening.include_keywords_in_prompt` (Prompt-Kontext, ändert den Prompt-Hash nicht, geht aber in den Lauf-Fingerabdruck ein); ADR 0023 | 2026-10-01 | *(folgt)* |
+| [x] | Stichwort-Vorfilter `prefilters.keywords` (neuer Grund `PREFILTER_KEYWORD`) und `screening.include_keywords_in_prompt` (Prompt-Kontext, ändert den Prompt-Hash nicht, geht aber in den Lauf-Fingerabdruck ein); ADR 0023 | 2026-10-01 | `cfd1929f` |
 | [ ] | Mehrfachbewertung/Modellvergleich: Vergleichsschicht `stats/agreement.py` (Cohen's/Fleiss' Kappa, Landis & Koch, instabile Datensätze), `services.results.compare_runs`, Befehl, Dashboard-Erweiterung (Plan Kap. 14.1) | | |
 
 ## Oberfläche, Protokoll-System und Arbeitsablauf (2026-10-01)
