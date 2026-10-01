@@ -7,6 +7,14 @@ Jeder Eintrag verweist auf die Aufgabenkarte; die genauen Commits stehen in `doc
 
 ## [Unveröffentlicht] - 0.0.1
 
+### Uneinigkeit zwischen Läufen klären: Schiedsrichter und Diskussion (ADR 0025)
+
+* **Neuer Befehl `crapai adjudicate --runs <id1,id2,...>`**: ein zusätzliches "Master"-Modell (die aktuellen `llm:`-Einstellungen) liest Datensatz, Kriterien und jede uneinige Meinung (Lauf/Modell, Entscheidung, Begründung) und entscheidet einmal, selbst; gleiches Antwortschema und dieselbe Garantie wie beim Screening (eine unlesbare Antwort wird nie zu einem Entscheid).
+* **Neuer Befehl `crapai discuss --runs <id1,id2,...> [--max-rounds N] [--tie-break majority|no_consensus]`**: die ursprünglichen Modelle jedes verglichenen Laufs (rekonstruiert aus **deren eigenem** Manifest, nicht der aktuellen `project.yaml`) sehen die Gegenmeinung und überdenken ihre Entscheidung, bis zu `discussion.max_rounds` Runden (Standard 3). Ohne Konsens entscheidet `discussion.tie_break` (Standard `majority`; ein echtes Patt ergibt immer `NO_CONSENSUS`).
+* **Neue Einstellungen** `discussion.max_rounds`, `discussion.tie_break` in `project.yaml` (Abschnitt `discussion:`).
+* Eine Klärung wird wie ein gewöhnlicher Lauf gespeichert (`runs/<lauf-id>/`, `manifest.kind` `adjudicate`/`discuss`), ändert `records.csv` nie, ist pausier-/fortsetzbar (`--resume`) und bleibt bewusst aus der gewöhnlichen Auswertung und dem Lauf-Vergleich heraus (`resolvable_runs`, angepasstes `services.results.runs_with_results`).
+* **Neue, sonst ungenutzte `ResultRow`-Felder:** `source_decisions`, `consensus`, `rounds_used`, `tie_break`, `history` (keine Schema-Version-Änderung, optionale Felder mit Standardwert). `services/screening.py`: `_new_manifest` speichert neu `base_url`/`api_key_env` (Namen, nie Schlüssel) je Lauf, damit `crapai discuss` jeden Teilnehmer mit seinem eigenen Anbieter aufrufen kann.
+
 ### Mehrfachbewertung und Modellvergleich (ADR 0024, Plan Kap. 14.1)
 
 * **Keine Änderung an der Engine:** ein Lauf bleibt ein Provider/Modell; Mehrfachbewertung (Test-Retest oder verschiedene Modelle) bedeutet mehrere separate `crapai screen`-Aufrufe mit angepasster `project.yaml`, jeder mit eigenem `runs/<lauf-id>/` (bestand bereits).

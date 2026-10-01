@@ -375,6 +375,30 @@ crapai compare-runs mein-review --runs run-001,run-002 --format xlsx
 * Nur Entscheidungen zählen (`INCLUDE`/`EXCLUDE`/`UNCERTAIN` mit Status `ok`); ein Datensatz, den ein Lauf noch nicht erreicht hat oder bei dem die Antwort fehlerhaft war, zählt nirgends als Uneinigkeit.
 * Nichts im Projekt wird verändert; der Befehl braucht keine Sperre.
 
+## 6n. Mehrere Modelle sind sich uneinig: `crapai adjudicate` und `crapai discuss`
+
+Zusätzlich zum Vergleich (Abschnitt 6m) können Sie die Datensätze, bei denen sich die verglichenen Läufe **uneinig** waren, automatisch klären lassen - mit einem Schiedsrichter-Modell oder indem die ursprünglichen Modelle sich gegenseitig antworten. Beide Befehle ändern nichts an `records.csv`; das Ergebnis ist ein eigener, neuer Lauf (sichtbar in `crapai runs`, aber nicht in der Auswertung oder im Lauf-Vergleich, weil er nur die umstrittenen Datensätze enthält).
+
+**Schiedsrichter (`crapai adjudicate`):** Ein zusätzliches Modell - die aktuell in `project.yaml` eingestellten `llm:`-Einstellungen - liest den Datensatz, die Kriterien und die Entscheidung samt Begründung **jedes** uneinigen Laufs und entscheidet einmal, selbst.
+
+```powershell
+crapai adjudicate mein-review --runs run-001,run-002
+```
+
+**Diskussion (`crapai discuss`):** Die ursprünglichen Modelle der verglichenen Läufe bekommen die Gegenmeinung zu lesen und dürfen ihre Entscheidung überdenken - bis zu `discussion.max_rounds` Runden (Standard 3). Jedes Modell wird dabei mit **seinen eigenen** Einstellungen aufgerufen (aus dem Manifest seines Laufs), nicht mit den aktuell in `project.yaml` eingestellten - sonst wäre es kein Gespräch zwischen verschiedenen Modellen.
+
+```powershell
+crapai discuss mein-review --runs run-001,run-002,run-003 --max-rounds 3 --tie-break majority
+```
+
+* `--runs id1,id2,...`: zwei oder mehr abgeschlossene Läufe (durch Komma getrennt).
+* `--max-rounds N` (nur `discuss`): überschreibt `discussion.max_rounds` für diesen Aufruf.
+* `--tie-break majority|no_consensus` (nur `discuss`): überschreibt `discussion.tie_break`. `majority`: die Entscheidung, auf die sich die meisten Modelle festlegen, gewinnt; ein echtes Patt (z. B. 1 zu 1) gilt weiterhin als kein Konsens. `no_consensus`: nie einen Sieger küren, auch bei klarer Mehrheit.
+* `--resume LAUF-ID`: einen unterbrochenen oder pausierten Schiedsrichter-/Diskussionslauf fortsetzen (wie bei `crapai screen --resume`); bereits geklärte Datensätze werden nicht erneut gesendet.
+* `--yes`: ohne Rückfrage starten (sonst wird die Anzahl der umstrittenen Datensätze angezeigt und nachgefragt, wie bei `crapai screen`).
+* Wie bei jedem Modellaufruf: kann Geld kosten. Ein Datensatz, den (noch) nicht alle gewählten Läufe bewertet haben, zählt nicht als Uneinigkeit.
+* Das Ergebnis trägt je Datensatz eine Entscheidung (`INCLUDE`/`EXCLUDE`/`UNCERTAIN`) und bei `discuss` zusätzlich, ob Konsens erreicht wurde, wie viele Runden gebraucht wurden und - ohne Konsens - `NO_CONSENSUS` oder die per Mehrheit gewählte Entscheidung samt der Entscheidungsregel, die gegriffen hat.
+
 ## 6j. Einstellungen ändern: `project.yaml`, Oberfläche, `crapai config`
 
 Fast nichts ist im Programm fest verdrahtet: Schwellen, Grenzen und Annahmen sind Einstellungen. Es gibt drei Wege, sie zu ändern, die sich ergänzen:

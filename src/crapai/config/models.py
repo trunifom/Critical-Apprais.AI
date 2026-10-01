@@ -183,6 +183,22 @@ class ScreeningOptions(_Strict):
     fulltext: FulltextOptions = Field(default_factory=FulltextOptions)
 
 
+class DiscussionSettings(_Strict):
+    """Defaults for ``crapai discuss`` (not in the plan; requested by the project lead).
+
+    A disagreement between two or more finished runs is settled by asking each run's own model to
+    reconsider, seeing the others' decision and reasoning, for up to ``max_rounds`` rounds.
+
+    Attributes:
+        max_rounds: Reconsideration rounds tried before giving up on consensus.
+        tie_break: ``majority`` picks the decision most runs end on (ties still count as no
+            consensus); ``no_consensus`` never picks a winner, even with a clear majority.
+    """
+
+    max_rounds: PositiveInt = 3
+    tie_break: Literal["majority", "no_consensus"] = "majority"
+
+
 class LlmSettings(_Strict):
     """Provider, model and sampling settings. Holds the NAME of the key variable, never the key."""
 
@@ -352,6 +368,7 @@ class ProjectConfig(_Strict):
     dedup: Dedup = Field(default_factory=Dedup)
     prefilters: Prefilters = Field(default_factory=Prefilters)
     screening: ScreeningOptions = Field(default_factory=ScreeningOptions)
+    discussion: DiscussionSettings = Field(default_factory=DiscussionSettings)
     llm: LlmSettings = Field(default_factory=LlmSettings)
     limits: Limits = Field(default_factory=Limits)
     quality: QualitySettings = Field(default_factory=QualitySettings)

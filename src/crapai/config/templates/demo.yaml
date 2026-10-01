@@ -57,6 +57,12 @@ screening:
     strategy: truncate                   # truncate | sections | map_reduce
     repeat_criteria_after_text: false
 
+# Defaults for 'crapai discuss' (settle a disagreement between two or more compared runs by
+# letting their own models reconsider, seeing each other's reasoning; not in the plan).
+discussion:
+  max_rounds: 3
+  tie_break: majority                    # majority | no_consensus
+
 llm:
   provider: openai_compatible          # SwissGPT is the expected main provider (ADR 0014); also: openai | anthropic
   model: "<pick via GET /v1/models>"    # see templates/models.yaml; SwissGPT model list is dynamic

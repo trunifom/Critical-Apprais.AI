@@ -184,6 +184,51 @@ def fingerprint(parts: dict[str, Any]) -> str:
     return hash_text(json.dumps(parts, sort_keys=True, ensure_ascii=False))
 
 
+def build_provider(
+    provider_name: str,
+    model: str,
+    *,
+    base_url: str | None = None,
+    api_key_env: str = "",
+    context_tokens: int | None = None,
+    environ: dict[str, str] | None = None,
+    source: str = "",
+) -> LLMProvider:
+    """Create a provider from its plain fields (also used to recreate an earlier run's provider).
+
+    Args:
+        source: What to name in the error if the key is missing (default: nothing extra).
+
+    Raises:
+        AuthError: E301 if the environment variable named by ``api_key_env`` is empty.
+        ConfigError: E203 for a provider that is not implemented yet or an unknown mock scenario.
+        ProviderError: E305 if the ``openai`` package is missing.
+    """
+    if provider_name == "mock":
+        scenario = model if model in SCENARIOS else "S1"
+        return MockProvider(scenario)
+    if provider_name == "anthropic":
+        raise ConfigError(
+            "The provider 'anthropic' is not available in this version",
+            code="E203",
+            hint="Use openai or openai_compatible (for example SwissGPT).",
+        )
+    key = (environ if environ is not None else os.environ).get(api_key_env, "").strip()
+    if not key:
+        hint = f"Set {api_key_env} to the key"
+        hint += f" {source}" if source else ""
+        hint += " (it is never stored in the project)."
+        raise AuthError(
+            f"The environment variable {api_key_env} is not set", code="E301", hint=hint
+        )
+    return OpenAICompatibleProvider(
+        key,
+        base_url=base_url,
+        name="openai" if provider_name == "openai" else "openai_compatible",
+        context_tokens=context_tokens,
+    )
+
+
 def make_provider(config: ProjectConfig, environ: dict[str, str] | None = None) -> LLMProvider:
     """Create the provider named in the settings.
 
@@ -193,27 +238,13 @@ def make_provider(config: ProjectConfig, environ: dict[str, str] | None = None) 
         ProviderError: E305 if the ``openai`` package is missing.
     """
     llm = config.llm
-    if llm.provider == "mock":
-        scenario = llm.model if llm.model in SCENARIOS else "S1"
-        return MockProvider(scenario)
-    if llm.provider == "anthropic":
-        raise ConfigError(
-            "The provider 'anthropic' is not available in this version",
-            code="E203",
-            hint="Use openai or openai_compatible (for example SwissGPT).",
-        )
-    key = (environ if environ is not None else os.environ).get(llm.api_key_env, "").strip()
-    if not key:
-        raise AuthError(
-            f"The environment variable {llm.api_key_env} is not set",
-            code="E301",
-            hint=f"Set {llm.api_key_env} to your key (it is never stored in the project).",
-        )
-    return OpenAICompatibleProvider(
-        key,
+    return build_provider(
+        llm.provider,
+        llm.model,
         base_url=llm.base_url,
-        name="openai" if llm.provider == "openai" else "openai_compatible",
+        api_key_env=llm.api_key_env,
         context_tokens=llm.context_tokens,
+        environ=environ,
     )
 
 
@@ -327,6 +358,10 @@ def _new_manifest(
                 for k, v in parts.items()
                 if k in ("provider", "model", "temperature", "top_p", "seed", "max_output_tokens")
             },
+            # Not secrets (the key itself never goes into a file): kept so that a later
+            # resolution (crapai discuss) can recreate this exact provider for its run id.
+            "base_url": config.llm.base_url or "",
+            "api_key_env": config.llm.api_key_env,
             "model_returned": [],
             "determinism_guaranteed": False,
         },

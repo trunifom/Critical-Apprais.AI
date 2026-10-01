@@ -40,9 +40,16 @@ RESULT_FORMATS: tuple[str, ...] = ("csv", "xlsx")
 
 
 def runs_with_results(workspace: Workspace) -> list[str]:
-    """Ids of the runs that have at least one result line, oldest first."""
+    """Ids of the screening runs that have at least one result line, oldest first.
+
+    Excludes a resolution (``crapai adjudicate``/``crapai discuss``, ``kind`` not ``full`` or
+    ``sample``): it only covers the records two or more runs disagreed on, so it would not make
+    sense in the ordinary results table or as one side of a run comparison.
+    """
     found: list[str] = []
     for manifest in list_runs(workspace):
+        if manifest.kind not in ("full", "sample"):
+            continue
         store = RunStore(workspace.runs_dir / manifest.run_id)
         if store.results_size() > 0:
             found.append(manifest.run_id)

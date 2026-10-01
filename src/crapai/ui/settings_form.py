@@ -99,6 +99,13 @@ SECTIONS: tuple[Section, ...] = (
         ),
     ),
     Section(
+        "discussion",
+        (
+            Field("discussion.max_rounds", "int", minimum=1, maximum=20),
+            Field("discussion.tie_break", "choice", ("majority", "no_consensus")),
+        ),
+    ),
+    Section(
         "llm",
         (
             Field("llm.provider", "choice", ("openai", "anthropic", "openai_compatible", "mock")),

@@ -36,6 +36,7 @@ from crapai.i18n.messages import Messages, resolve_language
 from crapai.logging_setup import attach_project_log, enable_console_log
 from crapai.project.lock import pid_alive
 from crapai.project.workspace import Workspace, cloud_sync_marker
+from crapai.services import resolution as resolution_service
 from crapai.services import screening as screening_service
 from crapai.services.cost import ProjectEstimate, estimate_project
 from crapai.services.dedup import dedup_project
@@ -961,6 +962,175 @@ def _print_compare(
             fg="yellow",
             err=True,
         )
+
+
+def _confirm_resolution(count: int, messages: Messages, *, as_json: bool) -> None:
+    """Show how many records are disputed, and ask (plan 8.5's rule, reused here)."""
+    _echo(messages.text("cli.resolve.disputed", count=count), json_mode=as_json)
+    decision = decide_confirmation(yes=False, interactive=_interactive())
+    if decision is Confirmation.REFUSE:
+        typer.secho(messages.text("cli.resolve.declined"), fg="yellow", err=True)
+        raise typer.Exit(EXIT_USER_ERROR)
+    if not typer.confirm(messages.text("cli.resolve.confirm"), err=as_json):
+        typer.echo(messages.text("cli.resolve.declined"), err=True)
+        raise typer.Exit(EXIT_USER_ERROR)
+
+
+def _resolution_exit_code(manifest: Any) -> int:
+    state = manifest.state
+    if state == "completed":
+        ok = manifest.counts.get("ok", 0)
+        done = manifest.counts.get("done", 0)
+        return EXIT_WARNINGS if ok < done else EXIT_OK
+    if state in ("paused", "interrupted"):
+        return EXIT_INTERRUPTED
+    code = manifest.last_error.get("code", "")
+    return EXIT_SYSTEM_ERROR if code in SYSTEM_ERROR_CODES else EXIT_USER_ERROR
+
+
+def _print_resolution_result(
+    result: resolution_service.ResolutionResult, messages: Messages, *, as_json: bool
+) -> int:
+    manifest = result.manifest
+    code = _resolution_exit_code(manifest)
+    if as_json:
+        typer.echo(
+            json.dumps(
+                {
+                    "run_id": result.run_id,
+                    "method": manifest.kind,
+                    "state": manifest.state,
+                    "resumed": result.resumed,
+                    "done": manifest.counts.get("done", 0),
+                    "total": manifest.counts.get("total", 0),
+                    "ok": manifest.counts.get("ok", 0),
+                    "last_error": manifest.last_error,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+    colour = {"completed": "green", "paused": "yellow", "interrupted": "yellow"}.get(
+        manifest.state, "red"
+    )
+    typer.secho(
+        messages.text(
+            f"cli.resolve.result.{manifest.state}",
+            run_id=result.run_id,
+            done=manifest.counts.get("done", 0),
+            total=manifest.counts.get("total", 0),
+            ok=manifest.counts.get("ok", 0),
+        ),
+        fg=colour,
+        bold=True,
+        err=as_json,
+    )
+    if manifest.last_error:
+        typer.secho(
+            messages.text(
+                "cli.resolve.error_line",
+                code=manifest.last_error.get("code", ""),
+                message=manifest.last_error.get("message", ""),
+            ),
+            fg=colour,
+            err=True,
+        )
+    return code
+
+
+@app.command("adjudicate")
+def adjudicate_command(
+    folder: Annotated[Path, typer.Argument(help="Project folder.")],
+    runs: Annotated[str, typer.Option("--runs", help="Two or more run ids, comma separated.")],
+    resume: Annotated[
+        str | None, typer.Option("--resume", help="Resolution run to continue.")
+    ] = None,
+    yes: Annotated[
+        bool, typer.Option("--yes", help="Start without asking for confirmation.")
+    ] = False,
+    as_json: JsonOption = False,
+    lang: LangOption = None,
+) -> None:
+    """Settle every disagreement between two or more finished runs with one master call each.
+
+    The master uses the project's current llm: settings (set them first, like for any other
+    run); it sees the record, the criteria and every disagreeing run's decision and reasoning, and
+    decides once, for itself. Only the disputed records are sent. The result is its own run (see
+    'crapai runs'); records.csv is never touched.
+    Example: crapai adjudicate my-review --runs run-001,run-002
+    """
+    messages = Messages(resolve_language(lang, folder / "project.yaml"))
+    _setup_file_log(folder)
+    run_ids = [r.strip() for r in runs.split(",") if r.strip()]
+    workspace = Workspace(folder)
+    try:
+        if resume is None and not yes:
+            count = len(resolution_service.disputed_items(workspace, run_ids))
+            _confirm_resolution(count, messages, as_json=as_json)
+        result = resolution_service.adjudicate_project(
+            workspace, run_ids, resolution_service.ResolutionOptions(resume=resume)
+        )
+    except typer.Exit:
+        raise
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        raise _fail(error, messages, json_mode=as_json) from error
+    raise typer.Exit(_print_resolution_result(result, messages, as_json=as_json))
+
+
+@app.command("discuss")
+def discuss_command(
+    folder: Annotated[Path, typer.Argument(help="Project folder.")],
+    runs: Annotated[str, typer.Option("--runs", help="Two or more run ids, comma separated.")],
+    max_rounds: Annotated[
+        int | None,
+        typer.Option("--max-rounds", min=1, help="Overrides discussion.max_rounds."),
+    ] = None,
+    tie_break: Annotated[
+        str | None,
+        typer.Option(
+            "--tie-break", help="majority or no_consensus; overrides discussion.tie_break."
+        ),
+    ] = None,
+    resume: Annotated[
+        str | None, typer.Option("--resume", help="Resolution run to continue.")
+    ] = None,
+    yes: Annotated[
+        bool, typer.Option("--yes", help="Start without asking for confirmation.")
+    ] = False,
+    as_json: JsonOption = False,
+    lang: LangOption = None,
+) -> None:
+    """Settle every disagreement between two or more finished runs by letting their own models
+    reconsider, seeing each other's decision and reasoning, for up to discussion.max_rounds rounds.
+
+    Each run is called with the model it originally used (read from its own manifest, not the
+    project's current llm: settings, which may since have moved on). Without consensus,
+    discussion.tie_break decides: the majority, or NO_CONSENSUS. Only the disputed records are
+    sent. The result is its own run (see 'crapai runs'); records.csv is never touched.
+    Example: crapai discuss my-review --runs run-001,run-002,run-003 --max-rounds 3
+    """
+    if tie_break is not None and tie_break not in ("majority", "no_consensus"):
+        raise typer.BadParameter("--tie-break must be majority or no_consensus")
+    messages = Messages(resolve_language(lang, folder / "project.yaml"))
+    _setup_file_log(folder)
+    run_ids = [r.strip() for r in runs.split(",") if r.strip()]
+    workspace = Workspace(folder)
+    try:
+        if resume is None and not yes:
+            count = len(resolution_service.disputed_items(workspace, run_ids))
+            _confirm_resolution(count, messages, as_json=as_json)
+        result = resolution_service.discuss_project(
+            workspace,
+            run_ids,
+            resolution_service.ResolutionOptions(
+                resume=resume, max_rounds=max_rounds, tie_break=tie_break
+            ),
+        )
+    except typer.Exit:
+        raise
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        raise _fail(error, messages, json_mode=as_json) from error
+    raise typer.Exit(_print_resolution_result(result, messages, as_json=as_json))
 
 
 def ui_command_line(

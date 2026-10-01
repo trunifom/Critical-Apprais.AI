@@ -90,6 +90,14 @@ class ResultRow(BaseModel):
     flags: list[str] = Field(default_factory=list)
     batch: int = 0
     timestamp: str = Field(default_factory=now_iso)
+    # Used only by a resolution run (kind "adjudicate" or "discuss"; crapai adjudicate/discuss),
+    # which settles a disagreement between two or more finished screening runs. Empty/unused for
+    # an ordinary screening run.
+    source_decisions: dict[str, str] = Field(default_factory=dict)  # run_id -> that run's decision
+    consensus: bool | None = None  # discuss: whether every participant agreed; None otherwise
+    rounds_used: int = 0  # discuss: reconsideration rounds actually used
+    tie_break: str = ""  # discuss, no consensus: "majority" or "no_consensus"
+    history: list[dict[str, Any]] = Field(default_factory=list)  # discuss: one entry per round
 
     @property
     def is_ok(self) -> bool:
