@@ -287,7 +287,14 @@ class ScreeningEngine:
                 await self._run_batch(index, batch)
                 if self._abort is not None:
                     raise self._abort
-                self._check_batch_rules(index)
+                if self._stop is None:
+                    # A stop already requested (Ctrl+C, 'pause'/'stop') must win over an
+                    # automatic error-rate pause discovered in the same batch: otherwise a batch
+                    # that was simply cut short by the user's own stop -- and so happened to have
+                    # a high error share among the few records it did finish -- could overwrite
+                    # the user's "interrupted" with a misleading automatic "paused: too many
+                    # failures" (E308), via the RunAbort catch below.
+                    self._check_batch_rules(index)
             if self._stop is not None:
                 final = self._stop
         except RunAbort as abort:
@@ -495,11 +502,21 @@ class ScreeningEngine:
         await asyncio.gather(*workers, return_exceptions=True)
 
     def _verify_batch(self, info: BatchInfo, batch: list[PlanItem], offset: int) -> None:
-        """Check on disk that every processed record of the batch has a result line."""
+        """Check on disk that every processed record of the batch has a result line.
+
+        A complete batch is checked against every uid it was planned for. A batch stopped
+        mid-way (pause, Ctrl+C, a crash) cannot be checked that way -- concurrent workers mean
+        we don't know *which* items were attempted -- but ``info.done`` only ever grows after
+        :meth:`_commit` has already written the line (same single-writer lock), so the number of
+        lines written since ``offset`` must still match it; a shortfall means a result was lost
+        between the writer and the disk, exactly the moment a torn write is most likely.
+        """
         written = {row.study_uid for row in self.store.read_results_since(offset)}
-        expected = {item.uid for item in batch} if info.done == len(batch) else None
-        if expected is not None and not expected <= written:
-            missing = len(expected - written)
+        if info.done == len(batch):
+            missing = len({item.uid for item in batch} - written)
+        else:
+            missing = max(0, info.done - len(written))
+        if missing:
             info.status = "failed"
             info.note = f"{missing} result(s) missing on disk"
             logger.error("Batch %d: %s", info.index + 1, info.note)

@@ -164,6 +164,8 @@ notifications:
 
 # ---- Command line (task T-M1-11). Added for Critical Apprais.AI; keep in sync with de.yaml. ----
 cli:
+  setup:
+    log_warning: "Warning: {problem}."
   init:
     done: "Project created: {path}"
     next: "Next: edit project.yaml (at least one inclusion criterion), then import your files."

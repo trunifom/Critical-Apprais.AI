@@ -45,6 +45,8 @@ def test_semicolon_csv_is_mapped_by_alias(tmp_path: Path) -> None:
     assert first.fields["authors"] == "Doe, J; Roe, R"
     assert first.fields["year"] == 2020 and first.fields["keywords"] == "x; y"
     assert "abstract" not in second.fields and "year" not in second.fields  # "n.d." -> no year
+    # Nothing is lost: an unparsable year is not just dropped, it survives in extra.
+    assert second.extra["col_Year"] == "n.d."
     assert [r.source_row for r in result.records] == [1, 2]
     assert result.column_map["abstract"] == "Abstract"
 

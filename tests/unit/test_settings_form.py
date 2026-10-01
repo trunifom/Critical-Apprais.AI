@@ -164,3 +164,43 @@ def test_settings_cannot_be_saved_while_the_project_is_in_use(project: Workspace
         assert outcome.error and outcome.error.code == "E402"
     finally:
         holder.release()
+
+
+# --- read_project_config / read_pricing_table (the page used to do this with its own try) --------
+
+
+def test_read_project_config_returns_the_config(project: Workspace) -> None:
+    outcome = actions.read_project_config(Messages("en"), project.root)
+    assert outcome.error is None
+    assert outcome.value is not None and outcome.value.project.title
+
+
+def test_read_project_config_of_a_broken_project_is_an_error_report(tmp_path: Path) -> None:
+    outcome = actions.read_project_config(Messages("en"), tmp_path / "nothing")
+    assert outcome.value is None and outcome.error is not None
+
+
+def test_read_pricing_table_keeps_every_row_and_the_right_columns(project: Workspace) -> None:
+    """Regression test: a delimiter sniff must not consume the header before DictReader reads
+    it, or the first data row is silently treated as the header (losing a row, mislabelling
+    every column) -- see the 'wrote 2 rows, read 1 garbled row' bug this guards against."""
+    path = project.pricing_csv
+    path.write_text(
+        "provider;model;price_input_per_1k;price_output_per_1k\n"
+        "openai;gpt-4o-mini;0.1;0.2\n"
+        "openai_compatible;neotron;0.3;0.4\n",
+        encoding="utf-8",
+    )
+    outcome = actions.read_pricing_table(Messages("en"), path)
+    assert outcome.error is None
+    rows = outcome.value
+    assert rows is not None and len(rows) == 2
+    assert [r["provider"] for r in rows] == ["openai", "openai_compatible"]
+    assert [r["model"] for r in rows] == ["gpt-4o-mini", "neotron"]
+
+
+def test_read_pricing_table_reports_a_file_missing_required_columns(project: Workspace) -> None:
+    path = project.pricing_csv
+    path.write_text("foo,bar\n1,2\n", encoding="utf-8")  # no provider/model/price columns
+    outcome = actions.read_pricing_table(Messages("en"), path)
+    assert outcome.value is None and outcome.error is not None and outcome.error.code == "E203"

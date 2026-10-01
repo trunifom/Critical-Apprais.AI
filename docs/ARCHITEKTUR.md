@@ -1,18 +1,22 @@
 # ARCHITEKTUR.md - Aufbau und Software-Architektur von Critical Apprais.AI
 
-Stand: 2026-09-30, Version 0.0.1 (Meilenstein A: Import ist umgesetzt, Screening ist **geplant**).
+Stand: 2026-10-02, Version 0.0.1. Umgesetzt: Meilenstein A (Import), M2 (Aufbereitung: Dedup, Vorfilter inkl. Stichwörter,
+Gültigkeit, Kosten), M3 (Screening-Kern: Anbieter, Prompt, Antwortprüfung, Engine), die lokale Oberfläche (`crapai ui`),
+Ergebnistabelle und Auswertung, der Lauf-Vergleich (`crapai compare-runs`) und das Klären von Uneinigkeit zwischen Läufen
+(`crapai adjudicate`, `crapai discuss`, ADR 0024/0025). Offen: Vergleich mit menschlichen Entscheidungen, PRISMA-Grafik (PNG/SVG).
 Zielgruppe: Entwickler:innen und Prüfende, die verstehen wollen, wie das Programm gebaut ist und warum.
 Die vollständige Spezifikation ist `docs/PROJEKTPLAN.md`; diese Datei beschreibt den **tatsächlichen Stand des Codes**
 und kennzeichnet Geplantes ausdrücklich. Bedienung: `docs/BENUTZERHANDBUCH.md`. Programmierung: `docs/ENTWICKLERDOKUMENTATION.md`.
+Laufend aktueller, verlässlicher Stand (Testzahl, nächster Schritt): `docs/UMSETZUNGSPLAN_UND_FORTSCHRITT.md`.
 
 ## 1. Leitgedanken
 
 | Grundsatz | Bedeutung im Code |
 |---|---|
 | **Der Projektordner ist die Datenbank** | Keine Datenbank, kein Server, keine Konten. Alles liegt in Dateien (CSV, JSONL, YAML). ADR 0001 |
-| **Lokal** | Nach aussen geht nur der Aufruf an den Modellanbieter (Screening, geplant). Keine Telemetrie |
+| **Lokal** | Nach aussen geht nur der Aufruf an den Modellanbieter (Screening, Schiedsrichter, Diskussion). Keine Telemetrie |
 | **Nichts still verlieren** | Duplikate und Datensätze ohne Abstract werden *markiert*, nie gelöscht. Unbekannte Felder wandern in `extra_json` |
-| **Nie ein Label aus einer unbrauchbaren Antwort** | Fehlerhafte Modellantworten erhalten einen Status (`parse_error` u. a.), nie `INCLUDE` (geplant, Lehre L4) |
+| **Nie ein Label aus einer unbrauchbaren Antwort** | Fehlerhafte Modellantworten erhalten einen Status (`parse_error` u. a.), nie `INCLUDE` (Lehre L4) |
 | **Alles über `study_uid`** | Jeder Datensatz bekommt beim Import eine stabile ID; nie Zeilenpositionen als Schlüssel (Lehre L1) |
 | **Persistierte Namen sind Verträge** | Spaltennamen, Enum-Werte, JSON-Schlüssel, Dateinamen ändern sich nur mit Versionssprung und Migration |
 | **Vorschläge, keine Entscheidungen** | Die Software ersetzt keine menschliche Prüfung |
@@ -20,18 +24,22 @@ und kennzeichnet Geplantes ausdrücklich. Bedienung: `docs/BENUTZERHANDBUCH.md`.
 ## 2. Schichten
 
 ```
-Bedienung        cli.py (typer)                      [geplant: ui/ (Streamlit)]
+Bedienung        cli.py (typer)                      ui/ (Streamlit, siehe unten)
                     │  ruft
-Dienste          services/importing.py   services/project.py   services/dedup.py   services/validity.py   services/preflight.py   services/cost.py   services/events.py   services/prefilter.py   services/export.py   services/screening.py
-Oberfläche       ui/ (Streamlit: viewmodels, actions, context, app, pages/)   logging_setup.py
-                 [geplant: screening, export, evaluation]
+Dienste          services/importing.py   services/project.py   services/dedup.py   services/validity.py   services/preflight.py
+                 services/cost.py   services/events.py   services/prefilter.py   services/export.py   services/screening.py
+                 services/results.py   services/resolution.py
+Oberfläche       ui/ (Streamlit: viewmodels, actions, context, app, pages/ - inkl. Lauf, Export, Auswertung)   logging_setup.py
                     │  ruft
-Fachkern         io/ (readers, normalize, records_store, import_log)
-                 config/ (Modelle, Loader)   project/ (Workspace, Lock, atomares Schreiben)
+Fachkern         io/ (readers, normalize, records_store, import_log, writers)
+                 config/ (Modelle, Loader, Overrides)   project/ (Workspace, Lock, atomares Schreiben)
                  i18n/ (Texte, Meldungen)    errors.py   criteria/  cost/  enums.py  legacy.py
-                 prisma/ (dedup)   llm/ (base, resilience, mock, openai)   prompts/   screening/ (answer, store, engine)   [geplant: stats/]
+                 prisma/ (dedup, prefilters, validity, events, flow)   llm/ (base, resilience, mock, openai)
+                 prompts/ (builder, resolution)   screening/ (answer, store, engine)   stats/ (results, agreement)
                     │  spricht mit der Aussenwelt nur über
-Ports/Adapter    [geplant: LLMProvider, FileStore, Clock, SecretStore, EventSink]
+Ports/Adapter    `llm.base.LLMProvider` (Protokoll, umgesetzt: Mock, OpenAI/-kompatibel); Uhr/Zufall/Schlaf als
+                 injizierbare Parameter statt eigener Klassen (`clock`, `sleep`, `now`, `rng` in Engine/Lock/Atomic/Resilience);
+                 kein eigenes FileStore-/SecretStore-/EventSink-Protokoll (Dateizugriff läuft direkt über `pathlib`/`project.atomic`)
 ```
 
 **Regel 1: Pfeile zeigen nur nach unten.** Der Fachkern importiert weder `streamlit`, `typer` noch ein LLM-SDK
@@ -208,6 +216,13 @@ Umsetzungsentscheide, die im Code gefallen sind (auch in `docs/UMSETZUNGSPLAN_UN
 
 ## 10. Geplante Erweiterungen (nicht implementiert)
 
-Deduplizierung und Vorfilter (M2), Provider-Schicht mit `MockProvider`, SwissGPT/OpenAI, Ratenbegrenzer, Prompt-Bau, Antwortschema mit Prüfung,
-Screening-Engine mit Checkpoint und Wiederaufnahme (M3), Ausgabe/Excel/PRISMA-Grafik, Statistik, Streamlit-Oberfläche, weitere Anbieter (M4-M8).
-Reihenfolge und Stand: `docs/UMSETZUNGSPLAN_UND_FORTSCHRITT.md`.
+* PRISMA-Flussdiagramm als Bild (PNG/SVG); die Zahlen selbst (`prisma_flow.json`) werden bereits über `crapai export --what flow`
+  geschrieben.
+* Vergleich der Modellentscheide mit menschlichen Entscheidungen (Plan Kap. 14, "Gegen Mensch").
+* Ein Komfortbefehl, der mehrere Modelle automatisch nacheinander durchläuft (`--repeats N` aus dem Plan); heute: mehrere
+  separate `crapai screen`-Aufrufe, siehe ADR 0024.
+* Oberflächen-Schaltflächen, um `crapai adjudicate`/`crapai discuss` direkt zu starten (vorerst nur Befehlszeile).
+* Weitere Anbieter ausser OpenAI/OpenAI-kompatibel (SwissGPT) und dem Mock.
+* Volltext-Screening (ADR 0015, bewusst ausserhalb von Version 1).
+
+Laufend aktueller Stand, nächster Schritt und Testzahl: `docs/UMSETZUNGSPLAN_UND_FORTSCHRITT.md`.

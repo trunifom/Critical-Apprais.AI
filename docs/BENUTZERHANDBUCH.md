@@ -399,6 +399,16 @@ crapai discuss mein-review --runs run-001,run-002,run-003 --max-rounds 3 --tie-b
 * Wie bei jedem Modellaufruf: kann Geld kosten. Ein Datensatz, den (noch) nicht alle gewählten Läufe bewertet haben, zählt nicht als Uneinigkeit.
 * Das Ergebnis trägt je Datensatz eine Entscheidung (`INCLUDE`/`EXCLUDE`/`UNCERTAIN`) und bei `discuss` zusätzlich, ob Konsens erreicht wurde, wie viele Runden gebraucht wurden und - ohne Konsens - `NO_CONSENSUS` oder die per Mehrheit gewählte Entscheidung samt der Entscheidungsregel, die gegriffen hat.
 
+Rückgabecodes von `crapai adjudicate` und `crapai discuss` (dieselbe Bedeutung wie bei `crapai screen`, Abschnitt 6k):
+
+| Code | Bedeutung |
+|---|---|
+| 0 | Lauf abgeschlossen, alle umstrittenen Datensätze geklärt |
+| 4 | abgeschlossen, aber einzelne Datensätze mit Fehlern (`--resume` wiederholt genau diese) |
+| 3 | pausiert oder unterbrochen; `--resume` setzt fort |
+| 1 | Fehlschlag, den Sie beheben können (Schlüssel, Einstellungen, keine Rückfrage möglich) |
+| 2 | Fehlschlag durch die Umgebung (Platte voll, Datei gesperrt, Projekt in Benutzung, unerwartet) |
+
 ## 6j. Einstellungen ändern: `project.yaml`, Oberfläche, `crapai config`
 
 Fast nichts ist im Programm fest verdrahtet: Schwellen, Grenzen und Annahmen sind Einstellungen. Es gibt drei Wege, sie zu ändern, die sich ergänzen:
@@ -713,7 +723,7 @@ Jeder Import, jede Duplikat-Markierung und jede Gültigkeitsprüfung schreibt ei
 * Fehlt ein Ereignis (zum Beispiel weil die Platte voll war), bleibt die Arbeit gültig; `crapai import`, `dedup` und `check` melden das mit einer Warnung (Rückgabecode 4). Führen Sie `crapai check` später erneut aus.
 * **Veraltete Zahlen werden gemeldet, nicht verschwiegen.** Importieren Sie nach dem letzten `dedup`, erscheint `STALE_DEDUP`: Die neuen Datensätze zählen dann als "zum Screening" und nicht als Duplikate, bis Sie `crapai check` ausführen. Läuft `dedup` allein nach Vorfilter oder Gültigkeitsprüfung, werden deren ältere Zahlen nicht abgezogen (`STALE_PREFILTER`, `STALE_VALIDITY`), damit nichts doppelt gezählt wird.
 * Wiederholtes `crapai check` schreibt nichts Neues, wenn sich nichts geändert hat; die Datei wächst nicht.
-* Die Ausgabe als Datei und Grafik (`prisma_flow.json`, `.png`) folgt mit dem Export (M8); die Berechnung selbst steht bereits zur Verfügung.
+* Die Zahlen lassen sich als Datei ausgeben (`crapai export mein-review --what flow`, Abschnitt 6l) → `prisma_flow.json`. Nur die Grafik (PNG/SVG) folgt noch.
 
 ## 7. Die Tabelle `records.csv` lesen
 
@@ -802,5 +812,5 @@ bestätigen (Rückfrage oder `--yes`). Es gibt keine Telemetrie.
 
 ## 10. Was noch kommt
 
-Die Ergebnistabelle (Excel/CSV) aus den Screening-Ergebnissen, der PRISMA-Fluss als Grafik, Test-Retest und Vergleich mit menschlichen Entscheidungen, und die Bedienung des Screenings in der grafischen Oberfläche. Den Stand finden Sie in
+Der PRISMA-Fluss als Grafik (PNG/SVG) und der Vergleich mit menschlichen Entscheidungen. Den Stand finden Sie in
 `docs/UMSETZUNGSPLAN_UND_FORTSCHRITT.md`; die Änderungen je Version in `CHANGELOG.md`.

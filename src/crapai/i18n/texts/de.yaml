@@ -156,6 +156,8 @@ notifications:
     Übermittelte Datensätze: **{total}**.
 
 cli:
+  setup:
+    log_warning: "Warnung: {problem}."
   init:
     done: "Projekt angelegt: {path}"
     next: "Als Nächstes: project.yaml bearbeiten (mindestens ein Einschlusskriterium) und danach Dateien importieren."

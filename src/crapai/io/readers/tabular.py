@@ -313,6 +313,11 @@ def _rows_to_records(
                 year = YEAR.search(value)
                 if year:
                     record.fields["year"] = int(year.group(1))
+                elif value:
+                    # Not a 4-digit year ("n.d.", "in press", "forthcoming", ...): nothing is
+                    # lost, the raw cell survives under the same key an unmapped column would
+                    # use (it is otherwise unused here, since "year"'s header is itself mapped).
+                    record.extra[f"col_{header}"] = value
             elif value:
                 record.fields[internal] = value
         for header in headers:

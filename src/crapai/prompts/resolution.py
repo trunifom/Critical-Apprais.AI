@@ -22,7 +22,7 @@ import json
 from dataclasses import dataclass, field
 
 from crapai.config.models import ProjectConfig
-from crapai.prompts.builder import RECORD_CLOSE, RECORD_OPEN, criteria_block
+from crapai.prompts.builder import RECORD_CLOSE, RECORD_OPEN, criteria_block, escape_for_tag
 from crapai.screening.answer import ANSWER_SCHEMA
 
 ADJUDICATE_SYSTEM = """\
@@ -108,15 +108,23 @@ def _context(config: ProjectConfig) -> str:
 
 
 def _record_block(item: DisputedItem) -> str:
-    lines = [f"Title: {item.title.strip()}", f"Abstract: {item.abstract.strip()}"]
+    lines = [
+        f"Title: {escape_for_tag(item.title.strip())}",
+        f"Abstract: {escape_for_tag(item.abstract.strip())}",
+    ]
     if item.keywords.strip():
-        lines.append(f"Keywords: {item.keywords.strip()}")
+        lines.append(f"Keywords: {escape_for_tag(item.keywords.strip())}")
     return f"{RECORD_OPEN}\n" + "\n".join(lines) + f"\n{RECORD_CLOSE}"
 
 
 def _opinion_block(label: str, decision: str, reasoning: str) -> str:
-    text = reasoning.strip() or "(no reasoning given)"
-    return f'<opinion source="{label}">\nDecision: {decision}\nReasoning: {text}\n</opinion>'
+    # label and reasoning both ultimately come from a provider's own answer (its reported model
+    # name, its reasoning text) -- in a multi-round discussion, one participant's untrusted
+    # output becomes part of the *next* prompt. escape_for_tag defangs '<'/'>'; the quote in the
+    # source="..." attribute gets the same treatment so a label cannot close the attribute early.
+    text = escape_for_tag(reasoning.strip()) or "(no reasoning given)"
+    safe_label = escape_for_tag(label).replace('"', "'")
+    return f'<opinion source="{safe_label}">\nDecision: {decision}\nReasoning: {text}\n</opinion>'
 
 
 def build_adjudication_prompt(config: ProjectConfig, item: DisputedItem) -> tuple[str, str]:

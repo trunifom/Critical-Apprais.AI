@@ -245,6 +245,13 @@ def test_every_outcome_colour_is_visible_against_the_background(theme: str) -> N
     assert all(contrast_ratio(charts.CHART_COLORS[theme][o], background) >= 3.0 for o in strong)
 
 
+@pytest.mark.parametrize("theme", ["light", "dark"])
+def test_every_run_colour_reaches_the_aa_contrast(theme: str) -> None:
+    background = PALETTES[theme]["bg"]
+    for colour in charts.RUN_COLORS[theme]:
+        assert contrast_ratio(colour, background) >= 4.5, (theme, colour)
+
+
 def test_the_colours_of_the_outcomes_differ() -> None:
     for theme in ("light", "dark"):
         assert len(set(charts.CHART_COLORS[theme].values())) == len(stats.OUTCOMES)

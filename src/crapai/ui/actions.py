@@ -13,6 +13,7 @@ file for anything unexpected. Uploaded files are stored under their base name on
 
 from __future__ import annotations
 
+import csv
 import logging
 import re
 import subprocess
@@ -26,7 +27,9 @@ from typing import Any, Generic, TypeVar
 import yaml
 
 from crapai.config.loader import load_project_config, validate_config
+from crapai.config.models import ProjectConfig
 from crapai.config.overrides import Setting, effective_settings, reset_values, set_values
+from crapai.cost.pricing import CsvPriceSource
 from crapai.errors import ConfigError, SaraError, StorageError
 from crapai.i18n.messages import ErrorReport, Messages
 from crapai.logging_setup import attach_project_log
@@ -213,6 +216,19 @@ def reset_settings(messages: Messages, folder: Path) -> Outcome[list[str]]:
         return removed
 
     return guarded(messages, work, name="reset settings")
+
+
+def read_pricing_table(messages: Messages, path: Path) -> Outcome[list[dict[str, str]]]:
+    """The project's ``pricing.csv`` as rows for display (validated, delimiter detected)."""
+
+    def work() -> list[dict[str, str]]:
+        CsvPriceSource(path)  # validates the file and logs any bad row
+        with path.open(encoding="utf-8-sig", newline="") as handle:
+            sample = handle.readline()
+            handle.seek(0)  # the sniff above must not consume the header row for DictReader
+            return list(csv.DictReader(handle, delimiter=";" if ";" in sample else ","))
+
+    return guarded(messages, work, name="read pricing table")
 
 
 # --- import ----------------------------------------------------------------------------------
@@ -449,6 +465,13 @@ def control_run(messages: Messages, folder: Path, run_id: str, command: str) -> 
 def estimate_run(messages: Messages, folder: Path) -> Outcome[ProjectEstimate]:
     """The cost and time estimate shown before a run starts."""
     return guarded(messages, lambda: estimate_project(Workspace.open(folder)), name="estimate")
+
+
+def read_project_config(messages: Messages, folder: Path) -> Outcome[ProjectConfig]:
+    """``project.yaml``, validated (no ``try`` needed on the page that only shows it)."""
+    return guarded(
+        messages, lambda: load_project_config(folder / "project.yaml"), name="read project config"
+    )
 
 
 def screen_output_tail(folder: Path, lines: int = 20) -> str:

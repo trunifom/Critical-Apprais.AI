@@ -355,9 +355,18 @@ def _map_fields(index: int, entry_type: str, key: str, fields: list[tuple[str, s
     editors = _split_authors(first("editor")) if by_name.get("editor") else []
     if editors:
         mapped["editors"] = join_values(unique_in_order(editors))
-    year = _year(first("year"))
+    raw_year = first("year")
+    year = _year(raw_year)
+    if year is None and raw_year:
+        # Not a 4-digit year ("n.d.", "forthcoming", ...): nothing is lost, the raw text still
+        # goes to extra -- first() already marked "year" as used, so without this it would
+        # vanish (the generic used-fields loop below never sees it again).
+        extra["bib_year"] = raw_year
     if year is None:  # `date` only counts (and is only consumed) if there is no usable `year`
-        year = _year(first("date"))
+        raw_date = first("date")
+        year = _year(raw_date)
+        if year is None and raw_date:
+            extra["bib_date"] = raw_date
     if year is not None:
         mapped["year"] = year
     journal = clean_latex(first("journal", "journaltitle", "booktitle")).strip()

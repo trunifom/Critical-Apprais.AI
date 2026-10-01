@@ -54,6 +54,24 @@ def test_help_and_version() -> None:
     assert invoke().exit_code in (0, 2)  # no arguments: usage help
 
 
+def test_a_log_attach_problem_is_shown_translated(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regression test: this warning used to be a hardcoded English 'Warning: ...' regardless
+    of --lang, the only such string in an otherwise fully-translated command line."""
+    folder = tmp_path / "demo"
+    assert invoke("init", folder, "--from-template", "demo", "--lang", "en").exit_code == 0
+
+    def broken(folder: Path, *, level: int | None = None) -> str:
+        return "cannot write the log file (PermissionError)"
+
+    monkeypatch.setattr(cli, "attach_project_log", broken)
+    de = invoke("runs", folder, "--lang", "de")
+    assert "Warnung:" in de.output and "cannot write the log file" in de.output
+    en = invoke("runs", folder, "--lang", "en")
+    assert "Warning:" in en.output and "cannot write the log file" in en.output
+
+
 def test_init_blank_and_errors(tmp_path: Path) -> None:
     folder = tmp_path / "blank"
     result = invoke("init", folder, "--lang", "de")
@@ -219,6 +237,18 @@ def test_project_log_file_is_written(demo: Path) -> None:
     log = (demo / ".crapai" / "app.log").read_text(encoding="utf-8")
     assert "Imported 10 record(s)" in log
     assert "Title" not in log  # no record content in the log
+
+
+def test_status_and_config_show_also_attach_the_project_log(demo: Path) -> None:
+    """Regression test: these two read-only commands used to be the only ones that never called
+    _setup_file_log, so an unexpected failure inside them left no trace in .crapai/app.log."""
+    log_path = demo / ".crapai" / "app.log"
+    before = log_path.stat().st_size if log_path.exists() else -1
+    assert invoke("status", demo, "--lang", "en").exit_code == 0
+    assert log_path.stat().st_size > before
+    before = log_path.stat().st_size
+    assert invoke("config", "show", demo, "--lang", "en").exit_code == 0
+    assert log_path.stat().st_size > before
 
 
 def test_repeated_table_import_uses_the_mapping_stored_in_project_yaml(

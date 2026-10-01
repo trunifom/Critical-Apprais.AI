@@ -276,6 +276,26 @@ def test_the_settings_page_shows_paths_and_the_price_list(
     assert not at.exception and len(at.dataframe) == 2  # sources of the values, price list
 
 
+def test_the_price_list_is_read_correctly_with_more_than_one_row(
+    monkeypatch: pytest.MonkeyPatch, filled_project: Path
+) -> None:
+    """Regression test: a delimiter sniff that reads the header without seeking back must not
+    make DictReader treat the first data row as the header (losing a row, mislabelling columns)."""
+    at = fresh(monkeypatch, filled_project).run()
+    goto(at, "settings")
+    (filled_project / "pricing.csv").write_text(
+        "provider;model;price_input_per_1k;price_output_per_1k\n"
+        "openai;gpt-4o-mini;0.1;0.2\n"
+        "openai_compatible;neotron;0.3;0.4\n",
+        encoding="utf-8",
+    )
+    at.run()
+    assert not at.exception
+    price_list = at.dataframe[-1].value
+    assert list(price_list["provider"]) == ["openai", "openai_compatible"]
+    assert list(price_list["model"]) == ["gpt-4o-mini", "neotron"]
+
+
 def test_closing_the_project_returns_to_the_start_page(
     monkeypatch: pytest.MonkeyPatch, empty_project: Path
 ) -> None:

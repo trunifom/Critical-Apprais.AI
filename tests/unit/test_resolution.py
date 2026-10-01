@@ -3,13 +3,14 @@ reconsider in rounds). Not in docs/PROJEKTPLAN.md; requested by the project lead
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 
 import pytest
 import yaml
 from results_helpers import project_with_run
 
-from crapai.errors import ConfigError, StorageError
+from crapai.errors import AuthError, ConfigError, StorageError
 from crapai.llm.base import Capabilities, LLMResponse
 from crapai.llm.mock_provider import MockProvider, answer_json
 from crapai.project.workspace import Workspace
@@ -59,6 +60,31 @@ class BrokenProvider:
         return LLMResponse(text="not a valid JSON answer", model_returned="broken")
 
 
+class SelectiveAuthErrorProvider:
+    """Raises AuthError only for the one record whose title contains ``bad_marker``; answers
+    normally (after yielding control, so siblings interleave) for everything else."""
+
+    name = "selective"
+
+    def __init__(self, bad_marker: str) -> None:
+        self.bad_marker = bad_marker
+        self.calls = 0
+
+    def count_tokens(self, text: str, model: str) -> int:
+        return max(1, len(text) // 4)
+
+    def capabilities(self, model: str) -> Capabilities:
+        return Capabilities(context_tokens=128_000)
+
+    async def complete(self, request):  # type: ignore[no-untyped-def]
+        self.calls += 1
+        if self.bad_marker in request.user:
+            raise AuthError("The key was refused", code="E301")
+        await asyncio.sleep(0)  # yield so the sibling call can also run before either returns
+        body = answer_json(request.user, decision="INCLUDE")
+        return LLMResponse(text=body, model_returned="selective", tokens_in=10, tokens_out=5)
+
+
 def mock_run(workspace: Workspace, scenario: str) -> str:
     """Screen the project with ``scenario`` (mock) and return the new run's id."""
     before = set(runs_with_results(workspace))
@@ -77,13 +103,20 @@ def two_mock_runs(tmp_path: Path, scenario: str = "S1") -> tuple[Workspace, str,
 
 def flip_one(workspace: Workspace, run_id: str) -> str:
     """Flip exactly one settled record's decision in ``run_id``; returns its ``study_uid``."""
+    return flip_many(workspace, run_id, 1)[0]
+
+
+def flip_many(workspace: Workspace, run_id: str, count: int) -> list[str]:
+    """Flip ``count`` settled records' decisions in ``run_id``; returns their ``study_uid``s."""
     store = RunStore(workspace.runs_dir / run_id)
-    uid, row = next(
+    chosen = [
         (u, r) for u, r in store.last_results().items() if r.status == "ok" and r.decision
-    )
-    flipped = "EXCLUDE" if row.decision != "EXCLUDE" else "INCLUDE"
-    store.append_result(row.model_copy(update={"decision": flipped, "reasoning": "flipped"}))
-    return uid
+    ][:count]
+    assert len(chosen) == count
+    for _uid, row in chosen:
+        flipped = "EXCLUDE" if row.decision != "EXCLUDE" else "INCLUDE"
+        store.append_result(row.model_copy(update={"decision": flipped, "reasoning": "flipped"}))
+    return [uid for uid, _ in chosen]
 
 
 # --- disputed_items / resolvable_runs --------------------------------------------------------------
@@ -177,6 +210,25 @@ def test_adjudicate_fails_on_an_auth_error(tmp_path: Path) -> None:
         workspace, [run_a, run_b], res.ResolutionOptions(provider=MockProvider("S7", after=0))
     )
     assert result.manifest.state == "failed" and result.manifest.last_error["code"] == "E301"
+
+
+def test_an_abort_does_not_discard_a_sibling_already_in_flight(tmp_path: Path) -> None:
+    """Regression test: gather() must wait for every item in the same chunk before reporting an
+    _Abort, or a sibling call that was already in flight (and already cost money) gets silently
+    dropped with no row and no log line (its task is simply abandoned when gather() returns)."""
+    workspace, run_a, run_b = two_mock_runs(tmp_path)
+    bad_uid, good_uid = flip_many(workspace, run_b, 2)
+    items = {i.study_uid: i for i in res.disputed_items(workspace, [run_a, run_b])}
+    assert {bad_uid, good_uid} == set(items)
+    provider = SelectiveAuthErrorProvider(bad_marker=items[bad_uid].title)
+    result = res.adjudicate_project(
+        workspace, [run_a, run_b], res.ResolutionOptions(provider=provider)
+    )
+    assert result.manifest.state == "failed"
+    rows = RunStore(workspace.runs_dir / result.run_id).last_results()
+    # The sibling, running concurrently in the same chunk, must still have settled -- not be
+    # silently discarded because gather() returned as soon as the other one raised.
+    assert good_uid in rows and rows[good_uid].status == "ok"
 
 
 # --- discuss ------------------------------------------------------------------------------------

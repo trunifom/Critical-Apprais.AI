@@ -18,9 +18,7 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from crapai.config.loader import load_project_config
 from crapai.cost.duration import format_duration
-from crapai.errors import SaraError
 from crapai.ui import actions
 from crapai.ui.context import Context
 from crapai.ui.pages.common import intro, metric_row, show_error
@@ -139,11 +137,12 @@ def _final_state(st: Any, ctx: Context, view: RunView) -> None:
 def _start_panel(st: Any, ctx: Context, *, resume_view: RunView | None) -> None:
     """Settings summary, estimate and the start (or resume) button."""
     assert ctx.folder is not None
-    try:
-        config = load_project_config(ctx.folder / "project.yaml")
-    except SaraError as error:
-        show_error(st, ctx, ctx.messages.error_report(error))
+    config_outcome = actions.read_project_config(ctx.messages, ctx.folder)
+    if config_outcome.error is not None:
+        show_error(st, ctx, config_outcome.error)
         return
+    config = config_outcome.value
+    assert config is not None
     st.caption(
         ctx.t(
             "run.model_line",

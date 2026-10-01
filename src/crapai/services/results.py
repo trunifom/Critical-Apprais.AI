@@ -191,7 +191,7 @@ def export_comparison(
     columns = compare_columns(summary.run_ids)
     stamp = (now or datetime.now()).strftime("%Y%m%d-%H%M%S")
     label = "-".join(run_id[:12] for run_id in summary.run_ids)
-    target = _target(Workspace(workspace.root), output, f"compare-{label}-{stamp}.{fmt}")
+    target = _target(workspace, output, f"compare-{label}-{stamp}.{fmt}")
     body = ([_cell(row.get(name)) for name in columns] for row in rows)
     if fmt == "csv":
         written = write_csv(
@@ -247,7 +247,7 @@ def export_results(
         )
     used_run, rows = results_table(workspace, run_id)
     stamp = (now or datetime.now()).strftime("%Y%m%d-%H%M%S")
-    target = _target(Workspace(workspace.root), output, f"results-{used_run[:16]}-{stamp}.{fmt}")
+    target = _target(workspace, output, f"results-{used_run[:16]}-{stamp}.{fmt}")
     body = ([_cell(row.get(name)) for name in RESULT_COLUMNS] for row in rows)
     if fmt == "csv":
         written = write_csv(

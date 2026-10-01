@@ -595,11 +595,22 @@ async def _process_with_control(
     chunk_size = max(1, concurrency * 2)
     for start in range(0, len(items), chunk_size):
         chunk = items[start : start + chunk_size]
-        try:
-            await asyncio.gather(*(bound(item) for item in chunk))
-        except _Abort as exc:
-            logger.warning("Resolution aborted (%s): %s %s", exc.state, exc.code, exc.message)
-            return exc.state, {"code": exc.code, "message": exc.message}
+        # return_exceptions=True: without it, the first _Abort would make gather() return
+        # immediately while its siblings in the same chunk keep running un-awaited in the
+        # background (asyncio's documented behaviour) -- in-flight LLM calls that already cost
+        # money would be silently dropped with no row and no log line. Waiting for every sibling
+        # to finish first means each one still gets to append its ResultRow (ok or error) before
+        # the abort is reported.
+        results = await asyncio.gather(*(bound(item) for item in chunk), return_exceptions=True)
+        abort = next((r for r in results if isinstance(r, _Abort)), None)
+        if abort is not None:
+            logger.warning(
+                "Resolution aborted (%s): %s %s", abort.state, abort.code, abort.message
+            )
+            return abort.state, {"code": abort.code, "message": abort.message}
+        other = next((r for r in results if isinstance(r, BaseException)), None)
+        if other is not None:
+            raise other
         command = store.read_control()
         if command in ("pause", "stop"):
             store.clear_control()

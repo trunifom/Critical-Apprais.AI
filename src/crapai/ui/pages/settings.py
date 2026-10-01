@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import csv
 import logging
 from pathlib import Path
 from typing import Any
 
-from crapai.cost.pricing import CsvPriceSource
-from crapai.errors import SaraError
 from crapai.logging_setup import LEVEL_ENV, LOG_FILE_NAME, resolve_level
 from crapai.project.workspace import Workspace
 from crapai.ui import actions
@@ -140,12 +137,8 @@ def render(st: Any, ctx: Context) -> None:
     if not path.exists():
         st.info(ctx.t("settings.no_pricing", path=path.name))
         return
-    try:
-        CsvPriceSource(path)  # validates the file and logs bad rows
-        with path.open(encoding="utf-8-sig", newline="") as handle:
-            rows = list(csv.DictReader(handle, delimiter=";" if ";" in handle.readline() else ","))
-        st.dataframe(rows, width="stretch", hide_index=True)
-    except SaraError as error:
-        show_error(st, ctx, ctx.messages.error_report(error))
-    except (OSError, UnicodeDecodeError, csv.Error):
-        st.error(ctx.t("settings.pricing_unreadable", path=path.name))
+    outcome = actions.read_pricing_table(ctx.messages, path)
+    if outcome.error is not None:
+        show_error(st, ctx, outcome.error)
+        return
+    st.dataframe(outcome.value, width="stretch", hide_index=True)

@@ -189,6 +189,14 @@ def test_month_macros_and_bare_numbers() -> None:
 def test_year_is_never_a_placeholder() -> None:
     record = parse_bibtex_text("@article{k, title={T}, year={n.d.}}").records[0]
     assert "year" not in record.fields
+    # Nothing is lost: the unparsable year text still survives in extra.
+    assert record.extra["bib_year"] == "n.d."
+
+
+def test_an_unparsable_date_also_survives_in_extra_when_year_is_missing() -> None:
+    record = parse_bibtex_text("@article{k, title={T}, date={forthcoming}}").records[0]
+    assert "year" not in record.fields
+    assert record.extra["bib_date"] == "forthcoming"
 
 
 def test_no_entries_raises_e102() -> None:

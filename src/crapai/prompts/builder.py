@@ -42,6 +42,18 @@ STRUCTURED = "structured"
 LEGACY = "legacy_xxx_yyy"
 RECORD_OPEN, RECORD_CLOSE = "<record>", "</record>"
 
+# '<'/'>' in untrusted text (title, abstract, keywords, a model's own reasoning quoted back to it
+# in services/resolution.py) are replaced by look-alike characters that cannot form a tag, so a
+# record cannot forge a fake "</record>" boundary and smuggle text that *looks* like it sits
+# outside the data block. Genuinely different code points (not an HTML entity like "&lt;") are
+# used on purpose: a model normalising "&lt;" back to "<" would quietly undo the defence.
+_ANGLE_BRACKETS = str.maketrans({"<": "‹", ">": "›"})
+
+
+def escape_for_tag(text: str) -> str:
+    """Defang '<'/'>' in untrusted text before it is embedded between our own structural tags."""
+    return text.translate(_ANGLE_BRACKETS)
+
 
 @dataclass(frozen=True)
 class PromptVariant:
@@ -263,9 +275,12 @@ class PromptBuilder:
         changes :attr:`prefix_hash`. Pass it only when ``screening.include_keywords_in_prompt``
         is on (see :func:`crapai.services.screening.plan_items`).
         """
-        lines = [f"Title: {title.strip()}", f"Abstract: {abstract.strip()}"]
+        lines = [
+            f"Title: {escape_for_tag(title.strip())}",
+            f"Abstract: {escape_for_tag(abstract.strip())}",
+        ]
         if keywords.strip():
-            lines.append(f"Keywords: {keywords.strip()}")
+            lines.append(f"Keywords: {escape_for_tag(keywords.strip())}")
         record = f"{RECORD_OPEN}\n" + "\n".join(lines) + f"\n{RECORD_CLOSE}"
         return PromptParts(self.system, f"{self.prefix}\n\n{record}", self.prefix_hash)
 

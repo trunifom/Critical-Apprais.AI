@@ -198,9 +198,13 @@ class ProjectLock:
             if self._try_create():
                 return
             info = self.inspect()
-        if info is not None and info.stale and take_over_stale and self.remove_stale(info):
-            if self._try_create():
+        if info is not None and info.stale and take_over_stale:
+            if self.remove_stale(info) and self._try_create():
                 return
+            # Re-inspect even if remove_stale refused (the lock "changed hands": another
+            # process replaced the stale lock while we were taking it over). Without this,
+            # _refusal would report the *old*, now-stale info and tell the user to
+            # "crapai unlock" a lock that is actually live again.
             info = self.inspect()
         raise self._refusal(info)
 
@@ -295,14 +299,34 @@ class ProjectLock:
         """Refresh the heartbeat. Call every :data:`HEARTBEAT_INTERVAL_S` seconds while running.
 
         Raises:
-            StorageError: (E402) if the lock was lost, i.e. someone else took it over.
+            StorageError: (E401) if the real lock file is locked by something else (a virus
+                scanner, a sync client) so the heartbeat could only be written to a fallback
+                file; (E402) if the lock was lost, i.e. someone else took it over.
         """
         info = self.inspect()
         if self._token is None or info is None or info.token != self._token:
             raise StorageError(
                 "The project lock was lost", code="E402", details={"path": str(self.path)}
             )
-        atomic_write_text(self.path, self._payload(self._token, info.started, self._now()))
+        result = atomic_write_text(self.path, self._payload(self._token, info.started, self._now()))
+        if result.used_alternative:
+            # There is no legitimate "alternative file" for a lock: the real .crapai/lock was
+            # not updated, so its heartbeat keeps aging. Silently returning here would let
+            # another process judge it stale (STALE_AFTER_S later) and take it over while this
+            # one is still alive and writing -- exactly the single-writer guarantee this class
+            # exists to protect. Surface it instead of swallowing it.
+            logger.error(
+                "Could not refresh the project lock at %s (it is locked by something else); "
+                "it may be judged stale and taken over",
+                self.path,
+            )
+            raise StorageError(
+                "The project lock could not be refreshed",
+                code="E401",
+                hint="Something else (a virus scanner, a sync client) is locking "
+                ".crapai/lock; close it so the running process can keep its lock.",
+                details={"path": str(self.path)},
+            )
 
     def release(self) -> None:
         """Remove the lock file if this object owns it; otherwise do nothing."""

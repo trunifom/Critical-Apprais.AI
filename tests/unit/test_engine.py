@@ -12,9 +12,10 @@ from screening_helpers import fast_settings, make_config, make_engine, make_item
 
 from crapai.cost.pricing import Price
 from crapai.errors import StorageError
+from crapai.llm.base import Capabilities, LLMResponse
 from crapai.llm.mock_provider import MockProvider
-from crapai.screening.engine import Progress
-from crapai.screening.store import ResultRow, RunState
+from crapai.screening.engine import MIN_RECORDS_FOR_RATE, Progress, RunAbort
+from crapai.screening.store import BatchInfo, ResultRow, RunState
 
 
 def statuses(engine) -> Counter[str]:  # type: ignore[no-untyped-def]
@@ -22,6 +23,43 @@ def statuses(engine) -> Counter[str]:  # type: ignore[no-untyped-def]
 
 
 # --- the ordinary run -----------------------------------------------------------------------------
+
+
+def test_verify_batch_catches_a_missing_result_in_a_partial_batch(tmp_path: Path) -> None:
+    """Regression test: a batch stopped mid-way (``info.done < len(batch)``) used to skip disk
+    verification entirely (the check only ran for a *complete* batch) -- exactly the moment a
+    torn or lost write is most likely. ``info.done`` only ever grows after a line was actually
+    written (single-writer lock in ``_commit``), so a shortfall against disk must still fail."""
+    engine = make_engine(tmp_path, MockProvider("S1"))
+    batch = make_items(4)
+    offset = engine.store.results_size()
+    engine.store.append_result(
+        ResultRow(
+            study_uid=batch[0].uid, run_id=engine.manifest.run_id, status="ok", decision="INCLUDE"
+        )
+    )
+    # Claim 2 records were processed in this batch, but only 1 actually made it to disk.
+    info = BatchInfo(index=0, size=len(batch), done=2, ok=2, errors=0)
+    with pytest.raises(RunAbort) as excinfo:
+        engine._verify_batch(info, batch, offset)
+    assert excinfo.value.state == RunState.FAILED
+    assert info.status == "failed" and "1 result(s) missing" in info.note
+
+
+def test_verify_batch_of_a_partial_batch_passes_when_disk_matches_done(tmp_path: Path) -> None:
+    """The flip side: a partial batch where disk matches the counted 'done' must still be
+    accepted as 'partial', not fail just for being incomplete."""
+    engine = make_engine(tmp_path, MockProvider("S1"))
+    batch = make_items(4)
+    offset = engine.store.results_size()
+    engine.store.append_result(
+        ResultRow(
+            study_uid=batch[0].uid, run_id=engine.manifest.run_id, status="ok", decision="INCLUDE"
+        )
+    )
+    info = BatchInfo(index=0, size=len(batch), done=1, ok=1, errors=0)
+    engine._verify_batch(info, batch, offset)  # must not raise
+    assert info.status == "partial" and "1 of 4" in info.note
 
 
 async def test_a_clean_run_screens_every_record_in_verified_batches(tmp_path: Path) -> None:
@@ -263,6 +301,51 @@ async def test_stop_from_outside_is_interrupted(tmp_path: Path) -> None:
     )
     summary = await engine.run(make_items(30))
     assert summary.state == "interrupted"
+
+
+class SlowFlakyProvider:
+    """Every call is a parse error, after a fixed delay (so a stop can land mid-batch)."""
+
+    name = "mock"
+
+    def __init__(self, delay_s: float) -> None:
+        self.delay_s = delay_s
+
+    def count_tokens(self, text: str, model: str) -> int:
+        return max(1, len(text) // 4)
+
+    def capabilities(self, model: str) -> Capabilities:
+        return Capabilities(context_tokens=128_000)
+
+    async def complete(self, request: object) -> LLMResponse:
+        await asyncio.sleep(self.delay_s)
+        return LLMResponse(text="not valid json", model_returned="mock")
+
+
+async def test_a_user_requested_stop_is_not_overwritten_by_an_automatic_error_pause(
+    tmp_path: Path,
+) -> None:
+    """Regression test: a batch cut short by the user's own stop, whose few finished records
+    happen to be all errors, must stay 'interrupted' (the user's reason) -- not get silently
+    turned into an automatic 'paused: too many failures' (E308) by the error-rate check."""
+    calls = {"n": 0}
+
+    def control() -> str | None:
+        calls["n"] += 1
+        return "stop" if calls["n"] >= 2 else None
+
+    engine = make_engine(
+        tmp_path,
+        SlowFlakyProvider(delay_s=0.3),
+        settings=fast_settings(
+            concurrency=2, batch_size=50, max_batch_error_rate=0.1, stop_grace_seconds=5.0
+        ),
+        control=control,
+    )
+    summary = await engine.run(make_items(40))
+    assert summary.state == "interrupted" and summary.stop_reason == "stop requested"
+    assert MIN_RECORDS_FOR_RATE <= summary.done < 40
+    assert summary.errors == summary.done  # every completed record was a parse error
 
 
 async def test_requests_still_running_after_the_grace_time_are_cancelled_and_not_written(

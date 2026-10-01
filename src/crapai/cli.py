@@ -36,6 +36,7 @@ from crapai.i18n.messages import Messages, resolve_language
 from crapai.logging_setup import attach_project_log, enable_console_log
 from crapai.project.lock import pid_alive
 from crapai.project.workspace import Workspace, cloud_sync_marker
+from crapai.screening.store import RunStore
 from crapai.services import resolution as resolution_service
 from crapai.services import screening as screening_service
 from crapai.services.cost import ProjectEstimate, estimate_project
@@ -68,6 +69,11 @@ STRATEGIES = ("doi_or_title", "strict_ids", "title", "title_authors")
 KEEP_RULES = ("best", "first", "last")
 
 # Errors caused by the environment, not by the input (plan chapter 15.1: exit code 2).
+# E404/E405 are deliberately NOT here even though they also cover "damaged file": in practice
+# they most often mean "wrong path" / "already a project" (a user mistake), and 9 existing tests
+# (test_cli_basic.py, test_check_command.py, test_export.py, ...) codify exit 1 for exactly that.
+# Reclassifying them would fix a rare "corrupted file after a crash" case at the cost of breaking
+# the common one; not worth it without a way to tell the two apart at this layer.
 SYSTEM_ERROR_CODES = frozenset({"E401", "E402", "E403", UNEXPECTED_ERROR_CODE})
 COMMAND = CLI_NAME
 
@@ -121,12 +127,12 @@ def _echo(message: str, *, json_mode: bool, colour: str | None = None) -> None:
     typer.secho(message, fg=colour, err=json_mode)
 
 
-def _setup_file_log(folder: Path) -> None:
+def _setup_file_log(folder: Path, messages: Messages) -> None:
     """Log to ``.crapai/app.log`` of the project (see :mod:`crapai.logging_setup`)."""
     problem = attach_project_log(folder, level=logging.DEBUG if _verbose else None)
     if problem:
         # A read-only share or a log held by another program must not stop the command itself.
-        typer.secho(f"Warning: {problem}.", fg="yellow", err=True)
+        typer.secho(messages.text("cli.setup.log_warning", problem=problem), fg="yellow", err=True)
 
 
 def error_json(error: Exception) -> dict[str, Any]:
@@ -235,7 +241,7 @@ def init_command(
         workspace = create_project(folder, template=from_template, title=title)
     except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
         raise _fail(error, messages, json_mode=False) from error
-    _setup_file_log(workspace.root)
+    _setup_file_log(workspace.root, messages)
     logger.info("Created project %s from template %s", workspace.root.name, from_template)
     typer.secho(messages.text("cli.init.done", path=workspace.root), fg="green")
     marker = cloud_sync_marker(workspace.root)
@@ -269,7 +275,7 @@ def import_command(
     Example: crapai import my-review pubmed.ris embase.bib --label PubMed --label Embase
     """
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
-    _setup_file_log(folder)
+    _setup_file_log(folder, messages)
     results: list[dict[str, Any]] = []
     exit_code = EXIT_OK
     try:
@@ -345,6 +351,7 @@ def status_command(
     Example: crapai status my-review
     """
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
+    _setup_file_log(folder, messages)
     try:
         status = project_status(folder)
     except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
@@ -412,7 +419,7 @@ def dedup_command(
     Example: crapai dedup my-review --strategy title
     """
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
-    _setup_file_log(folder)
+    _setup_file_log(folder, messages)
     try:
         if strategy is not None and strategy not in STRATEGIES:
             raise ConfigError(
@@ -478,7 +485,7 @@ def check_command(
     Example: crapai check my-review
     """
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
-    _setup_file_log(folder)
+    _setup_file_log(folder, messages)
     try:
         report = check_project(Workspace(folder), update=not read_only)
     except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
@@ -703,6 +710,7 @@ def config_show(
     Example: crapai config show my-review --changed
     """
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
+    _setup_file_log(folder, messages)
     try:
         settings = effective_settings(Workspace.open(folder).project_yaml)
     except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
@@ -731,7 +739,7 @@ def config_set(
     Example: crapai config set my-review quality.short_abstract_words=30 limits.rpm=200
     """
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
-    _setup_file_log(folder)
+    _setup_file_log(folder, messages)
     try:
         workspace = Workspace.open(folder)
         values = _parse_assignments(assignments)
@@ -757,7 +765,7 @@ def config_reset(
     Example: crapai config reset my-review limits.rpm
     """
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
-    _setup_file_log(folder)
+    _setup_file_log(folder, messages)
     try:
         workspace = Workspace.open(folder)
         with workspace.lock():
@@ -809,7 +817,7 @@ def export_command(
     Example: crapai export my-review --format xlsx --scope screenable
     """
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
-    _setup_file_log(folder)
+    _setup_file_log(folder, messages)
     try:
         if what not in ("records", "results", "flow"):
             raise ConfigError(
@@ -899,7 +907,7 @@ def compare_runs_command(
     Example: crapai compare-runs my-review --runs run-001,run-002,run-003
     """
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
-    _setup_file_log(folder)
+    _setup_file_log(folder, messages)
     run_ids = [r.strip() for r in runs.split(",") if r.strip()]
     try:
         separator = {"tab": "\t", "semicolon": ";", "comma": ","}.get(delimiter.lower(), delimiter)
@@ -1000,7 +1008,10 @@ def _print_resolution_result(
 ) -> int:
     manifest = result.manifest
     code = _resolution_exit_code(manifest)
+    run_folder_path = Workspace(folder).runs_dir / result.run_id
     if as_json:
+        rows = RunStore(run_folder_path).read_results()
+        cost = sum((r.cost or 0.0) for r in rows if r.cost is not None)
         typer.echo(
             json.dumps(
                 {
@@ -1011,7 +1022,13 @@ def _print_resolution_result(
                     "done": manifest.counts.get("done", 0),
                     "total": manifest.counts.get("total", 0),
                     "ok": manifest.counts.get("ok", 0),
+                    "cost": round(cost, 6) if any(r.cost is not None for r in rows) else None,
+                    "tokens_in": sum(r.tokens_in for r in rows),
+                    "tokens_out": sum(r.tokens_out for r in rows),
+                    "stop_reason": manifest.stop_reason,
                     "last_error": manifest.last_error,
+                    "warnings": manifest.warnings,
+                    "folder": str(run_folder_path),
                 },
                 ensure_ascii=False,
                 indent=2,
@@ -1042,7 +1059,7 @@ def _print_resolution_result(
             fg=colour,
             err=True,
         )
-    results_file = Workspace(folder).runs_dir / result.run_id / "screening.jsonl"
+    results_file = run_folder_path / "screening.jsonl"
     _echo(messages.text("cli.resolve.files", path=results_file), json_mode=as_json)
     if manifest.state != "completed":
         _echo(
@@ -1083,7 +1100,7 @@ def adjudicate_command(
     Example: crapai adjudicate my-review --runs run-001,run-002
     """
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
-    _setup_file_log(folder)
+    _setup_file_log(folder, messages)
     run_ids = [r.strip() for r in runs.split(",") if r.strip()]
     workspace = Workspace(folder)
     try:
@@ -1136,7 +1153,7 @@ def discuss_command(
     Example: crapai discuss my-review --runs run-001,run-002,run-003 --max-rounds 3
     """
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
-    _setup_file_log(folder)
+    _setup_file_log(folder, messages)
     run_ids = [r.strip() for r in runs.split(",") if r.strip()]
     workspace = Workspace(folder)
     try:
@@ -1211,7 +1228,7 @@ def ui_command(
                 hint='Install it with: pip install "crapai[ui]"',
             )
         if folder is not None:
-            _setup_file_log(folder)
+            _setup_file_log(folder, messages)
             Workspace.open(folder)  # fail early with E404 instead of inside the browser
         command, environment = ui_command_line(folder, port, no_browser)
         logger.info("Starting the interface on port %d", port)
@@ -1235,7 +1252,7 @@ def unlock_command(
     Example: crapai unlock my-review
     """
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
-    _setup_file_log(folder)
+    _setup_file_log(folder, messages)
     try:
         lock = Workspace.open(folder).lock()
         info = lock.inspect()
@@ -1310,7 +1327,7 @@ def screen_command(
     Example: crapai screen my-review --sample 20
     """
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
-    _setup_file_log(folder)
+    _setup_file_log(folder, messages)
     printer: ProgressPrinter | None = None
     try:
         workspace = Workspace.open(folder)
@@ -1496,7 +1513,7 @@ def runs_command(
     Example: crapai runs my-review
     """
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
-    _setup_file_log(folder)
+    _setup_file_log(folder, messages)
     try:
         manifests = screening_service.list_runs(Workspace.open(folder))
     except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
@@ -1545,7 +1562,7 @@ def runs_command(
 def _send_control(folder: Path, command: str, run_id: str | None, lang: str | None) -> None:
     """Write a pause/stop request for a running run (shared by the two commands)."""
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
-    _setup_file_log(folder)
+    _setup_file_log(folder, messages)
     try:
         workspace = Workspace.open(folder)
         store = screening_service.find_run(workspace, run_id or "latest")

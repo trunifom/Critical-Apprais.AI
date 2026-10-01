@@ -75,6 +75,10 @@ def test_discuss_as_json(tmp_path: Path) -> None:
     data = json.loads(result.stdout)
     assert data["method"] == "discuss" and data["state"] == "completed"
     assert data["done"] == 1
+    # parity with 'crapai screen --json' (same keys, so scripts need no special case)
+    for key in ("tokens_in", "tokens_out", "stop_reason", "warnings", "folder"):
+        assert key in data
+    assert data["folder"].endswith(data["run_id"])
 
 
 def test_discuss_rejects_a_bad_tie_break(tmp_path: Path) -> None:

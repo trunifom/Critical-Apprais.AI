@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from crapai.errors import StorageError
+from crapai.project import atomic
 from crapai.project.lock import ProjectLock, pid_alive
 
 
@@ -142,6 +143,57 @@ def test_heartbeat_after_takeover_reports_lost_lock(tmp_path: Path) -> None:
     assert err.value.code == "E402"
     old.release()  # must not delete the new owner's lock
     assert path.exists()
+
+
+def test_heartbeat_raises_instead_of_silently_writing_an_alternative_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A locked lock file must never let the heartbeat silently go stale (see ADR 0025-style
+    hardening: a swallowed `used_alternative` would let another process take the lock over)."""
+    clock = Clock()
+    path = tmp_path / "lock"
+    lock = make(path, clock, pid=1)
+    lock.acquire()
+
+    def always_locked(src: object, dst: object) -> None:
+        raise PermissionError("locked by a virus scanner")
+
+    monkeypatch.setattr(atomic.os, "replace", always_locked)
+    clock.advance(10)
+    with pytest.raises(StorageError) as info:
+        lock.heartbeat()
+    assert info.value.code == "E401"
+    # The real lock file keeps its old heartbeat: a caller must treat this as a failed run,
+    # never as "heartbeat done".
+    info_after = lock.inspect()
+    assert info_after is not None and info_after.heartbeat == clock.current - timedelta(seconds=10)
+
+
+def test_acquire_reports_a_live_lock_after_a_changed_hands_takeover(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """If remove_stale() finds the lock changed hands mid-takeover, acquire() must report the
+    *current* (live) holder, not the stale info from before the takeover attempt."""
+    clock = Clock()
+    path = tmp_path / "lock"
+    make(path, clock, pid=1, alive={1}).acquire()
+    clock.advance(120)  # now stale (pid 1 is dead from every other process's point of view)
+    taker = make(path, clock, pid=2, alive={2, 3})
+
+    def changed_hands(self: ProjectLock, info: object = None) -> bool:
+        # Simulate another process (pid 3) winning the race: by the time this call checks,
+        # pid 3 has already replaced the stale pid-1 lock with its own live one, so this call's
+        # own takeover must report "changed hands" (False).
+        path.unlink()
+        make(path, clock, pid=3, alive={1, 2, 3})._try_create()
+        return False
+
+    monkeypatch.setattr(ProjectLock, "remove_stale", changed_hands)
+    with pytest.raises(StorageError) as info:
+        taker.acquire(take_over_stale=True)
+    # Must report the live pid-3 lock (stale=False), not the stale pid-1 info from before.
+    assert info.value.details["stale"] is False
+    assert info.value.details["pid"] == 3
 
 
 def test_malformed_lock_file_is_stale_and_can_be_replaced(tmp_path: Path) -> None:

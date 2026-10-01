@@ -31,7 +31,7 @@ CHART_COLORS: dict[str, dict[str, str]] = {
 #: colour per run (comparing runs, not outcomes), cycled if there are more runs than colours
 RUN_COLORS: dict[str, tuple[str, ...]] = {
     "light": (
-        "#1B5FAE", "#B3261E", "#1B7F3B", "#B26A00", "#6E4E9E", "#0E7C86", "#A3338C", "#55606E",
+        "#1B5FAE", "#B3261E", "#1B7F3B", "#8F5400", "#6E4E9E", "#0E7C86", "#A3338C", "#55606E",
     ),
     "dark": (
         "#7FB4F2", "#FF8A80", "#5BD28A", "#FFC857", "#C7A8FF", "#5FE0E8", "#F2A8E0", "#C3CBD6",
