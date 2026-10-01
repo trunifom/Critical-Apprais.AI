@@ -194,7 +194,7 @@ Zwei Funktionen ausserhalb der Aufgabenkarten, auf Wunsch der Projektleitung im 
 |---|---|---|---|
 | [x] | Stichwort-Vorfilter `prefilters.keywords` (neuer Grund `PREFILTER_KEYWORD`) und `screening.include_keywords_in_prompt` (Prompt-Kontext, ändert den Prompt-Hash nicht, geht aber in den Lauf-Fingerabdruck ein); ADR 0023 | 2026-10-01 | `cfd1929f` |
 | [x] | Mehrfachbewertung/Modellvergleich: Vergleichsschicht `stats/agreement.py` (Cohen's/Fleiss' Kappa, Landis & Koch, instabile Datensätze), `services.results.compare_runs`/`export_comparison`, Befehl `crapai compare-runs`, Dashboard-Abschnitt „Läufe vergleichen“ (Farbe je Lauf); ADR 0024 | 2026-10-01 | `b83766c2` |
-| [x] | Uneinigkeit klären: `crapai adjudicate` (Schiedsrichter-Modell, aktuelle `llm:`-Einstellungen), `crapai discuss` (Original-Modelle jedes Laufs diskutieren, bis zu `discussion.max_rounds` Runden, dann Mehrheit/`NO_CONSENSUS`); `prompts/resolution.py`, `services/resolution.py`, gespeichert wie ein gewöhnlicher Lauf (`kind` `adjudicate`/`discuss`); ADR 0025 | 2026-10-02 | *(folgt)* |
+| [x] | Uneinigkeit klären: `crapai adjudicate` (Schiedsrichter-Modell, aktuelle `llm:`-Einstellungen), `crapai discuss` (Original-Modelle jedes Laufs diskutieren, bis zu `discussion.max_rounds` Runden, dann Mehrheit/`NO_CONSENSUS`); `prompts/resolution.py`, `services/resolution.py`, gespeichert wie ein gewöhnlicher Lauf (`kind` `adjudicate`/`discuss`); ADR 0025 | 2026-10-02 | `5fb3742d` |
 
 ## Oberfläche, Protokoll-System und Arbeitsablauf (2026-10-01)
 
