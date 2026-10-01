@@ -84,11 +84,17 @@ def current_overview(
 
 #: sidebar menu: (group title text key or "", pages); every page is a button
 NAV_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
-    ("", ("start",)),
-    ("nav_group.work", ("project", "data", "check", "run", "flow", "export")),
+    ("", ("start", "overview")),
+    ("nav_group.work", ("project", "data", "check", "run", "flow", "export", "results")),
     ("nav_group.more", ("settings", "help")),
 )
-PAGE_ICONS = {"start": "🏠", "settings": "⚙️", "help": "❓"}
+PAGE_ICONS = {
+    "start": "🏠",
+    "overview": "📋",
+    "results": "📊",
+    "settings": "⚙️",
+    "help": "❓",
+}
 
 
 def _go(st: Any, page: str) -> None:
@@ -122,7 +128,7 @@ def render_sidebar(st: Any, ui: Any, ctx: Context, prefs: UiPrefs) -> None:
         if ui.button(
             ctx.t("theme.to_light" if dark else "theme.to_dark"),
             key="theme_toggle",
-            use_container_width=True,
+            width="stretch",
         ):
             state["theme"] = "light" if dark else "dark"
             st.rerun()
@@ -130,7 +136,7 @@ def render_sidebar(st: Any, ui: Any, ctx: Context, prefs: UiPrefs) -> None:
         if ui.button(
             ctx.t("size.to_small" if large else "size.to_large"),
             key="size_toggle",
-            use_container_width=True,
+            width="stretch",
         ):
             state["size"] = "normal" if large else "large"
             st.rerun()
@@ -147,7 +153,7 @@ def render_sidebar(st: Any, ui: Any, ctx: Context, prefs: UiPrefs) -> None:
                     f"{icon} {ctx.t(f'nav.{page}')}".strip(),
                     key=f"nav_{page}",
                     type="primary" if current else "secondary",
-                    use_container_width=True,
+                    width="stretch",
                 ):
                     _go(st, page)
         if ctx.folder is not None:

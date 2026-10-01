@@ -34,6 +34,16 @@ Jeder Eintrag verweist auf die Aufgabenkarte; die genauen Commits stehen in `doc
 * **Lizenz:** PolyForm Noncommercial 1.0.0 (`LICENSE`, ADR 0016, `license` in `pyproject.toml`): nicht kommerzielle Nutzung erlaubt, kommerzielle ausgeschlossen (T-M0-01).
 * **Dokumentation:** Benutzerhandbuch, Entwicklerdokumentation, Architektur, ausführliches README, dieses Änderungsprotokoll, Umsetzungsplan mit Fortschrittsliste.
 
+### Oberfläche, zweite Überarbeitung (2026-10-01)
+
+* **Menü** links ausgerichtet; neue Seiten **Übersicht** (Fortschrittsbalken, Stand jedes Schrittes, «Weiter mit …») und **7 · Auswertung**.
+* **Einleitung** auf jeder Seite (Ziel, Was passiert, So gehen Sie vor, Ergebnis), einklappbar; lange Seiten in einklappbare Abschnitte gegliedert.
+* **Seite Projekt**: Projektbeschrieb, Forschungsfragen, Rahmenwerk (PICOS, SPIDER, PECO, PIRD, eigene) und Ein-/Ausschlusskriterien je Element als Formular (`ui/definition.py`), gespeichert in `project.overrides.yaml`; die Projektdatei ist zugeklappt.
+* **Import** in drei nummerierten Schritten mit Liste der importierten Dateien; **Export** in drei Schritten mit Liste und Download aller erzeugten Dateien.
+* **Neu: Export der Screening-Ergebnisse** (`crapai export --what results [--run-id]`, CSV/XLSX, `exports/results-*`): eine Zeile je Datensatz mit Ergebniskategorie, Entscheidung, Begründung, Status, Markierungen, Tokens, Kosten.
+* **Auswertung** (`stats/results.py`, `services/results.py`, `ui/charts.py`): Diagramme (Ring, Balken, gestapelte Balken, Histogramm, Boxplot, Streudiagramm) und Tabellen aus einem Lauf des Projekts oder aus einer hochgeladenen Exportdatei; Diagramme als Vega-Lite-Beschreibung in den Farben des Designs, ohne neues Paket.
+* Streamlit: `crapai ui` setzt die Akzentfarbe (`--theme.primaryColor`) und nutzt `width="stretch"` statt `use_container_width`.
+
 ### Oberfläche überarbeitet (2026-10-01)
 
 * **Menü:** Schaltflächen statt Text, in Gruppen (Startseite, Arbeitsablauf 1 bis 6, Weiteres) mit verständlichen Namen; die technischen Seitennamen (`streamlit app`, `check`, `common` ...) sind weg (Ursache war der Ordner `pages/`, den Streamlit selbst als Menü anzeigt; `crapai ui` schaltet das mit `--client.showSidebarNavigation false` aus). Titel steht oben.

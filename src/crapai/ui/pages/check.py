@@ -8,7 +8,7 @@ from crapai.cost.duration import format_duration
 from crapai.ui import actions
 from crapai.ui.actions import CheckResult
 from crapai.ui.context import Context
-from crapai.ui.pages.common import metric_row, show_error
+from crapai.ui.pages.common import intro, metric_row, show_error
 from crapai.ui.viewmodels import percent, status_icon
 
 BLOCKING = {"no_records", "nothing_to_screen"}
@@ -105,7 +105,7 @@ def render(st: Any, ctx: Context) -> None:
     folder = ctx.folder
     assert folder is not None
     st.header(ctx.t("check.title"))
-    st.caption(ctx.t("check.intro"))
+    intro(st, ctx, "check")
     read_only = st.checkbox(ctx.t("check.read_only"), key="check_read_only")
     if st.button(ctx.t("check.run"), key="run_check", type="primary"):
         with st.spinner(ctx.t("check.running")):

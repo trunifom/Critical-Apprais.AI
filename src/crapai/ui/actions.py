@@ -39,7 +39,11 @@ from crapai.services.events import project_flow
 from crapai.services.export import ExportSummary, export_flow, export_records
 from crapai.services.importing import ImportRequest, ImportSummary, import_source
 from crapai.services.preflight import PreflightFileResult, ProjectReport, check_file, check_project
-from crapai.services.project import DEFAULT_TEMPLATE, create_project
+from crapai.services.project import DEFAULT_TEMPLATE, create_project, project_status
+from crapai.services.results import export_results, results_table
+from crapai.stats.results import read_table_file
+from crapai.ui import definition as definition_module
+from crapai.ui.definition import Definition
 from crapai.ui.settings_form import changes
 from crapai.ui.viewmodels import Overview, RecentProjects, load_overview
 
@@ -345,6 +349,8 @@ def run_export(
         workspace = Workspace(folder)
         if what == "flow":
             summary = export_flow(workspace)
+        elif what == "results":
+            summary = export_results(workspace, fmt, delimiter=delimiter)
         else:
             summary = export_records(workspace, fmt, scope=scope, delimiter=delimiter)
         return ExportResult(summary, summary.path.read_bytes())
@@ -452,3 +458,74 @@ def screen_output_tail(folder: Path, lines: int = 20) -> str:
     except OSError:
         return ""
     return "\n".join(text.splitlines()[-lines:])
+
+
+# --- project definition and files ----------------------------------------------------------------
+
+
+def load_definition(messages: Messages, folder: Path) -> Outcome[Definition]:
+    """Description, research questions and criteria in force."""
+    return guarded(
+        messages, lambda: definition_module.load_definition(folder), name="load definition"
+    )
+
+
+def save_definition(messages: Messages, folder: Path, definition: Definition) -> Outcome[None]:
+    """Store a definition in the overrides file (``project.yaml`` stays as it is).
+
+    Raises nothing: invalid input becomes an error report and nothing is written.
+    """
+
+    def work() -> None:
+        workspace = Workspace.open(folder)
+        values = definition_module.to_settings(definition)
+        with workspace.lock():
+            set_values(workspace.project_yaml, values)
+        logger.info("Project definition saved (%s)", definition.framework)
+
+    return guarded(messages, work, name="save definition")
+
+
+def criteria_filled(folder: Path) -> int:
+    """How many framework elements have an inclusion criterion (0 if unreadable)."""
+    try:
+        current = definition_module.load_definition(folder)
+        elements = definition_module.framework_elements(current.framework, current.custom_fields)
+    except SaraError:
+        return 0
+    return sum(1 for name in elements if current.inclusion.get(name, "").strip())
+
+
+def list_exports(folder: Path) -> list[Path]:
+    """Files in the project's export folder, newest first (empty if there is none)."""
+    exports = Workspace(folder).exports_dir
+    try:
+        files = [p for p in exports.iterdir() if p.is_file()]
+    except OSError:
+        return []
+    return sorted(files, key=lambda p: p.stat().st_mtime, reverse=True)
+
+
+def import_history(folder: Path) -> list[Any]:
+    """The files imported so far (oldest first); empty if the project cannot be read."""
+    try:
+        return list(project_status(folder).imports)
+    except SaraError:
+        return []
+
+
+# --- evaluation ---------------------------------------------------------------------
+
+
+def load_results(
+    messages: Messages, folder: Path, run_id: str | None
+) -> Outcome[list[dict[str, Any]]]:
+    """The results table of a run of the project (the newest one if ``run_id`` is None)."""
+    return guarded(
+        messages, lambda: results_table(Workspace(folder), run_id)[1], name="load results"
+    )
+
+
+def read_results_file(messages: Messages, name: str, data: bytes) -> Outcome[list[dict[str, Any]]]:
+    """A results table from an uploaded CSV or XLSX file (checked; nothing is stored)."""
+    return guarded(messages, lambda: read_table_file(name, data), name="read results file")

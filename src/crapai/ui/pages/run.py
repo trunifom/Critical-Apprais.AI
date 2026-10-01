@@ -23,7 +23,7 @@ from crapai.cost.duration import format_duration
 from crapai.errors import SaraError
 from crapai.ui import actions
 from crapai.ui.context import Context
-from crapai.ui.pages.common import metric_row, show_error
+from crapai.ui.pages.common import intro, metric_row, show_error
 from crapai.ui.viewmodels import RunView, failed_results, load_run_views
 
 REFRESH_SECONDS = 2
@@ -66,7 +66,7 @@ def _batch_table(st: Any, ctx: Context, view: RunView) -> None:
     ]
     if rows:
         with st.expander(ctx.t("run.batches"), expanded=view.running):
-            st.dataframe(rows, use_container_width=True, hide_index=True)
+            st.dataframe(rows, width="stretch", hide_index=True)
 
 
 def _live(st: Any, ctx: Context, run_id: str) -> None:
@@ -132,7 +132,7 @@ def _final_state(st: Any, ctx: Context, view: RunView) -> None:
         assert ctx.folder is not None
         rows = failed_results(ctx.folder, view.run_id)
         with st.expander(ctx.t("run.failed_records", count=view.errors)):
-            st.dataframe(rows, use_container_width=True, hide_index=True)
+            st.dataframe(rows, width="stretch", hide_index=True)
             st.caption(ctx.t("run.failed_hint"))
 
 
@@ -238,7 +238,7 @@ def _history(st: Any, ctx: Context, views: list[RunView]) -> None:
         for v in reversed(views)
     ]
     with st.expander(ctx.t("run.history", count=len(rows))):
-        st.dataframe(rows, use_container_width=True, hide_index=True)
+        st.dataframe(rows, width="stretch", hide_index=True)
 
 
 def render(st: Any, ctx: Context) -> None:
@@ -246,7 +246,7 @@ def render(st: Any, ctx: Context) -> None:
     folder = ctx.folder
     assert folder is not None
     st.header(ctx.t("run.title"))
-    st.caption(ctx.t("run.intro"))
+    intro(st, ctx, "run")
     views = load_run_views(folder)
     active = next((v for v in reversed(views) if v.running and not v.stalled), None)
     starting = "starting_since" in st.session_state

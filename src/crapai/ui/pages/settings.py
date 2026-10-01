@@ -13,7 +13,7 @@ from crapai.logging_setup import LEVEL_ENV, LOG_FILE_NAME, resolve_level
 from crapai.project.workspace import Workspace
 from crapai.ui import actions
 from crapai.ui.context import Context
-from crapai.ui.pages.common import show_error
+from crapai.ui.pages.common import intro, show_error
 from crapai.ui.settings_form import SECTIONS, Field
 
 VERSION_KEY = "settings_version"
@@ -112,7 +112,7 @@ def _form(st: Any, ctx: Context, folder: Path) -> None:
     with st.expander(ctx.t("settings_form.sources")):
         st.dataframe(
             [{"key": s.key, "value": str(s.value), "source": s.source} for s in settings.values()],
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
         )
 
@@ -120,6 +120,7 @@ def _form(st: Any, ctx: Context, folder: Path) -> None:
 def render(st: Any, ctx: Context) -> None:
     """Draw the settings page: form, sources of the values, paths and the price list."""
     st.header(ctx.t("settings.title"))
+    intro(st, ctx, "settings")
     st.write(f"**{ctx.t('settings.language')}:** {ctx.lang}")
     st.caption(ctx.t("settings.language_hint"))
     st.write(f"**{ctx.t('settings.log_level')}:** {logging.getLevelName(resolve_level())}  ")
@@ -143,7 +144,7 @@ def render(st: Any, ctx: Context) -> None:
         CsvPriceSource(path)  # validates the file and logs bad rows
         with path.open(encoding="utf-8-sig", newline="") as handle:
             rows = list(csv.DictReader(handle, delimiter=";" if ";" in handle.readline() else ","))
-        st.dataframe(rows, use_container_width=True, hide_index=True)
+        st.dataframe(rows, width="stretch", hide_index=True)
     except SaraError as error:
         show_error(st, ctx, ctx.messages.error_report(error))
     except (OSError, UnicodeDecodeError, csv.Error):

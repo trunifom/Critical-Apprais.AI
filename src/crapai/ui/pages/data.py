@@ -9,7 +9,7 @@ from crapai.project.workspace import Workspace
 from crapai.ui import actions
 from crapai.ui.actions import PreparedFile, Upload
 from crapai.ui.context import Context
-from crapai.ui.pages.common import show_error
+from crapai.ui.pages.common import intro, show_error
 from crapai.ui.viewmodels import percent, status_icon
 
 ACCEPTED = ["ris", "nbib", "bib", "txt", "csv", "tsv", "xlsx"]
@@ -82,12 +82,16 @@ def render(st: Any, ctx: Context) -> None:
     folder = ctx.folder
     assert folder is not None
     st.header(ctx.t("data.title"))
-    st.caption(ctx.t("data.intro"))
+    intro(st, ctx, "data")
+    st.markdown(f"##### {ctx.t('data.step1')}")
+    st.caption(ctx.t("data.step1_hint"))
     uploads = st.file_uploader(
         ctx.t("data.upload"), type=ACCEPTED, accept_multiple_files=True, key="uploader"
     )
     if uploads:
         files = _prepared(st, ctx, uploads)
+        st.markdown(f"##### {ctx.t('data.step2')}")
+        st.caption(ctx.t("data.step2_hint"))
         _table(st, ctx, files)
         for item in files:
             if item.importable:
@@ -99,6 +103,8 @@ def render(st: Any, ctx: Context) -> None:
                 st.error(f"{item.name}: {ctx.messages.text(result.message_key)}")
                 if result.detail:
                     st.caption(f"{result.error_code}: {result.detail}")
+        st.markdown(f"##### {ctx.t('data.step3')}")
+        st.caption(ctx.t("data.step3_hint"))
         force = st.checkbox(ctx.t("data.force"), key="force_import")
         ready = [f for f in files if f.importable]
         if st.button(
@@ -112,7 +118,34 @@ def render(st: Any, ctx: Context) -> None:
     if overview is None or overview.records == 0:
         st.info(ctx.t("data.empty"))
         return
-    st.subheader(ctx.t("data.records"))
+    _history(st, ctx, folder)
+    with st.expander(ctx.t("data.records"), expanded=True):
+        _records(st, ctx, folder)
+
+
+def _history(st: Any, ctx: Context, folder: Any) -> None:
+    """The files imported so far: when, which source, how many records."""
+    entries = actions.import_history(folder)
+    if not entries:
+        return
+    with st.expander(ctx.t("data.history", count=len(entries)), expanded=False):
+        st.caption(ctx.t("data.history_hint"))
+        st.table(
+            [
+                {
+                    ctx.t("data.when"): e.timestamp.strftime("%Y-%m-%d %H:%M"),
+                    ctx.t("data.file"): e.source_file,
+                    ctx.t("data.source"): e.source_label,
+                    ctx.t("data.format"): e.format,
+                    ctx.t("bar.records"): e.records,
+                    ctx.t("bar.abstracts"): e.abstracts,
+                }
+                for e in entries
+            ]
+        )
+
+
+def _records(st: Any, ctx: Context, folder: Any) -> None:
     records = read_records(Workspace(folder).records_csv)
     reasons = sorted({r.exclusion_reason for r in records if r.exclusion_reason})
     choice = st.selectbox(
@@ -133,6 +166,6 @@ def render(st: Any, ctx: Context) -> None:
     st.caption(ctx.t("data.rows", shown=min(len(shown), PREVIEW_ROWS), total=len(shown)))
     st.dataframe(
         [{name: getattr(r, name) for name in PREVIEW_COLUMNS} for r in shown[:PREVIEW_ROWS]],
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )

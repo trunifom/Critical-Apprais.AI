@@ -12,17 +12,19 @@ from crapai.ui.viewmodels import Overview, RecentProjects
 PROJECT_ENV = "CRAPAI_UI_PROJECT"  # the folder that ``crapai ui FOLDER`` opens at the start
 PAGES: tuple[str, ...] = (
     "start",
+    "overview",
     "project",
     "data",
     "check",
     "run",
     "flow",
     "export",
+    "results",
     "settings",
     "help",
 )
 #: pages that need an open project (the others work without one)
-NEEDS_PROJECT = frozenset({"project", "data", "check", "run", "flow", "export"})
+NEEDS_PROJECT = frozenset({"overview", "project", "data", "check", "run", "flow", "export"})
 #: pages that need records
 NEEDS_RECORDS = frozenset({"check", "run", "flow", "export"})
 

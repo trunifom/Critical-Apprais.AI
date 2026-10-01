@@ -7,7 +7,7 @@ from typing import Any
 from crapai.enums import DuplicatesReportingMode
 from crapai.ui import actions
 from crapai.ui.context import Context
-from crapai.ui.pages.common import metric_row, show_error
+from crapai.ui.pages.common import intro, metric_row, show_error
 
 
 def render(st: Any, ctx: Context) -> None:
@@ -15,7 +15,7 @@ def render(st: Any, ctx: Context) -> None:
     folder = ctx.folder
     assert folder is not None
     st.header(ctx.t("flow.title"))
-    st.caption(ctx.t("flow.intro"))
+    intro(st, ctx, "flow")
     modes = [m.value for m in DuplicatesReportingMode]
     mode = st.selectbox(
         ctx.t("flow.mode"),

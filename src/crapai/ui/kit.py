@@ -31,6 +31,16 @@ HELPED = (
 ICONS = {"info": "ℹ️", "success": "✅", "warning": "⚠️", "error": "⛔"}
 _BOLD = re.compile(r"\*\*(.+?)\*\*")
 _VERSION = re.compile(r"::\d+$")
+#: keys that start like this share one help text
+PREFIXES = (
+    ("recent-", "recent"),
+    ("label-", "label"),
+    ("overview_open_", "overview_open"),
+    ("download_file_", "export_file"),
+    ("export_format_", "export_format"),
+    ("criteria_in_", "criteria_in"),
+    ("criteria_out_", "criteria_out"),
+)
 
 
 def help_id(key: str) -> str:
@@ -43,9 +53,9 @@ def help_id(key: str) -> str:
     if key.startswith("set::"):
         field = _VERSION.sub("", key[len("set::") :])
         return "setting." + field.replace(".", "_")
-    for prefix in ("recent-", "label-"):
+    for prefix, ident in PREFIXES:
         if key.startswith(prefix):
-            return prefix[:-1]
+            return ident
     return key
 
 

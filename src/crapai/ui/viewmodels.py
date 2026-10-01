@@ -373,3 +373,110 @@ def describe_problem(error: BaseException) -> str:
     if isinstance(error, SaraError):
         return f"{error.code}: {error.user_message}"
     return type(error).__name__
+
+
+# --- overview of the process steps -------------------------------------------------
+
+TRACKER_PAGES: tuple[str, ...] = ("project", "data", "check", "run", "flow", "export", "results")
+
+
+@dataclass(frozen=True)
+class TrackerRow:
+    """One step of the process as the overview page shows it.
+
+    Attributes:
+        page: The page that does this step (``project`` ... ``results``).
+        state: ``done``, ``current`` (the next thing to do), ``warning`` (done but needs a look)
+            or ``locked`` (comes later).
+        detail: Text key suffix under ``ui.tracker.`` that says what is done or missing.
+        values: The numbers for that text.
+    """
+
+    page: str
+    state: StepState
+    detail: str
+    values: dict[str, object] = field(default_factory=dict)
+
+    @property
+    def icon(self) -> str:
+        """The symbol that shows the state."""
+        return STATE_ICONS[self.state]
+
+
+def build_tracker(
+    overview: Overview,
+    runs: Sequence[RunView],
+    *,
+    criteria_filled: int,
+    exports: int,
+) -> list[TrackerRow]:
+    """The steps of the process, what is done, and which one is next.
+
+    Args:
+        overview: The project overview.
+        runs: The screening runs of the project, oldest first.
+        criteria_filled: Number of framework elements with an inclusion criterion.
+        exports: Number of files in the project's export folder.
+    """
+    last = runs[-1] if runs else None
+    raw: dict[str, tuple[StepState | None, str, dict[str, object]]] = {}
+    if not overview.config_ok:
+        raw["project"] = ("warning", "project_broken", {})
+    elif criteria_filled > 0:
+        raw["project"] = (
+            "done",
+            "project_done",
+            {"title": overview.title or "", "n": criteria_filled},
+        )
+    else:
+        raw["project"] = (None, "project_todo", {})
+    raw["data"] = (
+        ("done", "data_done", {"records": overview.records, "sources": len(overview.sources)})
+        if overview.records
+        else (None, "data_todo", {})
+    )
+    raw["check"] = (
+        (
+            "done",
+            "check_done",
+            {"valid": overview.valid_for_model or 0, "dups": overview.duplicates},
+        )
+        if overview.checked
+        else (None, "check_todo", {})
+    )
+    if last is None:
+        raw["run"] = (None, "run_todo", {})
+    else:
+        values = {"done": last.done, "total": last.total, "state": last.state}
+        if last.state == RunState.COMPLETED.value:
+            raw["run"] = (
+                ("warning", "run_errors", values) if last.errors else ("done", "run_done", values)
+            )
+        elif last.running:
+            raw["run"] = (None, "run_running", values)
+        else:
+            raw["run"] = ("warning", "run_stopped", values)
+    raw["flow"] = ("done", "flow_done", {}) if overview.checked else (None, "flow_todo", {})
+    raw["export"] = (
+        ("done", "export_done", {"n": exports}) if exports else (None, "export_todo", {})
+    )
+    finished = last is not None and last.state == RunState.COMPLETED.value
+    raw["results"] = ("done", "results_ready", {}) if finished else (None, "results_todo", {})
+    rows: list[TrackerRow] = []
+    current_taken = False
+    for page in TRACKER_PAGES:
+        state, detail, values = raw[page]
+        if state is None:
+            state = "locked" if current_taken else "current"
+            current_taken = True
+        rows.append(TrackerRow(page, state, detail, values))
+    return rows
+
+
+def next_step(rows: Sequence[TrackerRow]) -> TrackerRow | None:
+    """The first step that is ``current``, else the first with a ``warning`` (None if all done)."""
+    for state in ("current", "warning"):
+        for row in rows:
+            if row.state == state:
+                return row
+    return None

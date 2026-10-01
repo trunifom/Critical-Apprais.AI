@@ -205,7 +205,7 @@ def test_the_export_page_can_write_the_flow_and_a_ris_file(
     assert (filled_project / "exports" / "prisma_flow.json").exists()
     at.radio(key="export_what").set_value("records")
     at.run()
-    at.selectbox(key="export_format").set_value("ris")
+    at.selectbox(key="export_format_records").set_value("ris")
     at.run()
     at.button(key="export_button").click()
     at.run()
@@ -598,7 +598,19 @@ def test_every_control_of_every_page_has_a_help_text(
     at = fresh(monkeypatch, filled_project).run()
     at.sidebar.selectbox(key="lang").set_value(lang)
     at.run()
-    for page in ("start", "project", "data", "check", "run", "flow", "export", "settings", "help"):
+    for page in (
+        "start",
+        "overview",
+        "project",
+        "data",
+        "check",
+        "run",
+        "flow",
+        "export",
+        "results",
+        "settings",
+        "help",
+    ):
         goto(at, page)
         assert not at.exception, page
         assert at.session_state["missing_help"] == set(), (page, at.session_state["missing_help"])
@@ -614,3 +626,177 @@ def test_notices_are_drawn_as_own_boxes(
     at.run()
     boxes = [str(m.value) for m in at.markdown if "crapai-notice" in str(m.value)]
     assert any("crapai-error" in b and "E203" in b for b in boxes)
+
+
+# --- introductions, overview, definition, results ------------------------------------------------------
+
+ALL_PAGES = (
+    "start", "overview", "project", "data", "check", "run", "flow", "export", "results",
+    "settings", "help",
+)  # fmt: skip
+
+
+@pytest.fixture
+def run_project(tmp_path: Path) -> Path:
+    """A project with a finished mock run (24 records)."""
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "unit"))
+    from results_helpers import project_with_run
+
+    return project_with_run(tmp_path).root
+
+
+@pytest.mark.parametrize("lang", ["en", "de"])
+def test_every_page_starts_with_the_four_part_introduction(
+    monkeypatch: pytest.MonkeyPatch, run_project: Path, lang: str
+) -> None:
+    at = fresh(monkeypatch, run_project).run()
+    at.sidebar.selectbox(key="lang").set_value(lang)
+    at.run()
+    for page in ALL_PAGES:
+        goto(at, page)
+        assert not at.exception, page
+        html = " ".join(str(m.value) for m in at.markdown)
+        assert html.count('class="crapai-intro-label"') == 4, page
+        assert at.session_state["missing_help"] == set(), (page, at.session_state["missing_help"])
+
+
+def test_the_overview_shows_progress_and_jumps_to_a_step(
+    monkeypatch: pytest.MonkeyPatch, run_project: Path
+) -> None:
+    at = fresh(monkeypatch, run_project).run()
+    goto(at, "overview")
+    text = page_text(at)
+    assert at.get("progress") and "Next:" in text
+    at.button(key="overview_open_export").click()
+    at.run()
+    assert at.session_state["page"] == "export"
+
+
+def test_the_overview_points_to_the_next_open_step(
+    monkeypatch: pytest.MonkeyPatch, filled_project: Path
+) -> None:
+    at = fresh(monkeypatch, filled_project).run()
+    goto(at, "overview")
+    assert not at.exception
+    assert "Next:" in page_text(at)
+    next_buttons = [b for b in at.button if b.key and b.key.startswith("overview_open_next_")]
+    assert len(next_buttons) == 1
+    next_buttons[0].click()
+    at.run()
+    assert at.session_state["page"] in ("project", "check", "run")
+
+
+def test_description_questions_and_criteria_are_entered_and_saved_on_the_project_page(
+    monkeypatch: pytest.MonkeyPatch, empty_project: Path
+) -> None:
+    at = fresh(monkeypatch, empty_project).run()
+    assert not at.exception
+    at.text_input(key="def_title").set_value("Exercise and mood")
+    at.text_area(key="def_description").set_value("Adults, randomised trials.")
+    at.text_area(key="def_objectives").set_value("Does exercise help?\nHow much?")
+    at.selectbox(key="def_framework").set_value("PECO")
+    at.run()
+    at.text_area(key="criteria_in_PECO_Population").set_value("adults with depression")
+    at.text_area(key="criteria_out_PECO_Population").set_value("children")
+    at.run()
+    at.button(key="save_definition").click()
+    at.run()
+    assert not at.exception
+    assert "Saved." in page_text(at)
+    from crapai.config.loader import resolve_config
+
+    config = resolve_config(empty_project / "project.yaml")
+    assert config.project.title == "Exercise and mood" and config.criteria.framework == "PECO"
+    assert config.objectives == ["Does exercise help?", "How much?"]
+    assert config.criteria.inclusion["Population"] == "adults with depression"
+    assert config.criteria.exclusion["Population"] == "children"
+
+
+def test_a_definition_without_inclusion_criteria_is_refused_with_a_reason(
+    monkeypatch: pytest.MonkeyPatch, empty_project: Path
+) -> None:
+    at = fresh(monkeypatch, empty_project).run()
+    for name in ("Population", "Intervention", "Comparison", "Outcome", "Study Design"):
+        at.text_area(key=f"criteria_in_PICOS_{name}").set_value("")
+    at.run()
+    at.button(key="save_definition").click()
+    at.run()
+    assert "at least one element" in page_text(at) or "mindestens einem Element" in page_text(at)
+    assert not (empty_project / "project.overrides.yaml").exists()
+
+
+def test_the_project_file_editor_is_folded_away_by_default(
+    monkeypatch: pytest.MonkeyPatch, empty_project: Path
+) -> None:
+    at = fresh(monkeypatch, empty_project).run()
+    labels = {e.label: e.proto.expanded for e in at.expander}
+    assert any(label.startswith("Edit") or "project.yaml" in label for label in labels)
+    editor = next(e for e in at.expander if "project.yaml" in e.label)
+    assert editor.proto.expanded is False
+
+
+def test_the_results_page_draws_charts_for_the_run_of_the_project(
+    monkeypatch: pytest.MonkeyPatch, run_project: Path
+) -> None:
+    at = fresh(monkeypatch, run_project).run()
+    goto(at, "results")
+    assert not at.exception
+    assert len(at.get("vega_lite_chart")) >= 3
+    labels = " | ".join(e.label for e in at.expander)
+    assert "Decisions at a glance" in labels and "By source" in labels
+    at.checkbox(key="results_normalise").check()
+    at.run()
+    assert not at.exception
+
+
+def test_the_results_page_reads_an_uploaded_export_and_refuses_other_files(
+    monkeypatch: pytest.MonkeyPatch, run_project: Path
+) -> None:
+    from crapai.project.workspace import Workspace
+    from crapai.services.results import export_results
+
+    exported = export_results(Workspace(run_project), "csv").path
+    at = fresh(monkeypatch, None).run()  # no project open: only the file route
+    goto(at, "results")
+    assert not at.exception and "Choose a results file" in page_text(at)
+    from crapai.stats.results import read_table_file
+
+    rows = read_table_file(exported.name, exported.read_bytes())
+    assert len(rows) == 24
+
+
+def test_the_export_page_lists_the_files_and_offers_the_results(
+    monkeypatch: pytest.MonkeyPatch, run_project: Path
+) -> None:
+    at = fresh(monkeypatch, run_project).run()
+    goto(at, "export")
+    at.radio(key="export_what").set_value("results")
+    at.run()
+    at.button(key="export_button").click()
+    at.run()
+    assert not at.exception
+    assert list((run_project / "exports").glob("results-*.csv"))
+    at.run()
+    assert any(
+        b.key and b.key.startswith("download_file_") for b in at.get("download_button")
+    ) or at.get("download_button")
+
+
+def test_the_data_page_lists_what_was_imported(
+    monkeypatch: pytest.MonkeyPatch, run_project: Path
+) -> None:
+    at = fresh(monkeypatch, run_project).run()
+    goto(at, "data")
+    assert not at.exception
+    assert "Step 1" in page_text(at) and "Files already imported" in " ".join(
+        e.label for e in at.expander
+    )
+
+
+def test_sidebar_buttons_are_left_aligned_in_the_style_sheet(
+    monkeypatch: pytest.MonkeyPatch, filled_project: Path
+) -> None:
+    at = fresh(monkeypatch, filled_project).run()
+    assert "justify-content: flex-start" in css_of(at) and "text-align: left" in css_of(at)

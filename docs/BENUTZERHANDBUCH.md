@@ -281,6 +281,8 @@ Die Oberfläche läuft **nur auf Ihrem Rechner** (Adresse `127.0.0.1`) und sende
 | **Daten** | Dateien wählen, Trockenlesung mit Format, Zahl der Datensätze und Anteil mit Abstract, Quelle benennen, importieren; Tabelle der Datensätze mit Filter |
 | **Prüfen** | Duplikate, Vorfilter und Gültigkeit; Bericht mit Gründen und Hinweisen; Tokens, Kosten (mit schlimmstem Fall) und Dauer |
 | **Lauf** | Screening starten, verfolgen, pausieren, stoppen und fortsetzen (Abschnitt 6k) |
+| **Übersicht** | Stand aller Schritte und der nächste Schritt (Abschnitt 6h, «Die Seiten im Einzelnen») |
+| **Auswertung** | Diagramme und Tabellen der Ergebnisse (Abschnitt 6l) |
 | **PRISMA-Fluss** | Zahlen des Flussdiagramms aus den Ereignissen des Projekts, mit Warnungen bei veralteten Schritten |
 | **Export** | CSV, XLSX, RIS oder PRISMA-Zahlen erzeugen und herunterladen |
 | **Einstellungen** | Pfade, Protokollstufe, Preisliste ansehen |
@@ -298,6 +300,61 @@ Die Oberfläche läuft **nur auf Ihrem Rechner** (Adresse `127.0.0.1`) und sende
 * **Gespeichert:** Sprache, Design und Schriftgrösse bleiben beim Seitenwechsel und beim nächsten Start erhalten (Datei `ui_prefs.json` neben der Liste der zuletzt verwendeten Projekte, `~/.config/crapai/`). Ohne gespeicherte Wahl folgt das Design der Einstellung Ihres Browsers.
 * **Hilfe zu jedem Bedienelement:** Neben jeder Beschriftung steht ein kleines **?**; fahren Sie mit der Maus darüber (oder tippen Sie darauf) und Sie sehen, was das Feld bewirkt, mit Beispielen. Bei Schaltflächen erscheint der Hilfetext beim Darüberfahren. Das gilt auch für alle Einstellungen im Formular.
 * **Hinweise** (Erfolg, Warnung, Fehler) erscheinen als farbige Kästen mit Symbol; die Farben passen zum gewählten Design.
+
+### Die Seiten im Einzelnen: wo gebe ich was ein?
+
+Jede Seite beginnt mit einem einklappbaren Kasten **Über diese Seite** (Ziel, Was passiert, So gehen Sie vor, Ergebnis).
+
+| Ich möchte … | Seite | Wo genau |
+|---|---|---|
+| wissen, wie weit das Projekt ist und was fehlt | **Übersicht** | Fortschrittsbalken, die Schritte mit Stand und der Knopf «Weiter mit …» |
+| den **Projektbeschrieb** schreiben | **1 · Projekt** | Abschnitt «Projektbeschrieb, Forschungsfrage und Kriterien»: Name des Reviews und Kurzbeschreibung |
+| die **Forschungsfrage(n)** eintragen | **1 · Projekt** | gleicher Abschnitt, Feld «Forschungsfragen (eine pro Zeile)» |
+| **PICOS, SPIDER, PECO, PIRD** oder eigene Elemente wählen | **1 · Projekt** | Auswahl «Rahmenwerk»; für ein eigenes Rahmenwerk die Elementnamen eintragen |
+| **Einschluss- und Ausschlusskriterien** festlegen | **1 · Projekt** | zu jedem Element des Rahmenwerks links «Einschluss», rechts «Ausschluss» |
+| die Projektdatei von Hand bearbeiten | **1 · Projekt** | zugeklappter Abschnitt «project.yaml bearbeiten» |
+| Literaturdateien einlesen | **2 · Daten importieren** | Schritt 1 Dateien wählen, Schritt 2 Quelle benennen, Schritt 3 Importieren |
+| Duplikate und Filter prüfen, Kosten schätzen | **3 · Daten prüfen** | Knopf «Prüfung ausführen» |
+| Modell, Schlüsselname, Grenzen einstellen | **Einstellungen** | Abschnitte «Sprachmodell», «Lauf», «Grenzen und Kosten» |
+| das Screening starten | **4 · Screening starten** | Probelauf, Einverständnis, «Lauf starten» |
+| Zahlen für das PRISMA-Diagramm | **5 · PRISMA-Fluss** | Tabelle der Zahlen |
+| Dateien herausgeben | **6 · Ergebnisse exportieren** | Datensätze, Screening-Ergebnisse oder PRISMA-Zahlen |
+| Ergebnisse grafisch auswerten | **7 · Auswertung** | aus dem Projekt oder aus einer hochgeladenen Exportdatei |
+
+**Projektbeschrieb, Forschungsfrage und Kriterien** werden in `project.overrides.yaml` gespeichert (neben der `project.yaml`); die Projektdatei und ihre Kommentare bleiben unverändert, die gespeicherten Werte haben Vorrang. Gespeichert wird nur, wenn der Name gesetzt ist und bei mindestens einem Element ein Einschlusskriterium steht. Beim Wechsel des Rahmenwerks werden nur die Elemente des neuen Rahmenwerks geschrieben. Das Sprachmodell erhält Beschrieb, Forschungsfragen und Kriterien in jedem Prompt; ändern Sie sie nach einem Lauf, kann dieser Lauf nicht fortgesetzt werden (E204, Abschnitt 6k).
+
+**Import und Export:** Die Seite *Daten importieren* führt in drei nummerierten Schritten und zeigt darunter die Liste der bereits importierten Dateien (Zeitpunkt, Quelle, Zahl der Datensätze). Die Seite *Ergebnisse exportieren* führt ebenfalls in drei Schritten (was, Format und Umfang, exportieren) und listet alle bisher erzeugten Dateien im Ordner `exports/` mit Download.
+
+## 6l. Auswertung: Diagramme und Tabellen
+
+Die Seite **7 · Auswertung** zeigt die Ergebnisse eines Screenings grafisch. Sie liest entweder einen **Lauf des geöffneten Projekts** oder eine **früher exportierte Ergebnisdatei**, auch ohne das Projekt (zum Beispiel nach Abschluss des Reviews oder auf einem anderen Rechner). Es wird nichts verändert und nichts gesendet.
+
+**Ergebnisdatei erzeugen:** Seite *Ergebnisse exportieren*, «Screening-Ergebnisse», CSV oder Excel; oder auf der Befehlszeile:
+
+```powershell
+crapai export mein-review --what results --format xlsx          # neuester Lauf mit Ergebnissen
+crapai export mein-review --what results --run-id 2026-10-01T14-05_run-003
+```
+
+Die Datei hat eine Zeile je Datensatz des Projekts. Wichtige Spalten: `outcome` (Ergebniskategorie), `decision`, `reasoning`, `status`, `flags`, `source_label`, `year`, `abstract_words`, `exclusion_reason`, `tokens_in`, `tokens_out`, `cost`, `latency_s`, `run_id`, `batch`. Beim Hochladen genügt eine Tabelle mit der Spalte `outcome` oder `decision`; fehlende Spalten werden weggelassen, andere Dateien werden mit einer Erklärung abgelehnt (E203). Trennzeichen (Komma, Semikolon, Tabulator) und Zeichenkodierung (UTF-8, Windows) werden erkannt.
+
+**Ergebniskategorien (`outcome`):** *Einschliessen*, *Ausschliessen*, *Unsicher* (Entscheidung des Modells); *Fehler* (an das Modell gesendet, aber ohne gültige Antwort); *Vor dem Modell ausgeschlossen* (Duplikat, Sprache, Jahr, kein Abstract …); *Noch nicht bewertet*.
+
+**Abschnitte** (alle auf- und zuklappbar):
+
+| Abschnitt | Diagramme |
+|---|---|
+| Entscheidungen im Überblick | Kennzahlen, Ringdiagramm der Anteile, Balkendiagramm der Anzahl |
+| Nach Quelle (Datenbank) | gestapelte Balken je Datenbank, auf Wunsch als Anteile |
+| Nach Erscheinungsjahr | gestapelte Balken je Jahr |
+| Länge der Abstracts | Histogramm, Boxplot je Ergebnis, Streudiagramm Jahr gegen Wortzahl |
+| Qualität des Laufs | Status, Markierungen (`inconsistent`, `quote_unverified` …), Stimmigkeit der Entscheidung |
+| Kosten, Tokens und Antwortzeit | Tokens je Päckchen, Verteilung der Antwortzeit, Summen |
+| Gründe für den Ausschluss vor dem Modell | Balken je Grund |
+| Unsichere Datensätze | Liste zur Prüfung durch Menschen |
+| Tabelle aller Datensätze | filterbar nach Ergebnis, als CSV herunterladbar |
+
+Die Farben der Ergebnisse sind in beiden Designs unterscheidbar; die Diagramme folgen dem gewählten Design und der Schriftgrösse. Zeigen Sie mit der Maus auf Balken oder Punkte, um die Zahlen zu sehen.
 
 ## 6j. Einstellungen ändern: `project.yaml`, Oberfläche, `crapai config`
 

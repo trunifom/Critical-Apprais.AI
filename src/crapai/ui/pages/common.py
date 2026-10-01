@@ -25,6 +25,24 @@ def show_error(st: Any, ctx: Context, report: ErrorReport) -> None:
         st.code(f"{report.code}: {report.title}\n{report.details}", language="text")
 
 
+INTRO_PARTS = ("goal", "what", "how", "result")
+
+
+def intro(st: Any, ctx: Context, page: str) -> None:
+    """The short introduction at the top of a page: goal, what happens, how to use it, result.
+
+    It sits in an expander, so it can be folded away once it is known.
+    """
+    with st.expander(ctx.t("intro.title"), expanded=True):
+        for part in INTRO_PARTS:
+            st.markdown(
+                f'<div class="crapai-intro-row"><span class="crapai-intro-label">'
+                f"{ctx.t(f'intro.label.{part}')}</span>"
+                f'<span class="crapai-intro-text">{ctx.t(f"intro.{page}.{part}")}</span></div>',
+                unsafe_allow_html=True,
+            )
+
+
 def show_locked(st: Any, ctx: Context, reason: str) -> None:
     """Explain why a page cannot be used yet."""
     st.info(ctx.t(f"locked.{reason}"))

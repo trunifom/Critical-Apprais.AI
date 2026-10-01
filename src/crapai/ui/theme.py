@@ -231,8 +231,18 @@ button:disabled {{ opacity: .55; cursor: not-allowed; }}
 }}
 [data-testid="stSidebar"] button[data-testid*="primary"] {{ box-shadow: inset 4px 0 0 {p["focus"]}; }}
 .crapai-title {{ font-size: 1.15rem; font-weight: 650; color: {p["text"]}; margin: 0 0 .4rem 0; overflow-wrap: anywhere; }}
+[data-testid="stSidebar"] button[data-testid^="stBaseButton-"] > div {{
+  justify-content: flex-start !important; width: 100%;
+}}
+[data-testid="stSidebar"] button[data-testid^="stBaseButton-"] p {{
+  text-align: left !important; width: 100%; margin: 0;
+}}
 .crapai-brand {{ font-size: 1.35rem; font-weight: 700; color: {p["text"]}; margin: .2rem 0 .1rem 0; }}
 .crapai-brand-sub {{ font-size: .85rem; color: {p["muted"]}; margin-bottom: .8rem; }}
+.crapai-intro-row {{ display: flex; gap: 1rem; margin: .15rem 0 .55rem 0; line-height: 1.55; }}
+.crapai-intro-label {{ flex: 0 0 9.5rem; font-weight: 700; color: {p["primary"]}; }}
+.crapai-intro-text {{ flex: 1 1 auto; }}
+.crapai-step {{ font-weight: 650; }}
 .crapai-nav-title {{
   font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
   color: {p["muted"]}; margin: 1rem 0 .3rem 0;

@@ -47,6 +47,7 @@ from crapai.services.export import (
 from crapai.services.importing import ImportRequest, ImportSummary, import_source
 from crapai.services.preflight import ProjectReport, check_project
 from crapai.services.project import DEFAULT_TEMPLATE, create_project, project_status
+from crapai.services.results import export_results
 from crapai.ui.context import PROJECT_ENV
 
 logger = logging.getLogger("crapai.cli")
@@ -772,7 +773,7 @@ def config_reset(
 def export_command(
     folder: Annotated[Path, typer.Argument(help="Project folder.")],
     what: Annotated[
-        str, typer.Option("--what", help="records or flow (PRISMA numbers).")
+        str, typer.Option("--what", help="records, results (screening results) or flow.")
     ] = "records",
     fmt: Annotated[str, typer.Option("--format", help="csv, xlsx or ris (records only).")] = "csv",
     scope: Annotated[
@@ -792,10 +793,14 @@ def export_command(
     mode: Annotated[
         str | None, typer.Option(help="Flow only: all_before_screening or between_databases_only.")
     ] = None,
+    run_id: Annotated[
+        str | None,
+        typer.Option("--run-id", help="Results only: the run (default: the newest with results)."),
+    ] = None,
     as_json: JsonOption = False,
     lang: LangOption = None,
 ) -> None:
-    """Export the records (CSV, XLSX, RIS) or the PRISMA flow numbers (JSON).
+    """Export the records (CSV, XLSX, RIS), the screening results (CSV, XLSX) or the PRISMA flow.
 
     The project is not changed. A target that is open in Excel is not overwritten: the export is
     saved under a timestamped name and the exit code is 4.
@@ -804,11 +809,22 @@ def export_command(
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
     _setup_file_log(folder)
     try:
-        if what not in ("records", "flow"):
-            raise ConfigError(f"Unknown --what '{what}' (valid: records, flow)", code="E203")
+        if what not in ("records", "results", "flow"):
+            raise ConfigError(
+                f"Unknown --what '{what}' (valid: records, results, flow)", code="E203"
+            )
         separator = {"tab": "\t", "semicolon": ";", "comma": ","}.get(delimiter.lower(), delimiter)
         if what == "flow":
             summary = export_flow(Workspace(folder), output=output, mode=mode)
+        elif what == "results":
+            summary = export_results(
+                Workspace(folder),
+                fmt,
+                run_id=run_id,
+                output=output,
+                delimiter=separator,
+                guard_formulas=not raw,
+            )
         else:
             summary = export_records(
                 Workspace(folder),
@@ -865,6 +881,7 @@ def ui_command_line(
         "--server.address", "127.0.0.1",
         "--server.port", str(port),
         "--browser.gatherUsageStats", "false",
+        "--theme.primaryColor", "#2F6FDE",  # radio buttons, check boxes, sliders
         "--client.showSidebarNavigation", "false",  # the interface has its own menu
         "--server.headless", "true" if headless else "false",
     ]  # fmt: skip

@@ -7,7 +7,7 @@ from typing import Any
 
 from crapai.ui import actions
 from crapai.ui.context import Context
-from crapai.ui.pages.common import show_error
+from crapai.ui.pages.common import intro, show_error
 
 TEMPLATES = ("blank", "demo")
 
@@ -29,6 +29,7 @@ def render(st: Any, ctx: Context) -> None:
     """Draw the start page: open a recent or typed project folder, or create a new one."""
     st.header(ctx.t("start.title"))
     st.caption(ctx.t("tagline"))
+    intro(st, ctx, "start")
     left, right = st.columns(2)
 
     with left:

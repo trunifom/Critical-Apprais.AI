@@ -8,6 +8,7 @@ from crapai import __version__
 from crapai.branding import PRODUCT_NAME
 from crapai.logging_setup import read_log_tail
 from crapai.ui.context import Context
+from crapai.ui.pages.common import intro
 
 LOG_LINES = 200
 
@@ -27,11 +28,12 @@ def error_catalogue(ctx: Context) -> list[dict[str, str]]:
 def render(st: Any, ctx: Context) -> None:
     """Draw the help page: privacy note, error catalogue and the log of the project."""
     st.header(ctx.t("help.title"))
+    intro(st, ctx, "help")
     st.write(f"**{PRODUCT_NAME}** {__version__}")
     st.write(ctx.t("help.privacy"))
     st.warning(ctx.t("disclaimer"))
     st.subheader(ctx.t("help.errors"))
-    st.dataframe(error_catalogue(ctx), use_container_width=True, hide_index=True)
+    st.dataframe(error_catalogue(ctx), width="stretch", hide_index=True)
     st.subheader(ctx.t("help.log"))
     if ctx.folder is None:
         st.info(ctx.t("locked.needs_project"))
