@@ -167,6 +167,60 @@ def test_plan_items_carry_keywords_only_when_switched_on(project: Workspace) -> 
     assert all(item.keywords == "" for item in items[1:])
 
 
+def _record(**overrides: Any) -> Any:
+    from crapai.io.records_store import Record
+
+    values: dict[str, Any] = {
+        "study_uid": overrides.pop("study_uid", "u1"),
+        "source_label": "PubMed",
+        "source_file": "pubmed.ris",
+        "source_row": 1,
+        "source_format": "ris",
+        "title": "A paper",
+        "abstract": "An abstract",
+    }
+    values.update(overrides)
+    return Record(**values)
+
+
+def test_fulltext_mode_only_plans_anchors_with_a_usable_attachment() -> None:
+    from crapai.config.models import ProjectConfig
+
+    config = ProjectConfig.model_validate(
+        {
+            "project": {"title": "T", "mode": "fulltext"},
+            "criteria": {"inclusion": {"Population": "adults"}},
+        }
+    )
+    anchor_with_pdf = _record(study_uid="a1")
+    anchor_without_pdf = _record(study_uid="a2")
+    anchor_with_bad_pdf = _record(study_uid="a3")
+    usable_attachment = _record(
+        study_uid="p1", fulltext_of="a1", has_fulltext=True, zip_member="p1.pdf"
+    )
+    unusable_attachment = _record(
+        study_uid="p2", fulltext_of="a3", has_fulltext=True, exclusion_reason="NO_TEXT"
+    )
+    records = [anchor_with_pdf, anchor_without_pdf, anchor_with_bad_pdf,
+               usable_attachment, unusable_attachment]  # fmt: skip
+    eligible = svc.eligible_records(records, config)
+    assert [r.study_uid for r in eligible] == ["a1"]
+
+
+def test_an_excluded_anchor_is_never_planned_even_with_a_usable_pdf() -> None:
+    from crapai.config.models import ProjectConfig
+
+    config = ProjectConfig.model_validate(
+        {
+            "project": {"title": "T", "mode": "fulltext"},
+            "criteria": {"inclusion": {"Population": "adults"}},
+        }
+    )
+    anchor = _record(study_uid="a1", exclusion_reason="DUPLICATE")
+    attachment = _record(study_uid="p1", fulltext_of="a1", has_fulltext=True)
+    assert svc.eligible_records([anchor, attachment], config) == []
+
+
 def test_settings_that_do_not_shape_the_answers_may_change_between_sessions(
     project: Workspace,
 ) -> None:

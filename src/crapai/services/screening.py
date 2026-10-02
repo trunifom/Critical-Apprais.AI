@@ -30,6 +30,7 @@ import platform
 import random
 import signal
 import threading
+import zipfile
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -42,6 +43,7 @@ from crapai.config.models import ProjectConfig
 from crapai.enums import ScreeningPhase
 from crapai.errors import AuthError, ConfigError, ImportFailed, SaraError
 from crapai.io.import_log import sha256_file
+from crapai.io.readers.pdf_zip import extract_one
 from crapai.io.records_store import Record, read_records
 from crapai.llm.base import LLMProvider
 from crapai.llm.mock_provider import SCENARIOS, MockProvider
@@ -102,29 +104,90 @@ class RunResult:
 # --- planning ---------------------------------------------------------------------------------
 
 
+def _fulltext_anchors(records: list[Record]) -> list[Record]:
+    """Records (not themselves a full-text attachment) that have >=1 usable attachment.
+
+    "Usable" means a matched row (``fulltext_of`` points at it) with no quality problem
+    (``exclusion_reason`` empty -- a matched but unreadable PDF, ``NO_TEXT``/``ENCRYPTED``/
+    ``IMPORT_ERROR``, does not count). This is the full-text-mode counterpart of
+    :func:`eligible_records`'s abstract check: a record with no usable full text is left out of
+    the plan entirely, the same way a record with no abstract is today, rather than sent with
+    nothing to screen.
+    """
+    usable_targets = {r.fulltext_of for r in records if r.fulltext_of and not r.exclusion_reason}
+    return [
+        r
+        for r in records
+        if not r.fulltext_of and not r.exclusion_reason and r.study_uid in usable_targets
+    ]
+
+
 def eligible_records(records: list[Record], config: ProjectConfig) -> list[Record]:
-    """Records that go to the model: no exclusion reason (and an abstract, unless title-only)."""
+    """Records that go to the model: no exclusion reason (and an abstract, unless title-only).
+
+    In full-text mode (``project.mode``, ADR 0026) this instead returns :func:`_fulltext_anchors`.
+    """
+    if config.project.mode == "fulltext":
+        return _fulltext_anchors(records)
     title_only = config.screening.include_title_only
     return [r for r in records if not r.exclusion_reason and (r.abstract.strip() or title_only)]
 
 
-def _plan_item(record: Record, config: ProjectConfig) -> PlanItem:
+def _fulltext_lookup(records: list[Record], workspace: Workspace) -> Callable[[Record], str]:
+    """A function from an anchor record to its full text, re-read from its ZIP each time.
+
+    The text itself is never stored in ``records.csv`` (too large for a CSV cell); only
+    ``source_file``/``zip_member`` are, so every plan (a fresh run, or a ``--resume``) re-extracts
+    it from the ZIP kept in ``sources/``. One record's PDF is a few hundred KB to a few MB, so
+    re-opening the ZIP once per record (no caching across records) is simple and fast enough for
+    the PDF counts a systematic review has (tens to low hundreds), even though several records
+    from the same ZIP mean it is opened more than once.
+    """
+    attachment_by_anchor = {
+        r.fulltext_of: r for r in records if r.fulltext_of and not r.exclusion_reason
+    }
+
+    def resolve(anchor: Record) -> str:
+        attachment = attachment_by_anchor.get(anchor.study_uid)
+        if attachment is None:
+            return ""
+        with zipfile.ZipFile(workspace.sources_dir / attachment.source_file) as archive:
+            data = archive.read(attachment.zip_member)
+        return extract_one(attachment.zip_member, data).text
+
+    return resolve
+
+
+def _plan_item(
+    record: Record, config: ProjectConfig, *, fulltext_of: Callable[[Record], str] | None = None
+) -> PlanItem:
     keywords = record.keywords if config.screening.include_keywords_in_prompt else ""
-    return PlanItem(record.study_uid, record.title, record.abstract, keywords)
+    fulltext = fulltext_of(record) if fulltext_of is not None else ""
+    return PlanItem(record.study_uid, record.title, record.abstract, keywords, fulltext)
 
 
 def plan_items(
-    records: list[Record], config: ProjectConfig, *, sample: int | None = None
+    records: list[Record],
+    config: ProjectConfig,
+    *,
+    sample: int | None = None,
+    workspace: Workspace | None = None,
 ) -> list[PlanItem]:
     """The records of a run as plan items; with ``sample`` a reproducible random draw.
 
     The draw uses ``run.sample_seed`` and keeps the original order of the drawn records.
+    ``workspace`` is required in full-text mode (to re-read a ZIP from ``sources/``); it is
+    unused in abstract mode.
     """
     chosen = eligible_records(records, config)
     if sample is not None and 0 < sample < len(chosen):
         drawn = random.Random(config.run.sample_seed).sample(range(len(chosen)), sample)
         chosen = [chosen[i] for i in sorted(drawn)]
-    return [_plan_item(r, config) for r in chosen]
+    fulltext_of = None
+    if config.project.mode == "fulltext":
+        assert workspace is not None, "full-text mode needs a workspace to re-read the ZIP"
+        fulltext_of = _fulltext_lookup(records, workspace)
+    return [_plan_item(r, config, fulltext_of=fulltext_of) for r in chosen]
 
 
 def settings_from_config(config: ProjectConfig, *, keep_raw: bool | None = None) -> EngineSettings:
@@ -155,6 +218,8 @@ def settings_from_config(config: ProjectConfig, *, keep_raw: bool | None = None)
         stop_grace_seconds=run.stop_grace_seconds,
         keep_raw=config.output.keep_raw_responses if keep_raw is None else keep_raw,
         currency=limits.currency,
+        mode=config.project.mode,
+        fulltext_strategy=config.screening.fulltext.strategy,
     )
 
 
@@ -176,6 +241,9 @@ def fingerprint_parts(config: ProjectConfig, builder: PromptBuilder) -> dict[str
         "schema_version": builder.schema_version,
         "reasoning_language": config.screening.reasoning_language,
         "include_keywords_in_prompt": config.screening.include_keywords_in_prompt,
+        # Only meaningful in full-text mode (ADR 0026), but harmless to always include: a changed
+        # strategy would otherwise change how much of the text a resumed run sees, unnoticed.
+        "fulltext_strategy": config.screening.fulltext.strategy,
     }
 
 
@@ -406,15 +474,18 @@ def _read_plan(store: RunStore) -> list[str]:
         ) from exc
 
 
-def _prisma_event(workspace: Workspace, store: RunStore, manifest: Manifest) -> None:
-    """Write the aggregated result of a completed full run to the PRISMA event file."""
+def _prisma_event(workspace: Workspace, store: RunStore, manifest: Manifest, mode: str) -> None:
+    """Write the aggregated result of a completed full run to the PRISMA event file.
+
+    ``mode`` picks the phase (abstract or full-text, ADR 0026); ``prisma.flow.build_flow`` already
+    reads both kinds of event, so no change is needed there.
+    """
     rows = [r for r in store.last_results().values() if r.is_ok]
     included = sum(1 for r in rows if r.decision == "INCLUDE")
     excluded = sum(1 for r in rows if r.decision == "EXCLUDE")
     uncertain = sum(1 for r in rows if r.decision == "UNCERTAIN")
-    event = ev.screening_done(
-        ScreeningPhase.ABSTRACT, included, excluded, uncertain, run_id=manifest.run_id
-    )
+    phase = ScreeningPhase.FULLTEXT if mode == "fulltext" else ScreeningPhase.ABSTRACT
+    event = ev.screening_done(phase, included, excluded, uncertain, run_id=manifest.run_id)
     try:
         append_events(workspace.events_jsonl, [event])
     except OSError as exc:
@@ -442,11 +513,22 @@ def screen_project(workspace: Workspace, options: RunOptions | None = None) -> R
     workspace = Workspace.open(workspace.root)
     with workspace.lock() as lock:
         config = load_project_config(workspace.project_yaml)
+        if config.project.mode == "fulltext" and config.screening.fulltext.strategy == "map_reduce":
+            # Chunking and the final call that weighs the collected evidence are not wired into
+            # the engine yet (ADR 0026): refuse clearly up front rather than mis-screen silently.
+            raise ConfigError(
+                "screening.fulltext.strategy 'map_reduce' is not implemented yet",
+                code="E203",
+                hint="Use 'truncate' or 'sections' for full-text screening.",
+            )
         builder = builder_for(config, workspace.prompts_dir)
         settings = settings_from_config(config)
         records = read_records(workspace.records_csv)
         price = find_price(workspace, config.llm.provider, config.llm.model)[0]
         resumed = options.resume is not None
+        fulltext_of = (
+            _fulltext_lookup(records, workspace) if config.project.mode == "fulltext" else None
+        )
         if resumed:
             assert options.resume is not None
             store = find_run(workspace, options.resume)
@@ -454,10 +536,12 @@ def screen_project(workspace: Workspace, options: RunOptions | None = None) -> R
             _check_resumable(manifest, config, builder, store)
             by_uid = {r.study_uid: r for r in records}
             items = [
-                _plan_item(by_uid[u], config) for u in _read_plan(store) if u in by_uid
+                _plan_item(by_uid[u], config, fulltext_of=fulltext_of)
+                for u in _read_plan(store)
+                if u in by_uid
             ]
         else:
-            items = plan_items(records, config, sample=options.sample)
+            items = plan_items(records, config, sample=options.sample, workspace=workspace)
             if not items:
                 raise ImportFailed(
                     "No record goes to the model",
@@ -491,7 +575,7 @@ def screen_project(workspace: Workspace, options: RunOptions | None = None) -> R
         )  # fmt: skip
         summary = _run_engine(engine, items, options.install_signal_handler)
         if summary.state == RunState.COMPLETED.value and manifest.kind == "full":
-            _prisma_event(workspace, store, manifest)
+            _prisma_event(workspace, store, manifest, config.project.mode)
         store.clear_control()
     return RunResult(
         manifest.run_id, summary, manifest, store.folder, resumed, list(manifest.warnings)

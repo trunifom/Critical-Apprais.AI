@@ -12,17 +12,20 @@ Three strategies (``screening.fulltext.strategy``):
     weighs the collected evidence), not just text preparation. :func:`chunk_for_map_reduce` splits
     the text; :mod:`crapai.screening.engine` drives the calls.
 
-Token budgets use the project's chosen :class:`~crapai.cost.tokenizers.Tokenizer` (the same one
-the cost estimate uses), so a strategy never overshoots the context window it was measured
-against; counting never sends the text anywhere.
+Token budgets use the caller's own token counter (the engine's provider, or the project's chosen
+:class:`~crapai.cost.tokenizers.Tokenizer` for a cost estimate), so a strategy never overshoots the
+context window it was measured against; counting never sends the text anywhere.
 """
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
-from crapai.cost.tokenizers import Tokenizer
 from crapai.prompts.fulltext_sections import methods_results_discussion
+
+#: a token counter: takes text, returns how many tokens it would be (never sends anything anywhere).
+CountTokens = Callable[[str], int]
 
 #: tokens reserved for the rest of the prompt (criteria, instructions, system) and the model's
 #: answer, so `truncate`/`sections` leave room for more than just the article itself.
@@ -52,16 +55,16 @@ def _budget(max_context_tokens: int) -> int:
     return max(max_context_tokens - RESERVED_TOKENS, MIN_BUDGET_TOKENS)
 
 
-def _fits(text: str, start: int, end: int, budget: int, tokenizer: Tokenizer) -> bool:
-    return tokenizer.count(text[start:end]) <= budget
+def _fits(text: str, start: int, end: int, budget: int, count_tokens: CountTokens) -> bool:
+    return count_tokens(text[start:end]) <= budget
 
 
-def _longest_fit(text: str, start: int, budget: int, tokenizer: Tokenizer) -> int:
+def _longest_fit(text: str, start: int, budget: int, count_tokens: CountTokens) -> int:
     """The largest ``end`` (``start <= end <= len(text)``) such that ``text[start:end]`` fits."""
     lo, hi = start, len(text)
     while lo < hi:
         mid = (lo + hi + 1) // 2
-        if _fits(text, start, mid, budget, tokenizer):
+        if _fits(text, start, mid, budget, count_tokens):
             lo = mid
         else:
             hi = mid - 1
@@ -69,18 +72,18 @@ def _longest_fit(text: str, start: int, budget: int, tokenizer: Tokenizer) -> in
 
 
 def _truncate_to_budget(
-    text: str, budget: int, tokenizer: Tokenizer, *, strategy_used: str
+    text: str, budget: int, count_tokens: CountTokens, *, strategy_used: str
 ) -> PreparedFulltext:
-    if tokenizer.count(text) <= budget:
+    if count_tokens(text) <= budget:
         return PreparedFulltext(text, truncated=False, strategy_used=strategy_used)
-    end = max(_longest_fit(text, 0, budget, tokenizer), 1)
+    end = max(_longest_fit(text, 0, budget, count_tokens), 1)
     return PreparedFulltext(
         text[:end].rstrip() + TRUNCATION_NOTICE, truncated=True, strategy_used=strategy_used
     )
 
 
 def prepare_fulltext(
-    text: str, *, strategy: str, max_context_tokens: int, tokenizer: Tokenizer
+    text: str, *, strategy: str, max_context_tokens: int, count_tokens: CountTokens
 ) -> PreparedFulltext:
     """Fit ``text`` into the model's context window per ``strategy`` (``truncate``/``sections``).
 
@@ -93,14 +96,14 @@ def prepare_fulltext(
     if strategy == "sections":
         reduced = methods_results_discussion(text)
         if reduced:
-            return _truncate_to_budget(reduced, budget, tokenizer, strategy_used="sections")
+            return _truncate_to_budget(reduced, budget, count_tokens, strategy_used="sections")
         # No heading was recognised (for example OCR output with no line breaks): better to send
         # the whole (truncated) text than nothing.
-    return _truncate_to_budget(text, budget, tokenizer, strategy_used="truncate")
+    return _truncate_to_budget(text, budget, count_tokens, strategy_used="truncate")
 
 
 def chunk_for_map_reduce(
-    text: str, *, max_context_tokens: int, tokenizer: Tokenizer, overlap_chars: int = 200
+    text: str, *, max_context_tokens: int, count_tokens: CountTokens, overlap_chars: int = 200
 ) -> list[str]:
     """Split ``text`` into chunks that each fit the context window (plan chapter 29.8).
 
@@ -108,12 +111,12 @@ def chunk_for_map_reduce(
     boundary is not lost to both halves. A text that already fits is returned as a single chunk.
     """
     budget = _budget(max_context_tokens)
-    if tokenizer.count(text) <= budget:
+    if count_tokens(text) <= budget:
         return [text]
     chunks: list[str] = []
     start = 0
     while start < len(text):
-        end = max(_longest_fit(text, start, budget, tokenizer), start + 1)
+        end = max(_longest_fit(text, start, budget, count_tokens), start + 1)
         chunks.append(text[start:end])
         if end >= len(text):
             break

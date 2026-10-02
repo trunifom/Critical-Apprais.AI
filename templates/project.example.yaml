@@ -7,7 +7,7 @@ project:
   title: "Digital health literacy - scoping review (EXAMPLE)"
   description: "Short description of aim and scope."
   language: de            # UI/report language: de | en
-  mode: abstract          # abstract (v1). `fulltext` is NOT supported in v1 (ADR 0015)
+  mode: abstract          # abstract | fulltext (full-text screening, ADR 0026)
 
 objectives:
   - "Which instruments measure digital health literacy in adults?"
@@ -54,7 +54,7 @@ screening:
   include_title_only: false
   include_keywords_in_prompt: false      # also show the record's keywords to the model
   fulltext:
-    strategy: truncate                   # truncate | sections | map_reduce
+    strategy: truncate                   # truncate | sections (map_reduce is not implemented yet, refused at run start)
     repeat_criteria_after_text: false
 
 # Defaults for 'crapai discuss' (settle a disagreement between two or more compared runs by

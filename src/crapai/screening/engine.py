@@ -66,8 +66,9 @@ from crapai.llm.resilience import (
     Sleep,
     call_with_retry,
 )
-from crapai.prompts.builder import STRUCTURED, PromptBuilder
+from crapai.prompts.builder import STRUCTURED, PromptBuilder, PromptParts
 from crapai.screening.answer import Answer, check_quotes, parse_answer, parse_legacy
+from crapai.screening.fulltext import prepare_fulltext
 from crapai.screening.store import BatchInfo, Manifest, ResultRow, RunState, RunStore, now_iso
 
 logger = logging.getLogger(__name__)
@@ -75,21 +76,38 @@ logger = logging.getLogger(__name__)
 MIN_RECORDS_FOR_RATE = 5  # a batch smaller than this is not judged by its error rate
 LENGTH_RETRY_FACTOR = 2  # a cut-off answer is asked again with this many times the limit
 MAX_OUTPUT_CAP = 16_000
+# Conservative fallback when the provider does not report its context window (ADR 0026's
+# full-text mode needs a number to truncate/chunk against; better to truncate more than to risk
+# silently overshooting an unknown, possibly small, context window).
+DEFAULT_FULLTEXT_CONTEXT_TOKENS = 16_000
 
 
 @dataclass(frozen=True)
 class PlanItem:
-    """One record to screen."""
+    """One record to screen.
+
+    Attributes:
+        fulltext: The record's full text (ADR 0026), already extracted from its ZIP at plan time;
+            empty for abstract-mode screening, or if full-text mode found no usable attachment
+            (``plan_items`` normally excludes such records before the engine ever sees them).
+    """
 
     uid: str
     title: str
     abstract: str
     keywords: str = ""
+    fulltext: str = ""
 
 
 @dataclass
 class EngineSettings:
-    """Everything the engine needs from the configuration, as plain values."""
+    """Everything the engine needs from the configuration, as plain values.
+
+    Attributes:
+        mode: ``"abstract"`` or ``"fulltext"`` (ADR 0026; ``project.mode``).
+        fulltext_strategy: ``"truncate"``/``"sections"`` for full-text mode (``map_reduce`` is
+            rejected before a run starts, see :func:`crapai.services.screening.screen_project`).
+    """
 
     model: str
     temperature: float = 0.0
@@ -115,6 +133,8 @@ class EngineSettings:
     stop_grace_seconds: float = 10.0
     keep_raw: bool = False
     currency: str = "USD"
+    mode: str = "abstract"
+    fulltext_strategy: str = "truncate"
 
 
 @dataclass
@@ -681,11 +701,31 @@ class ScreeningEngine:
         )
 
     def _parse(self, response: LLMResponse, item: PlanItem) -> Answer:
+        source_text = item.fulltext if self.settings.mode == "fulltext" else item.abstract
         if self.builder.output_format == STRUCTURED:
             answer = parse_answer(response.text)
-            check_quotes(answer, f"{item.title}\n{item.abstract}")
+            check_quotes(answer, f"{item.title}\n{source_text}")
             return answer
         return parse_legacy(response.text)
+
+    def _build_parts(self, item: PlanItem) -> PromptParts:
+        """The prompt for one record: abstract, or full text (ADR 0026) per ``settings.mode``.
+
+        The full text is already fitted to the context window here (truncated, or reduced to
+        Methods/Results/Discussion); :meth:`_parse`'s quote check still runs against the whole,
+        untruncated ``item.fulltext``, since anything the model could have quoted from the
+        (possibly smaller) prepared text is still found in the full text it came from.
+        """
+        if self.settings.mode != "fulltext":
+            return self.builder.build(item.title, item.abstract, item.keywords)
+        context = self._capabilities.context_tokens or DEFAULT_FULLTEXT_CONTEXT_TOKENS
+        prepared = prepare_fulltext(
+            item.fulltext,
+            strategy=self.settings.fulltext_strategy,
+            max_context_tokens=context,
+            count_tokens=lambda text: self.provider.count_tokens(text, self.settings.model),
+        )
+        return self.builder.build_fulltext(item.title, prepared.text, item.keywords)
 
     async def _process(self, item: PlanItem, batch_index: int) -> ResultRow:
         """Screen one record; a problem with the record becomes a result row, never an exception.
@@ -693,7 +733,6 @@ class ScreeningEngine:
         Raises:
             RunAbort: only for problems that concern the whole run (key refused, credit used up).
         """
-        parts = self.builder.build(item.title, item.abstract, item.keywords)
         base = ResultRow(
             study_uid=item.uid,
             run_id=self.manifest.run_id,
@@ -702,6 +741,11 @@ class ScreeningEngine:
             schema_version=self.builder.schema_version,
             batch=batch_index,
         )
+        if self.settings.mode == "fulltext" and not item.fulltext:
+            # plan_items() normally keeps such a record out of the plan entirely; reachable only
+            # if a --resume finds that a once-usable attachment has since become unreadable.
+            return self._failed(base, "api_error", "E203", "No usable full text for this record")
+        parts = self._build_parts(item)
         prompt_tokens = self.provider.count_tokens(parts.system + parts.user, self.settings.model)
         context = self._capabilities.context_tokens
         if context is not None and prompt_tokens + self.settings.max_output_tokens > context:

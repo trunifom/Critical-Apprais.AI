@@ -1,0 +1,32 @@
+# Structured (JSON) full-text variant of Critical Apprais.AI (ADR 0026). Mirrors
+# structured_abstract.yaml, adapted for a full article instead of a title/abstract: the two
+# ported variants (baseline_fulltext, gpt_improved_fulltext) use the legacy XXX/YYY format instead.
+id: structured_fulltext
+version: 1
+mode: fulltext
+output_format: structured
+source: Critical Apprais.AI
+notes: One verdict per criterion from the full text, short reasoning, decision last.
+pre_prompt: |-
+  Decide from the full text of the article whether the study belongs in a systematic review. A
+  study is INCLUDED only if ALL inclusion criteria are met. If ANY exclusion criterion is
+  triggered, it is EXCLUDED. Here are the criteria:
+instructions: |-
+  # Instructions
+  Read the full text, then work criterion by criterion, then decide.
+
+  1. For every inclusion criterion give a verdict: met, not_met or unclear, a note of at most 12
+     words, and (where possible) a short quote from the full text that supports it.
+  2. For every exclusion criterion give a verdict: triggered, not_triggered or unclear, with a note
+     and, where possible, a quote.
+  3. List open questions that the full text cannot answer under "ambiguities".
+  4. Give your reasoning in one or two sentences.
+  5. Only then give the decision: INCLUDE, EXCLUDE or UNCERTAIN.
+
+  Heuristics:
+  - Prefer UNCERTAIN to a guess when key information is missing or only plausible.
+  - Never invent details; use "unclear" for what the text does not say.
+  - A single clearly triggered exclusion criterion outweighs otherwise positive signals.
+  - Quotes must be copied word for word from the record; the text may have been shortened to fit
+    the context window, so a fact that does not appear may simply have been cut, not absent from
+    the original article.

@@ -423,6 +423,41 @@ Rückgabecodes von `crapai adjudicate` und `crapai discuss` (dieselbe Bedeutung 
 | 1 | Fehlschlag, den Sie beheben können (Schlüssel, Einstellungen, keine Rückfrage möglich) |
 | 2 | Fehlschlag durch die Umgebung (Platte voll, Datei gesperrt, Projekt in Benutzung, unerwartet) |
 
+## 6o. Volltext-Screening mit PDF-Dokumenten (ADR 0026)
+
+Nach dem Titel-/Abstract-Screening (Abschnitt 6k) kann derselbe Befehl `crapai screen` auch den **Volltext** beurteilen - für die Datensätze, zu denen eine PDF importiert und zugeordnet wurde (Abschnitt 5.5).
+
+### Ablauf
+
+1. Titel-/Abstract-Screening wie gewohnt durchführen (Abschnitt 6k).
+2. PDFs als ZIP importieren: `crapai import mein-review fulltexte.zip --label Volltexte` (Abschnitt 5.5). Jede PDF wird per DOI/Titel einem Datensatz zugeordnet; nur Datensätze mit einer **zugeordneten, lesbaren** PDF werden später zum Volltext-Screening zugelassen - alle anderen (keine PDF gefunden, oder eine gefundene PDF ist `NO_TEXT`/`ENCRYPTED`/`IMPORT_ERROR`) werden nicht angefragt, nicht stillschweigend übersprungen.
+3. `project.yaml` auf den Volltext-Modus umstellen:
+
+   ```yaml
+   project:
+     mode: fulltext                        # statt abstract
+   screening:
+     prompt_variant: structured_fulltext    # oder baseline_fulltext/gpt_improved_fulltext (legacy_xxx_yyy)
+     output_format: structured              # muss zur gewählten Variante passen
+     fulltext:
+       strategy: truncate                   # truncate | sections (map_reduce: noch nicht umgesetzt, wird beim Start abgelehnt)
+       repeat_criteria_after_text: false
+   ```
+
+4. `crapai screen mein-review` erneut ausführen - wie jeder Lauf, mit Kostenvoranschlag, Fortschrittsbalken, `--resume` usw. (Abschnitt 6k). Das Ergebnis trägt dieselbe `study_uid` wie der Titel-/Abstract-Datensatz, sodass die Auswertung (Abschnitt 6l) beide Entscheidungen nebeneinander zeigen kann.
+
+### Die drei Strategien (`screening.fulltext.strategy`)
+
+* **`truncate`** (Standard): Der Text wird auf das Kontextfenster des Modells gekürzt (mit Hinweis im Protokoll, wenn gekürzt wurde). Einfach, günstig, verliert alles nach dem Schnitt.
+* **`sections`**: Nur die Abschnitte Methods/Results/Discussion werden geschickt (automatisch erkannt an Überschriftzeilen); ohne erkennbare Überschrift fällt die Software auf `truncate` zurück, statt nichts zu schicken.
+* **`map_reduce`**: **Noch nicht umgesetzt.** Der Plan sieht vor, den Text in Abschnitte zu teilen, je Abschnitt Belege zu sammeln und am Ende zusammenzuführen (deutlich gründlicher, aber 20-40-fache Kosten eines Abstract-Laufs). `crapai screen` lehnt diese Einstellung beim Start klar ab (E203), statt sie falsch zu verarbeiten.
+
+### Grenzen dieser Version
+
+* Nur **ZIP-Import** von PDFs wird unterstützt, keine einzelnen PDF-Dateien (Abschnitt 5.5).
+* Gescannte PDFs ohne Textlayer (`NO_TEXT`) werden nicht automatisch per OCR gelesen.
+* Es gibt noch keinen Kostenvoranschlag, der die Volltext-Länge berücksichtigt; der allgemeine Kostenvoranschlag vor `crapai screen` gilt unverändert.
+
 ## 6j. Einstellungen ändern: `project.yaml`, Oberfläche, `crapai config`
 
 Fast nichts ist im Programm fest verdrahtet: Schwellen, Grenzen und Annahmen sind Einstellungen. Es gibt drei Wege, sie zu ändern, die sich ergänzen:
