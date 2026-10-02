@@ -53,6 +53,7 @@ from crapai.services.export import (
     ExportSummary,
     export_flow,
     export_records,
+    export_report,
 )
 from crapai.services.importing import ImportRequest, ImportSummary, import_source
 from crapai.services.preflight import ProjectReport, check_project
@@ -908,7 +909,8 @@ def profile_delete_command(
 def export_command(
     folder: Annotated[Path, typer.Argument(help="Project folder.")],
     what: Annotated[
-        str, typer.Option("--what", help="records, results (screening results) or flow.")
+        str,
+        typer.Option("--what", help="records, results (screening results), flow or report."),
     ] = "records",
     fmt: Annotated[
         str,
@@ -940,7 +942,8 @@ def export_command(
     as_json: JsonOption = False,
     lang: LangOption = None,
 ) -> None:
-    """Export records (CSV, XLSX, RIS, BibTeX, NBIB), results (CSV, XLSX) or the PRISMA flow.
+    """Export records (CSV, XLSX, RIS, BibTeX, NBIB), results (CSV, XLSX), the PRISMA flow, or a
+    readable DOCX summary report (method, PRISMA flow, screening results).
 
     The project is not changed. A target that is open in Excel is not overwritten: the export is
     saved under a timestamped name and the exit code is 4.
@@ -949,9 +952,9 @@ def export_command(
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
     _setup_file_log(folder, messages)
     try:
-        if what not in ("records", "results", "flow"):
+        if what not in ("records", "results", "flow", "report"):
             raise ConfigError(
-                f"Unknown --what '{what}' (valid: records, results, flow)", code="E203"
+                f"Unknown --what '{what}' (valid: records, results, flow, report)", code="E203"
             )
         separator = {"tab": "\t", "semicolon": ";", "comma": ","}.get(delimiter.lower(), delimiter)
         if what == "flow":
@@ -959,6 +962,8 @@ def export_command(
             # means "json", the original behaviour -- --format png/svg still works explicitly.
             flow_fmt = "json" if fmt == "csv" else fmt
             summary = export_flow(Workspace(folder), fmt=flow_fmt, output=output, mode=mode)
+        elif what == "report":
+            summary = export_report(Workspace(folder), output=output)
         elif what == "results":
             summary = export_results(
                 Workspace(folder),
@@ -991,6 +996,8 @@ def export_command(
 def _print_export(summary: ExportSummary, messages: Messages) -> None:
     if summary.what == "flow":
         typer.secho(messages.text("cli.export.done_flow", path=summary.path), fg="green")
+    elif summary.what == "report":
+        typer.secho(messages.text("cli.export.done_report", path=summary.path), fg="green")
     else:
         typer.secho(
             messages.text(

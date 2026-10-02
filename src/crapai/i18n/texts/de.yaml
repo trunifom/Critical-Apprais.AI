@@ -169,6 +169,7 @@ cli:
   export:
     done: "{records} Datensatz/Datensätze exportiert (Umfang: {scope}) als {format}: {path}"
     done_flow: "PRISMA-Flusszahlen geschrieben: {path}"
+    done_report: "Zusammenfassungsbericht geschrieben: {path}"
     alternative: "Die Datei {wanted} ist in einem anderen Programm geöffnet, darum wurde nichts überschrieben. Der Export liegt unter dem oben genannten Namen; schliessen Sie das Programm und exportieren Sie erneut, wenn Sie den ursprünglichen Namen brauchen."
   compare:
     done: "{records} Datensatz/Datensätze verglichen; Tabelle geschrieben: {path}"
@@ -1295,7 +1296,8 @@ ui:
     intro: "Schreibt die Daten in eine Datei im Projektordner (exports/) und bietet sie zum Herunterladen an. Das Projekt wird nicht verändert."
     what: "Was"
     what_records: "Datensätze"
-    what_flow: "PRISMA-Flusszahlen (JSON)"
+    what_flow: "PRISMA-Fluss"
+    what_report: "Zusammenfassungsbericht (DOCX)"
     format: "Format"
     scope: "Welche Datensätze"
     scope_all: "Alle"

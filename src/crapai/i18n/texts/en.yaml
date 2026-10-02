@@ -177,6 +177,7 @@ cli:
   export:
     done: "Exported {records} record(s) (scope: {scope}) as {format}: {path}"
     done_flow: "PRISMA flow numbers written: {path}"
+    done_report: "Summary report written: {path}"
     alternative: "The file {wanted} is open in another program, so nothing was overwritten. The export was saved under the name shown above; close the program and export again if you need the original name."
   compare:
     done: "Compared {records} record(s); table written: {path}"
@@ -1304,7 +1305,8 @@ ui:
     intro: "Write the data to a file in the project folder (exports/) and download it. The project is not changed."
     what: "What"
     what_records: "Records"
-    what_flow: "PRISMA flow numbers (JSON)"
+    what_flow: "PRISMA flow"
+    what_report: "Summary report (DOCX)"
     format: "Format"
     scope: "Which records"
     scope_all: "All"

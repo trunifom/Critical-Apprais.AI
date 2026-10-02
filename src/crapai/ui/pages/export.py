@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from crapai.project.workspace import Workspace
-from crapai.services.export import RECORD_FORMATS, SCOPES
+from crapai.services.export import FLOW_FORMATS, RECORD_FORMATS, SCOPES
 from crapai.ui import actions
 from crapai.ui.context import Context
 from crapai.ui.pages.common import intro, show_error
@@ -19,6 +19,9 @@ MIME = {
     "bibtex": "application/x-bibtex",
     "nbib": "text/plain",
     "json": "application/json",
+    "png": "image/png",
+    "svg": "image/svg+xml",
+    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 }
 
 
@@ -32,17 +35,19 @@ def render(st: Any, ctx: Context) -> None:
     st.caption(ctx.t("export.step1_hint"))
     what = st.radio(
         ctx.t("export.what"),
-        ["records", "results", "flow"],
+        ["records", "results", "flow", "report"],
         format_func=lambda value: ctx.t(f"export.what_{value}"),
         horizontal=True,
         key="export_what",
     )
     fmt, scope, delimiter = "csv", "all", ","
-    if what in ("records", "results"):
+    if what in ("records", "results", "flow"):
         st.markdown(f"##### {ctx.t('export.step2')}")
         st.caption(ctx.t("export.step2_hint"))
         left, middle, right = st.columns(3)
-        formats = RECORD_FORMATS if what == "records" else ("csv", "xlsx")
+        formats: tuple[str, ...] = {
+            "records": RECORD_FORMATS, "results": ("csv", "xlsx"), "flow": FLOW_FORMATS,
+        }[what]  # fmt: skip
         fmt = left.selectbox(ctx.t("export.format"), formats, key=f"export_format_{what}")
         scope = "all"
         if what == "records":
@@ -103,6 +108,8 @@ def _show_outcome(st: Any, ctx: Context, outcome: Any) -> None:
     summary = result.summary
     if summary.what == "flow":
         st.success(ctx.messages.text("cli.export.done_flow", path=summary.path))
+    elif summary.what == "report":
+        st.success(ctx.messages.text("cli.export.done_report", path=summary.path))
     else:
         st.success(
             ctx.messages.text(

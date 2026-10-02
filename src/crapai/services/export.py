@@ -25,10 +25,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
+from crapai.config.loader import load_project_config
 from crapai.enums import DuplicatesReportingMode
-from crapai.errors import ConfigError
+from crapai.errors import ConfigError, SaraError
 from crapai.io.records_store import RECORD_COLUMNS, Record, read_records
 from crapai.io.writers.bibtex import write_bibtex
+from crapai.io.writers.docx_report import write_docx_report
 from crapai.io.writers.nbib import write_nbib
 from crapai.io.writers.prisma_image import write_prisma_image
 from crapai.io.writers.ris import write_ris
@@ -36,6 +38,7 @@ from crapai.io.writers.tables import write_csv, write_xlsx
 from crapai.project.atomic import atomic_write_text
 from crapai.project.workspace import Workspace
 from crapai.services.events import project_flow, read_events
+from crapai.stats.results import Analysis
 
 logger = logging.getLogger(__name__)
 
@@ -53,13 +56,13 @@ class ExportSummary:
     """What an export wrote.
 
     Attributes:
-        what: ``records`` or ``flow``.
-        format: ``csv``, ``xlsx``, ``ris``, ``bibtex``, ``nbib`` (records) or ``json``, ``png``,
-            ``svg`` (flow).
+        what: ``records``, ``flow`` or ``report``.
+        format: ``csv``, ``xlsx``, ``ris``, ``bibtex``, ``nbib`` (records); ``json``, ``png``,
+            ``svg`` (flow); or ``docx`` (report).
         path: The file that holds the content.
         requested_path: The file that was asked for (differs from ``path`` if it was locked).
-        records: Number of records written (0 for the flow).
-        scope: Scope of a records export, ``""`` for the flow.
+        records: Number of records written (0 for the flow or the report).
+        scope: Scope of a records export, ``""`` for the flow or the report.
         used_alternative: True if the target was locked and ``path`` is a timestamped copy.
     """
 
@@ -246,6 +249,50 @@ def export_flow(
     return ExportSummary(
         what="flow",
         format="json",
+        path=written.path,
+        requested_path=target,
+        used_alternative=written.used_alternative,
+    )
+
+
+def export_report(
+    workspace: Workspace,
+    *,
+    output: Path | None = None,
+    now: datetime | None = None,
+) -> ExportSummary:
+    """Write a readable Word summary (method, PRISMA flow, screening results) as ``.docx``.
+
+    Uses only numbers this program already computes: the project's objectives and criteria, the
+    PRISMA flow (same numbers as ``--what flow``) and the results of the newest finished run, if
+    any (a project with no run yet still gets a report; that section just says so).
+
+    Raises:
+        ConfigError: E203 if ``python-docx`` is not installed, or a bad target.
+        StorageError: E404 for a folder that is no project or damaged files; E401/E403 if the
+            file cannot be written.
+    """
+    # Deferred: services.results imports from this module (ExportSummary, _target), so importing
+    # it back at module level here would be a circular import.
+    from crapai.services.results import results_table, runs_with_results
+    from crapai.stats.results import analyse
+
+    workspace = Workspace.open(workspace.root)
+    config = load_project_config(workspace.project_yaml)
+    flow, _warnings = project_flow(workspace)
+    results: tuple[str, Analysis] | None = None
+    if runs_with_results(workspace):
+        try:
+            run_id, rows = results_table(workspace)
+            results = (run_id, analyse(rows))
+        except SaraError as exc:
+            logger.warning("Report: results table not available (%s)", exc.code)
+    target = _target(workspace, output, f"report-{(now or datetime.now()):%Y%m%d-%H%M%S}.docx")
+    written = write_docx_report(target, config, flow, results, now=now)
+    logger.info("Exported the summary report to %s", written.path.name)
+    return ExportSummary(
+        what="report",
+        format="docx",
         path=written.path,
         requested_path=target,
         used_alternative=written.used_alternative,

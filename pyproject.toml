@@ -27,6 +27,7 @@ llm-anthropic = ["anthropic"]
 cli = ["typer", "rich"]
 ui = ["streamlit", "streamlit-aggrid"]
 stats = ["scikit-learn", "matplotlib"]
+report = ["python-docx"]
 dev = ["pytest", "pytest-asyncio", "pytest-cov", "hypothesis", "respx", "ruff", "mypy"]
 
 [tool.hatch.build.targets.wheel]

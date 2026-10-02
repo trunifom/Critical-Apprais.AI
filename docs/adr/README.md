@@ -29,3 +29,4 @@ Kurze Entscheidungsprotokolle. Neue Datei `NNNN-titel.md` mit *Entscheidung / Al
 - 0025 - Uneinigkeit zwischen Läufen klären: Schiedsrichter und Diskussion
 - 0026 - Volltext-Screening mit PDF-Dokumenten (löst 0015 ab)
 - 0027 - Wiederverwendbare Settings-Profile
+- 0028 - Drei zusätzliche Export-Formate (BibTeX/NBIB, PRISMA-Bild, DOCX-Bericht)

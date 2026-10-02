@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from results_helpers import project_with_run
 from typer.testing import CliRunner
 
 from crapai.cli import app
@@ -24,7 +25,7 @@ from crapai.io.writers.tables import neutralise_formula, write_csv, write_xlsx
 from crapai.project import atomic
 from crapai.project.workspace import Workspace
 from crapai.services.dedup import dedup_project
-from crapai.services.export import export_flow, export_records, select_records
+from crapai.services.export import export_flow, export_records, export_report, select_records
 from crapai.services.importing import ImportRequest, import_source
 from crapai.services.preflight import check_project
 from crapai.services.project import create_project
@@ -418,6 +419,29 @@ def test_flow_export_rejects_an_unknown_format(project: Workspace) -> None:
     assert info.value.code == "E203"
 
 
+def test_docx_report_without_any_run_still_writes_a_report(project: Workspace) -> None:
+    pytest.importorskip("docx")
+    from docx import Document
+
+    summary = export_report(project, now=NOW)
+    assert summary.path.suffix == ".docx" and summary.what == "report"
+    text = "\n".join(p.text for p in Document(summary.path).paragraphs)
+    assert "No finished screening run yet." in text
+
+
+def test_docx_report_with_a_finished_run(tmp_path: Path) -> None:
+    pytest.importorskip("docx")
+    from docx import Document
+
+    workspace = project_with_run(tmp_path, scenario="S1")
+    summary = export_report(workspace, now=NOW)
+    text = "\n".join(p.text for p in Document(summary.path).paragraphs)
+    assert "No finished screening run yet." not in text
+    assert "record(s) screened" in text
+    headers = [cell.text for t in Document(summary.path).tables for cell in t.rows[0].cells]
+    assert "PRISMA step" in headers and "Decision" in headers
+
+
 def test_flow_export_carries_stale_warnings(project: Workspace, tmp_path: Path) -> None:
     more = tmp_path / "more.ris"
     more.write_text(
@@ -471,6 +495,13 @@ def test_export_command_flow_as_png(project: Workspace) -> None:
     )
     assert result.exit_code == 0, result.output
     assert "prisma_flow.png" in result.output
+
+
+def test_export_command_report(project: Workspace) -> None:
+    pytest.importorskip("docx")
+    result = CliRunner().invoke(app, ["export", str(project.root), "--what", "report"])
+    assert result.exit_code == 0, result.output
+    assert ".docx" in result.output
 
 
 def test_export_command_reports_a_locked_target_with_exit_four(

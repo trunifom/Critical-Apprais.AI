@@ -33,6 +33,7 @@ bereitet sie auf und wird sie zusammen mit Ihren Ein- und Ausschlusskriterien ei
 | Uneinigkeit zwischen Läufen klären (`crapai adjudicate`, `crapai discuss`), ADR 0025 | **umgesetzt** (nur Befehlszeile, keine Oberflächen-Schaltfläche) |
 | Volltext-Screening mit PDF-Dokumenten (ZIP-Import, Zuordnung, `project.mode: fulltext`, Strategien truncate/sections), ADR 0026 | **umgesetzt**; Strategie `map_reduce` noch nicht (wird beim Start abgelehnt) |
 | Wiederverwendbare Settings-Profile (`crapai profile save/load/list/show/delete`), ADR 0027 | **umgesetzt** |
+| DOCX-Zusammenfassungsbericht (`crapai export --what report`), ADR 0028 | **umgesetzt** |
 | Vergleich mit menschlichen Entscheidungen (Plan Kap. 14) | in Planung |
 
 Meilenstein A („Import steht“) ist erreicht: Alle Beispieldateien in `tests/data/` lassen sich importieren und die Zahlen stimmen mit `tests/data/EXPECTED.json` überein.

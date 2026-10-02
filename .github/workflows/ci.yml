@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-      - run: python -m pip install -e ".[dev,import,cli,ui]"
+      - run: python -m pip install -e ".[dev,import,cli,ui,stats,report]"
       - run: python -m ruff check .
       - run: python -m ruff format --check src tests scripts
       - run: python -m mypy src
@@ -41,7 +41,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-      - run: python -m pip install -e ".[dev,import,cli,ui]"
+      - run: python -m pip install -e ".[dev,import,cli,ui,stats,report]"
       # Live tests call real LLM APIs and cost money: never in CI. tests/data_large is not versioned,
       # so tests that need it skip themselves.
       # -ra lists every failed/skipped test at the end, --tb=short keeps the log readable.

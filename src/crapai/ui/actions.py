@@ -40,7 +40,7 @@ from crapai.project.workspace import Workspace
 from crapai.services import screening as screening_service
 from crapai.services.cost import ProjectEstimate, estimate_project
 from crapai.services.events import project_flow
-from crapai.services.export import ExportSummary, export_flow, export_records
+from crapai.services.export import ExportSummary, export_flow, export_records, export_report
 from crapai.services.importing import ImportRequest, ImportSummary, import_source
 from crapai.services.preflight import PreflightFileResult, ProjectReport, check_file, check_project
 from crapai.services.project import DEFAULT_TEMPLATE, create_project, project_status
@@ -401,7 +401,12 @@ def run_export(
     def work() -> ExportResult:
         workspace = Workspace(folder)
         if what == "flow":
-            summary = export_flow(workspace)
+            # fmt defaults to "csv" (the page's general default, meant for records/results);
+            # for flow that means "json", the original behaviour -- the page can still choose
+            # png/svg explicitly (see ui/pages/export.py).
+            summary = export_flow(workspace, fmt="json" if fmt == "csv" else fmt)
+        elif what == "report":
+            summary = export_report(workspace)
         elif what == "results":
             summary = export_results(workspace, fmt, delimiter=delimiter)
         else:

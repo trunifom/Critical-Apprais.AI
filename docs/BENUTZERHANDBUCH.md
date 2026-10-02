@@ -728,6 +728,7 @@ crapai export mein-review --format bibtex --scope excluded     # ausgeschlossene
 crapai export mein-review --format nbib                        # als MEDLINE/.nbib
 crapai export mein-review --what flow                  # PRISMA-Flusszahlen als prisma_flow.json
 crapai export mein-review --what flow --format png     # ... oder als Grafik (PNG/SVG)
+crapai export mein-review --what report                # lesbarer Word-Bericht (.docx)
 crapai export mein-review --delimiter semicolon        # Semikolon für Excel mit deutscher Einstellung
 ```
 
@@ -735,7 +736,7 @@ Der Export **verändert das Projekt nicht**. Die Dateien landen im Ordner `expor
 
 | Option | Bedeutung |
 |---|---|
-| `--what records` (Standard) / `flow` | Datensätze, oder die PRISMA-Flusszahlen mit Warnungen, Modus und Zahl der zugrunde liegenden Ereignisse |
+| `--what records` (Standard) / `results` / `flow` / `report` | Datensätze; Screening-Ergebnisse; die PRISMA-Flusszahlen mit Warnungen, Modus und Zahl der zugrunde liegenden Ereignisse; oder ein lesbarer Word-Zusammenfassungsbericht |
 | `--format csv` (Standard) / `xlsx` / `ris` / `bibtex` / `nbib` | Tabellen für Excel; RIS/BibTeX/NBIB für Literaturverwaltung und Screening-Werkzeuge (Zotero, EndNote, Covidence, Rayyan) |
 | `--format json` (Standard bei `--what flow`) / `png` / `svg` | nur für `--what flow`: Zahlen als Datei, oder dasselbe als PRISMA-2020-Flussdiagramm (Kästen mit Pfeilen); braucht das Paket `matplotlib` (Extra `stats`), sonst `E203` |
 | `--scope all` (Standard) / `screenable` / `excluded` | alle Datensätze, nur die, die ans Modell gehen, oder nur die mit Ausschlussgrund |
@@ -749,6 +750,7 @@ Der Export **verändert das Projekt nicht**. Die Dateien landen im Ordner `expor
 * **BibTeX:** Jeder Datensatz ein `@typ{study_uid, ...}`-Eintrag; Ausschlussgrund, Duplikatsverweis und zurückgezogene Publikation stehen im Feld `note`, wie bei RIS.
 * **NBIB/MEDLINE:** Jeder Datensatz ein Block im PubMed-Format (`PMID-`, `TI  -`, `FAU -`, ...). Anders als bei RIS/BibTeX gibt es **kein** Feld für Ausschlussgrund/Duplikat/Rückzug (MEDLINE kennt kein passendes freies Textfeld dafür); für diese Vermerke RIS oder BibTeX verwenden. **Wichtig:** Ein Export ohne jegliche PMID (`pmid`-Spalte überall leer) lässt sich von unserem eigenen NBIB-Lesemodul nicht wieder einlesen, weil MEDLINE PMID als Erkennungsmerkmal braucht - eine Eigenschaft des Formats, kein Fehler dieses Programms.
 * **Schutz vor Formeln (CSV-Injektion):** Ein Titel wie `=HYPERLINK(...)` würde in Excel als Formel laufen. Zellen, die mit `=`, `+`, `-`, `@`, Tabulator oder Zeilenumbruch beginnen, erhalten darum ein vorangestelltes `'` und bleiben Text. Mit `--raw` entfällt der Schutz; öffnen Sie solche Dateien dann nicht in Excel.
+* **Zusammenfassungsbericht (`--what report`):** eine lesbare `.docx`-Datei für Publikationen oder Anträge - Ziele, Kriterien, PRISMA-Fluss als Tabelle und die Ergebnisse des neusten abgeschlossenen Laufs (falls vorhanden; ohne Lauf steht dort ein Hinweis statt einer Tabelle). Erfindet keine Zahl: alles stammt aus bereits vorhandenen Werten. Braucht das Paket `python-docx` (Extra `report`), sonst Fehler `E203`.
 * **Datei in Excel geöffnet?** Die Zieldatei wird nicht überschrieben: Der Export wird unter einem Namen mit Zeitstempel gespeichert, das Programm sagt es, und der Rückgabecode ist 4.
 * Fehler: `E203` bei unbekanntem Format, Umfang oder Modus oder ungültigem Zielpfad; `E404` für einen Ordner ohne Projekt; `E401`/`E403`, wenn nicht geschrieben werden kann.
 
@@ -886,5 +888,5 @@ bestätigen (Rückfrage oder `--yes`). Es gibt keine Telemetrie.
 
 ## 10. Was noch kommt
 
-Der Vergleich mit menschlichen Entscheidungen, die `map_reduce`-Strategie für das Volltext-Screening, und ein DOCX-Zusammenfassungsbericht. Den Stand finden Sie in
+Der Vergleich mit menschlichen Entscheidungen und die `map_reduce`-Strategie für das Volltext-Screening. Den Stand finden Sie in
 `docs/UMSETZUNGSPLAN_UND_FORTSCHRITT.md`; die Änderungen je Version in `CHANGELOG.md`.
