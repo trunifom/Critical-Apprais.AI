@@ -29,7 +29,15 @@ import yaml
 from crapai import __version__
 from crapai.branding import CLI_NAME, PRODUCT_NAME
 from crapai.cli_progress import ProgressPrinter
+from crapai.config.loader import load_project_config
 from crapai.config.overrides import effective_settings, reset_values, set_values
+from crapai.config.profiles import (
+    apply_profile,
+    delete_profile,
+    list_profiles,
+    load_profile,
+    save_profile,
+)
 from crapai.cost.duration import Confirmation, decide_confirmation, format_duration
 from crapai.errors import UNEXPECTED_ERROR_CODE, ConfigError, SaraError
 from crapai.i18n.messages import Messages, resolve_language
@@ -783,6 +791,117 @@ def config_reset(
         typer.echo(messages.text("cli.config.reset_none"))
         return
     typer.secho(messages.text("cli.config.reset_done", count=len(removed)), fg="green")
+
+
+profile_app = typer.Typer(
+    help="Save or load a reusable settings profile (objectives, criteria, screening, llm; "
+    "ADR 0027). Profiles live in your user folder, not in any one project.",
+    no_args_is_help=True,
+)
+app.add_typer(profile_app, name="profile")
+
+
+@profile_app.command("save")
+def profile_save_command(
+    folder: Annotated[Path, typer.Argument(help="Project folder to save settings from.")],
+    name: Annotated[str, typer.Argument(help="Name for the profile.")],
+    lang: LangOption = None,
+) -> None:
+    """Save this project's objectives, criteria, screening and model settings as a profile.
+
+    Saves the *effective* settings (project.yaml with project.overrides.yaml applied), not just
+    project.yaml. A profile of the same name is overwritten.
+    Example: crapai profile save my-review systematic-review-default
+    """
+    messages = Messages(resolve_language(lang, folder / "project.yaml"))
+    _setup_file_log(folder, messages)
+    try:
+        config = load_project_config(Workspace.open(folder).project_yaml)
+        path = save_profile(name, config)
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        raise _fail(error, messages, json_mode=False) from error
+    typer.secho(messages.text("cli.profile.saved", name=name, path=path), fg="green")
+
+
+@profile_app.command("load")
+def profile_load_command(
+    folder: Annotated[Path, typer.Argument(help="Project folder to load settings into.")],
+    name: Annotated[str, typer.Argument(help="Name of the saved profile.")],
+    lang: LangOption = None,
+) -> None:
+    """Load a saved profile into this project (project.overrides.yaml; project.yaml is untouched).
+
+    Example: crapai profile load my-review systematic-review-default
+    """
+    messages = Messages(resolve_language(lang, folder / "project.yaml"))
+    _setup_file_log(folder, messages)
+    try:
+        workspace = Workspace.open(folder)
+        with workspace.lock():
+            sections = apply_profile(workspace.project_yaml, name)
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        raise _fail(error, messages, json_mode=False) from error
+    typer.secho(messages.text("cli.profile.loaded", name=name, count=len(sections)), fg="green")
+
+
+@profile_app.command("list")
+def profile_list_command(as_json: JsonOption = False, lang: LangOption = None) -> None:
+    """List the names of every saved settings profile.
+
+    Example: crapai profile list
+    """
+    messages = Messages(resolve_language(lang, None))
+    names = list_profiles()
+    if as_json:
+        typer.echo(json.dumps(names, ensure_ascii=False, indent=2))
+        return
+    if not names:
+        typer.echo(messages.text("cli.profile.none"))
+        return
+    for name in names:
+        typer.echo(name)
+
+
+@profile_app.command("show")
+def profile_show_command(
+    name: Annotated[str, typer.Argument(help="Name of the saved profile.")],
+    as_json: JsonOption = False,
+    lang: LangOption = None,
+) -> None:
+    """Show a saved profile's settings.
+
+    Example: crapai profile show systematic-review-default
+    """
+    messages = Messages(resolve_language(lang, None))
+    try:
+        profile = load_profile(name)
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        raise _fail(error, messages, json_mode=as_json) from error
+    data = profile.model_dump(mode="json", by_alias=True)
+    if as_json:
+        typer.echo(json.dumps(data, ensure_ascii=False, indent=2))
+        return
+    typer.echo(yaml.safe_dump(data, sort_keys=False, allow_unicode=True))
+
+
+@profile_app.command("delete")
+def profile_delete_command(
+    name: Annotated[str, typer.Argument(help="Name of the saved profile.")],
+    lang: LangOption = None,
+) -> None:
+    """Delete a saved settings profile.
+
+    Example: crapai profile delete old-design
+    """
+    messages = Messages(resolve_language(lang, None))
+    try:
+        existed = delete_profile(name)
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        raise _fail(error, messages, json_mode=False) from error
+    if not existed:
+        typer.secho(messages.text("cli.profile.not_found", name=name), fg="yellow")
+        raise typer.Exit(EXIT_USER_ERROR)
+    typer.secho(messages.text("cli.profile.deleted", name=name), fg="green")
 
 
 @app.command("export")

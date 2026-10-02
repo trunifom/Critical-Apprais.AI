@@ -493,6 +493,24 @@ crapai config reset mein-review limits.rpm  # eine Einstellung zurück (ohne Nam
 
 Die Hinweise zur Abstract-Qualität sind **nur Hinweise**: Sie schliessen nie einen Datensatz aus. Falsch gesetzte Werte kosten deshalb nichts ausser einer Warnung.
 
+## 6p. Wiederverwendbare Settings-Profile: `crapai profile` (ADR 0027)
+
+Ziele, Kriterien, Screening-Einstellungen und Modellwahl eines Projekts als benannte Vorlage sichern und in ein anderes (oder neues) Projekt laden - zum Beispiel eine bewährte Kriterienliste für mehrere ähnliche Reviews wiederverwenden.
+
+```powershell
+crapai profile save mein-review mein-standard-entwurf   # aus dem Projekt speichern
+crapai profile list                                     # alle gespeicherten Namen
+crapai profile show mein-standard-entwurf               # Inhalt ansehen
+crapai profile load anderes-review mein-standard-entwurf  # in ein anderes Projekt laden
+crapai profile delete mein-standard-entwurf
+```
+
+* **Was gespeichert wird:** `objectives`, `criteria`, `screening` (auch die Volltext-Einstellungen, Abschnitt 6o) und `llm` (auch `api_key_env` - immer nur der **Name** der Umgebungsvariable, nie der Schlüssel selbst). **Nicht** gespeichert: Titel, Beschreibung, Sprache und Modus des Projekts sowie alles Betriebliche (`run`, `limits`, Vorfilter, Duplikat-Einstellungen) - das sind projektspezifische Dinge, kein wiederverwendbares „Review-Design“.
+* **Wo Profile liegen:** `~/.config/crapai/profiles/<name>.yaml`, ausserhalb jedes Projekts (neben der optionalen Benutzerdatei `config.yaml`). Dieselbe Datei lässt sich von Hand kopieren oder teilen.
+* **`crapai profile save`** liest die **wirksamen** Einstellungen (`project.yaml` mit `project.overrides.yaml` darüber, wie `crapai config show` sie zeigt) - ein Profil spiegelt also, was ein Projekt gerade tatsächlich tut, auch wenn Sie Werte über die Oberfläche geändert haben. Ein Profil desselben Namens wird überschrieben.
+* **`crapai profile load`** schreibt die vier Abschnitte in `project.overrides.yaml` - genau wie `crapai config set` oder die Oberfläche. **Die `project.yaml` wird nie verändert** (Ihre Kommentare bleiben); andere, schon vorhandene Overrides bleiben erhalten; rückgängig mit `crapai config reset`.
+* Ein unbekannter Profilname ist ein Fehler (E203), kein stilles Nichtstun.
+
 ## 6k. Das Screening: `crapai screen`
 
 Dieser Befehl schickt die Datensätze, die nicht ausgeschlossen sind, **einzeln** an das Sprachmodell und speichert für jeden Datensatz einen Vorschlag (`INCLUDE`, `EXCLUDE` oder `UNCERTAIN`) mit Begründung. **Die Vorschläge ersetzen nie Ihre Entscheidung:** jeder Vorschlag wird von Menschen geprüft.

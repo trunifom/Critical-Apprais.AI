@@ -193,6 +193,12 @@ cli:
       project: "project.yaml"
       user: "user configuration"
       default: "default"
+  profile:
+    saved: "Saved settings profile '{name}' to {path}."
+    loaded: "Loaded settings profile '{name}' ({count} section(s): objectives, criteria, screening, llm). project.yaml is unchanged; undo with 'crapai config reset'."
+    none: "No settings profiles saved yet. Create one with 'crapai profile save <project> <name>'."
+    not_found: "There is no settings profile '{name}'."
+    deleted: "Deleted settings profile '{name}'."
   ui:
     starting: "Starting the interface at http://127.0.0.1:{port} (stop it with Ctrl+C). It runs on this computer only."
   unlock:
@@ -616,8 +622,8 @@ errors:
     action: "Name the column yourself, for example --map abstract=<column>."
   E105:
     title: "The ZIP file contains no readable PDFs."
-    cause: "PDF import is not part of version 1."
-    action: "Import a bibliographic export instead."
+    cause: "Every entry was skipped (not a .pdf, __MACOSX/, or a hidden ._ file) or none could be opened."
+    action: "Check the ZIP; only a ZIP that contains at least one PDF can be imported (see E102)."
   E106:
     title: "This file has already been imported."
     cause: "A file with identical content is listed in the import log."
@@ -784,6 +790,14 @@ ui:
     changed_here: "changed here"
     bad_value: "The value of {key} is not valid."
     sources: "Where do the values come from?"
+    profiles_hint: "Save this project's objectives, criteria, screening and model settings (ADR 0027) as a reusable profile, or load a saved one. project.yaml is never touched; a loaded profile goes to project.overrides.yaml like the form above."
+    profile_name: "Name for a new profile"
+    profile_save: "Save as profile"
+    profile_saved: "Saved as profile \"{name}\"."
+    profile_choose: "Saved profile"
+    profile_load: "Load profile"
+    profile_loaded: "Loaded profile \"{name}\"."
+    profile_none: "No settings profiles saved yet."
   tagline: "AI-assisted title/abstract screening for systematic reviews. Everything stays on this computer."
   disclaimer: "Results are proposals. A human must review every decision."
   language: "Language"
@@ -1050,6 +1064,10 @@ ui:
     download_log: "Saves the log as a text file, for example for a bug report. It contains no keys and no abstracts."
     reset_settings: "Undoes all changes made here. The values of the project file apply again."
     save_settings: "Checks the entries and saves only the changes in project.overrides.yaml. The project file stays unchanged."
+    profile_name: "A short name for the new profile, for example 'systematic-review-default'."
+    profile_save: "Saves this project's current objectives, criteria, screening and model settings as a profile with this name (overwrites a profile of the same name)."
+    profile_pick: "Choose a saved profile to load into this project."
+    profile_load: "Loads the chosen profile into project.overrides.yaml. project.yaml is never touched; undo with 'Reset all changes' above or 'crapai config reset'."
     setting:
       dedup_strategy: "What duplicates are recognised by. \"doi_or_title\": same DOI or same title (recommended); \"strict_ids\": only same DOI/PMID; \"title\": title only; \"title_authors\": title and authors."
       dedup_min_title_words: "Very short titles (for example \"Editorial\") would often be false matches. Example: 4 means a title with fewer than 4 words never counts as a duplicate by title alone."
@@ -1300,6 +1318,7 @@ ui:
   settings:
     title: "Settings"
     form: "Project settings"
+    profiles: "Settings profiles"
     language: "Language"
     language_hint: "The language is changed in the sidebar."
     log_level: "Log level"

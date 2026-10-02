@@ -185,6 +185,12 @@ cli:
       project: "project.yaml"
       user: "Benutzereinstellung"
       default: "Standard"
+  profile:
+    saved: "Settings-Profil «{name}» gespeichert unter {path}."
+    loaded: "Settings-Profil «{name}» geladen ({count} Abschnitt(e): objectives, criteria, screening, llm). Die project.yaml bleibt unverändert; rückgängig mit «crapai config reset»."
+    none: "Noch kein Settings-Profil gespeichert. Anlegen mit «crapai profile save <projekt> <name>»."
+    not_found: "Es gibt kein Settings-Profil «{name}»."
+    deleted: "Settings-Profil «{name}» gelöscht."
   ui:
     starting: "Die Oberfläche startet unter http://127.0.0.1:{port} (beenden mit Strg+C). Sie läuft nur auf diesem Rechner."
   unlock:
@@ -607,8 +613,8 @@ errors:
     action: "Nennen Sie die Spalte selbst, zum Beispiel --map abstract=<spalte>."
   E105:
     title: "Die ZIP-Datei enthält keine lesbaren PDFs."
-    cause: "Der PDF-Import gehört nicht zu Version 1."
-    action: "Importieren Sie stattdessen einen bibliografischen Export."
+    cause: "Jeder Eintrag wurde übersprungen (kein .pdf, __MACOSX/ oder eine versteckte ._-Datei) oder keiner liess sich öffnen."
+    action: "Die ZIP-Datei prüfen; importiert wird nur ein ZIP mit mindestens einer PDF (siehe E102)."
   E106:
     title: "Diese Datei wurde bereits importiert."
     cause: "Eine Datei mit identischem Inhalt steht im Import-Protokoll."
@@ -775,6 +781,14 @@ ui:
     changed_here: "hier geändert"
     bad_value: "Der Wert von {key} ist nicht gültig."
     sources: "Woher stammen die Werte?"
+    profiles_hint: "Ziele, Kriterien, Screening- und Modell-Einstellungen dieses Projekts (ADR 0027) als wiederverwendbares Profil speichern, oder ein gespeichertes laden. Die project.yaml bleibt unverändert; ein geladenes Profil geht wie das Formular oben in project.overrides.yaml."
+    profile_name: "Name für ein neues Profil"
+    profile_save: "Als Profil speichern"
+    profile_saved: "Als Profil «{name}» gespeichert."
+    profile_choose: "Gespeichertes Profil"
+    profile_load: "Profil laden"
+    profile_loaded: "Profil «{name}» geladen."
+    profile_none: "Noch kein Settings-Profil gespeichert."
   tagline: "KI-gestütztes Screening von Titeln und Abstracts für systematische Reviews. Alles bleibt auf diesem Rechner."
   disclaimer: "Die Ergebnisse sind Vorschläge. Jede Entscheidung muss von Menschen geprüft werden."
   language: "Sprache"
@@ -1041,6 +1055,10 @@ ui:
     download_log: "Speichert das Protokoll als Textdatei, zum Beispiel für eine Fehlermeldung. Es enthält keine Schlüssel und keine Abstracts."
     reset_settings: "Macht alle hier gemachten Änderungen rückgängig. Die Werte der Projektdatei gelten wieder."
     save_settings: "Prüft die Eingaben und speichert nur die Änderungen in project.overrides.yaml. Die Projektdatei bleibt unverändert."
+    profile_name: "Ein kurzer Name für das neue Profil, zum Beispiel «systematic-review-default»."
+    profile_save: "Speichert die aktuellen Ziele, Kriterien, Screening- und Modell-Einstellungen dieses Projekts unter diesem Namen (überschreibt ein gleichnamiges Profil)."
+    profile_pick: "Ein gespeichertes Profil auswählen, das in dieses Projekt geladen werden soll."
+    profile_load: "Lädt das gewählte Profil in project.overrides.yaml. Die project.yaml bleibt unverändert; rückgängig mit «Alle Änderungen zurücksetzen» oben oder «crapai config reset»."
     setting:
       dedup_strategy: "Wonach Duplikate erkannt werden. «doi_or_title»: gleiche DOI oder gleicher Titel (empfohlen); «strict_ids»: nur gleiche DOI/PMID; «title»: nur Titel; «title_authors»: Titel und Autor:innen."
       dedup_min_title_words: "Sehr kurze Titel (zum Beispiel «Editorial») wären sonst oft falsche Treffer. Beispiel: 4 heisst, dass ein Titel mit weniger als 4 Wörtern nie allein über den Titel als Duplikat gilt."
@@ -1291,6 +1309,7 @@ ui:
   settings:
     title: "Einstellungen"
     form: "Einstellungen des Projekts"
+    profiles: "Settings-Profile"
     language: "Sprache"
     language_hint: "Die Sprache wird in der Seitenleiste geändert."
     log_level: "Protokollstufe"

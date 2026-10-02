@@ -59,9 +59,38 @@ def _report(st: Any, ctx: Context, count: int, done: str, none: str) -> None:
     st.success(ctx.t(done, count=count) if count else ctx.t(none))
 
 
+def _profiles(st: Any, ctx: Context, folder: Path) -> None:
+    """Save the current settings as a reusable profile, or load a saved one (ADR 0027)."""
+    st.subheader(ctx.t("settings.profiles"))
+    st.caption(ctx.t("settings_form.profiles_hint"))
+    names = actions.saved_profile_names()
+    col_save, col_load = st.columns(2)
+    with col_save:
+        new_name = st.text_input(ctx.t("settings_form.profile_name"), key="profile_name")
+        if st.button(ctx.t("settings_form.profile_save"), key="profile_save") and new_name.strip():
+            outcome = actions.save_as_profile(ctx.messages, folder, new_name.strip())
+            if outcome.error is not None:
+                show_error(st, ctx, outcome.error)
+            else:
+                st.success(ctx.t("settings_form.profile_saved", name=new_name.strip()))
+    with col_load:
+        if names:
+            chosen = st.selectbox(ctx.t("settings_form.profile_choose"), names, key="profile_pick")
+            if st.button(ctx.t("settings_form.profile_load"), key="profile_load"):
+                outcome_load = actions.load_profile_into(ctx.messages, folder, chosen)
+                if outcome_load.error is not None:
+                    show_error(st, ctx, outcome_load.error)
+                else:
+                    st.session_state[VERSION_KEY] = st.session_state.get(VERSION_KEY, 0) + 1
+                    st.success(ctx.t("settings_form.profile_loaded", name=chosen))
+        else:
+            st.caption(ctx.t("settings_form.profile_none"))
+
+
 def _form(st: Any, ctx: Context, folder: Path) -> None:
     st.subheader(ctx.t("settings.form"))
     st.caption(ctx.t("settings_form.intro"))
+    _profiles(st, ctx, folder)
     settings = actions.load_settings(folder)
     if not settings:
         return

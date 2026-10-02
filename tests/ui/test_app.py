@@ -327,7 +327,7 @@ def test_the_settings_form_saves_a_change_and_can_reset_it(
     assert field.value == 40
     field.set_value(25)
     at.run()
-    at.button[0].click()  # the submit button of the form
+    at.button(key="save_settings").click()
     at.run()
     assert not at.exception
     overrides = (empty_project / "project.overrides.yaml").read_text(encoding="utf-8")
@@ -350,7 +350,7 @@ def test_the_settings_form_offers_fulltext_mode_and_strategy(
     assert set(strategy.options) == {"truncate", "sections"}
     mode.set_value("fulltext")
     at.run()
-    at.button[0].click()
+    at.button(key="save_settings").click()
     at.run()
     assert not at.exception
     overrides = (empty_project / "project.overrides.yaml").read_text(encoding="utf-8")

@@ -29,6 +29,7 @@ import yaml
 from crapai.config.loader import load_project_config, validate_config
 from crapai.config.models import ProjectConfig
 from crapai.config.overrides import Setting, effective_settings, reset_values, set_values
+from crapai.config.profiles import apply_profile, list_profiles, save_profile
 from crapai.cost.pricing import CsvPriceSource
 from crapai.errors import ConfigError, SaraError, StorageError
 from crapai.i18n.messages import ErrorReport, Messages
@@ -216,6 +217,40 @@ def reset_settings(messages: Messages, folder: Path) -> Outcome[list[str]]:
         return removed
 
     return guarded(messages, work, name="reset settings")
+
+
+def saved_profile_names() -> list[str]:
+    """Names of every saved settings profile, sorted (empty if none are saved, never raises)."""
+    try:
+        return list_profiles()
+    except SaraError as error:
+        logger.warning("Settings profiles not readable: %s", error.code)
+        return []
+
+
+def save_as_profile(messages: Messages, folder: Path, name: str) -> Outcome[Path]:
+    """Save this project's effective objectives/criteria/screening/llm as a named profile."""
+
+    def work() -> Path:
+        config = load_project_config(Workspace.open(folder).project_yaml)
+        path = save_profile(name, config)
+        logger.info("Saved settings profile '%s' from the interface", name)
+        return path
+
+    return guarded(messages, work, name="save profile")
+
+
+def load_profile_into(messages: Messages, folder: Path, name: str) -> Outcome[dict[str, Any]]:
+    """Load a saved profile into this project's overrides (``project.yaml`` stays untouched)."""
+
+    def work() -> dict[str, Any]:
+        workspace = Workspace.open(folder)
+        with workspace.lock():
+            sections = apply_profile(workspace.project_yaml, name)
+        logger.info("Loaded settings profile '%s' in the interface", name)
+        return sections
+
+    return guarded(messages, work, name="load profile")
 
 
 def read_pricing_table(messages: Messages, path: Path) -> Outcome[list[dict[str, str]]]:

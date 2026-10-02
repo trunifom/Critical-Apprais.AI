@@ -16,7 +16,7 @@ Kurze Entscheidungsprotokolle. Neue Datei `NNNN-titel.md` mit *Entscheidung / Al
 - 0012 - Fehlercodes und i18n-Schlüssel je Fehler
 - 0013 - GUI-Framework Streamlit
 - 0014 - SwissGPT als voraussichtlicher Hauptanbieter
-- 0015 - Volltext-Screening nicht in Version 1
+- 0015 - Volltext-Screening nicht in Version 1 (ersetzt durch 0026)
 - 0016 - Lizenz des Codes: PolyForm Noncommercial 1.0.0
 - 0017 - Technische Namen: Kurzform CrAp-AI, Paket und Befehl `crapai`
 - 0018 - Markieren statt Löschen: Ausschlussgründe, Reihenfolge, Vorsicht bei Duplikaten
@@ -24,3 +24,8 @@ Kurze Entscheidungsprotokolle. Neue Datei `NNNN-titel.md` mit *Entscheidung / Al
 - 0020 - Ergebnisse der Gesamtprüfung: Sperre, Ereignisse, Dedup, Fehlerbehandlung
 - 0021 - Einstellungen statt fester Zahlen, Überschreibdatei, unscharfe Duplikate ohne Zusatzpaket
 - 0022 - Screening-Kern: Päckchen, Prüfung auf der Platte, Zustände, Fortsetzen
+- 0023 - Stichwort-Vorfilter und Prompt-Kontext
+- 0024 - Vergleich mehrerer Läufe (Test-Retest)
+- 0025 - Uneinigkeit zwischen Läufen klären: Schiedsrichter und Diskussion
+- 0026 - Volltext-Screening mit PDF-Dokumenten (löst 0015 ab)
+- 0027 - Wiederverwendbare Settings-Profile
