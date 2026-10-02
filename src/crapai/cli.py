@@ -58,6 +58,7 @@ from crapai.services.dedup import dedup_project
 from crapai.services.export import (
     ExportSummary,
     export_flow,
+    export_prospero,
     export_records,
     export_report,
 )
@@ -65,6 +66,7 @@ from crapai.services.importing import ImportRequest, ImportSummary, import_sourc
 from crapai.services.preflight import ProjectReport, check_project
 from crapai.services.project import DEFAULT_TEMPLATE, create_project, project_status
 from crapai.services.results import compare_runs, export_comparison, export_results
+from crapai.services.zotero_import import zotero_import_project
 from crapai.stats.agreement import ComparisonSummary
 from crapai.ui.context import PROJECT_ENV
 
@@ -359,6 +361,40 @@ def _print_import(summary: ImportSummary, messages: Messages, *, json_mode: bool
             json_mode=json_mode,
             colour="yellow",
         )
+
+
+@app.command("zotero-import")
+def zotero_import_command(
+    folder: Annotated[Path, typer.Argument(help="Project folder.")],
+    label: Annotated[str, typer.Option("--label", help="Source name for the imported records.")] = (
+        "Zotero"
+    ),
+    force: Annotated[
+        bool, typer.Option("--force", help="Import even if the fetched text matches a past sync.")
+    ] = False,
+    as_json: JsonOption = False,
+    lang: LangOption = None,
+) -> None:
+    """Pull a Zotero library or collection into the project, read-only (ADR 0030).
+
+    Settings (library, collection, API key, format) come from project.yaml's zotero: section, not
+    from options here. The fetched text is saved under sources/ and imported exactly like any
+    other file (records are added, never deleted); a repeat sync that finds records already in
+    the project is left to the ordinary duplicate detection (crapai dedup), not to --force.
+
+    Example: crapai zotero-import my-review --label "My Zotero library"
+    """
+    messages = Messages(resolve_language(lang, folder / "project.yaml"))
+    _setup_file_log(folder, messages)
+    try:
+        summary = zotero_import_project(Workspace(folder), label=label, force=force)
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        raise _fail(error, messages, json_mode=as_json) from error
+    if as_json:
+        typer.echo(json.dumps(_summary_json(summary), ensure_ascii=False, indent=2))
+    else:
+        _print_import(summary, messages, json_mode=as_json)
+    raise typer.Exit(EXIT_WARNINGS if summary.warnings else EXIT_OK)
 
 
 @app.command("status")
@@ -916,7 +952,9 @@ def export_command(
     folder: Annotated[Path, typer.Argument(help="Project folder.")],
     what: Annotated[
         str,
-        typer.Option("--what", help="records, results (screening results), flow or report."),
+        typer.Option(
+            "--what", help="records, results (screening results), flow, report or prospero."
+        ),
     ] = "records",
     fmt: Annotated[
         str,
@@ -948,8 +986,9 @@ def export_command(
     as_json: JsonOption = False,
     lang: LangOption = None,
 ) -> None:
-    """Export records (CSV, XLSX, RIS, BibTeX, NBIB), results (CSV, XLSX), the PRISMA flow, or a
-    readable DOCX summary report (method, PRISMA flow, screening results).
+    """Export records (CSV, XLSX, RIS, BibTeX, NBIB), results (CSV, XLSX), the PRISMA flow, a
+    readable DOCX summary report (method, PRISMA flow, screening results), or a pre-filled
+    PROSPERO protocol draft (DOCX, to copy into PROSPERO's own web form -- ADR 0031).
 
     The project is not changed. A target that is open in Excel is not overwritten: the export is
     saved under a timestamped name and the exit code is 4.
@@ -958,9 +997,10 @@ def export_command(
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
     _setup_file_log(folder, messages)
     try:
-        if what not in ("records", "results", "flow", "report"):
+        if what not in ("records", "results", "flow", "report", "prospero"):
             raise ConfigError(
-                f"Unknown --what '{what}' (valid: records, results, flow, report)", code="E203"
+                f"Unknown --what '{what}' (valid: records, results, flow, report, prospero)",
+                code="E203",
             )
         separator = {"tab": "\t", "semicolon": ";", "comma": ","}.get(delimiter.lower(), delimiter)
         if what == "flow":
@@ -970,6 +1010,8 @@ def export_command(
             summary = export_flow(Workspace(folder), fmt=flow_fmt, output=output, mode=mode)
         elif what == "report":
             summary = export_report(Workspace(folder), output=output)
+        elif what == "prospero":
+            summary = export_prospero(Workspace(folder), output=output)
         elif what == "results":
             summary = export_results(
                 Workspace(folder),
@@ -1004,6 +1046,8 @@ def _print_export(summary: ExportSummary, messages: Messages) -> None:
         typer.secho(messages.text("cli.export.done_flow", path=summary.path), fg="green")
     elif summary.what == "report":
         typer.secho(messages.text("cli.export.done_report", path=summary.path), fg="green")
+    elif summary.what == "prospero":
+        typer.secho(messages.text("cli.export.done_prospero", path=summary.path), fg="green")
     else:
         typer.secho(
             messages.text(

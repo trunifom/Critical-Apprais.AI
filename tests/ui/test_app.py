@@ -141,6 +141,39 @@ def test_the_data_page_shows_the_records_and_filters_them(
     assert not at.exception
 
 
+def test_the_zotero_section_is_hidden_behind_a_configured_library_id(
+    monkeypatch: pytest.MonkeyPatch, filled_project: Path
+) -> None:
+    at = fresh(monkeypatch, filled_project).run()
+    goto(at, "data")
+    assert not at.exception
+    assert "zotero_import_button" not in {b.key for b in at.button}
+    assert "not set up yet" in page_text(at).lower() or "einrichten" in page_text(at).lower()
+
+
+def test_the_zotero_section_imports_records(
+    monkeypatch: pytest.MonkeyPatch, filled_project: Path
+) -> None:
+    import yaml
+
+    from crapai.services import zotero_import as zotero_module
+    from crapai.zotero.client import MockZoteroClient
+
+    text = "TY  - JOUR\nTI  - Exercise therapy for mood disorders\nDO  - 10.1000/zz9\nAB  - x.\nER  - \n"
+    monkeypatch.setattr(zotero_module, "build_client", lambda *a, **kw: MockZoteroClient(text))
+    data = yaml.safe_load((filled_project / "project.yaml").read_text(encoding="utf-8"))
+    data["zotero"] = {"library_id": "123", "api_key_env": ""}
+    (filled_project / "project.yaml").write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+
+    at = fresh(monkeypatch, filled_project).run()
+    goto(at, "data")
+    assert not at.exception
+    at.button(key="zotero_import_button").click()
+    at.run()
+    assert not at.exception
+    assert "imported" in page_text(at).lower() or "importiert" in page_text(at).lower()
+
+
 def test_the_check_runs_and_shows_duplicates_and_the_estimate(
     monkeypatch: pytest.MonkeyPatch, filled_project: Path
 ) -> None:

@@ -33,6 +33,7 @@ from crapai.io.writers.bibtex import write_bibtex
 from crapai.io.writers.docx_report import write_docx_report
 from crapai.io.writers.nbib import write_nbib
 from crapai.io.writers.prisma_image import write_prisma_image
+from crapai.io.writers.prospero_protocol import write_prospero_protocol
 from crapai.io.writers.ris import write_ris
 from crapai.io.writers.tables import write_csv, write_xlsx
 from crapai.project.atomic import atomic_write_text
@@ -299,6 +300,35 @@ def export_report(
     logger.info("Exported the summary report to %s", written.path.name)
     return ExportSummary(
         what="report",
+        format="docx",
+        path=written.path,
+        requested_path=target,
+        used_alternative=written.used_alternative,
+    )
+
+
+def export_prospero(
+    workspace: Workspace, *, output: Path | None = None, now: datetime | None = None
+) -> ExportSummary:
+    """Write a pre-filled PROSPERO protocol draft as ``.docx`` (ADR 0031).
+
+    PROSPERO has no public submission API; this only drafts a document to copy into PROSPERO's
+    own web form. Fields PROSPERO asks for that this project does not track (full search
+    strategy, risk-of-bias method, synthesis plan) are shown as a visible placeholder, not left
+    out.
+
+    Raises:
+        ConfigError: E203 if ``python-docx`` is not installed, or a bad target.
+        StorageError: E404 for a folder that is no project or damaged files; E401/E403 if the
+            file cannot be written.
+    """
+    workspace = Workspace.open(workspace.root)
+    config = load_project_config(workspace.project_yaml)
+    target = _target(workspace, output, f"prospero-{(now or datetime.now()):%Y%m%d-%H%M%S}.docx")
+    written = write_prospero_protocol(target, config, now=now)
+    logger.info("Exported the PROSPERO protocol draft to %s", written.path.name)
+    return ExportSummary(
+        what="prospero",
         format="docx",
         path=written.path,
         requested_path=target,

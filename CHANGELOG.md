@@ -7,6 +7,35 @@ Jeder Eintrag verweist auf die Aufgabenkarte; die genauen Commits stehen in `doc
 
 ## [Unveröffentlicht] - 0.0.1
 
+### Zotero-Import, nur lesend (ADR 0030)
+
+Zotero hat eine erreichbare Web-API, die Treffer direkt als RIS- oder BibTeX-Text liefert - genau
+die Formate, die dieses Projekt schon lesen kann. `crapai zotero-import` holt deshalb eine
+Bibliothek oder Sammlung ab und reicht den Text an die gewöhnliche Import-Pipeline weiter, statt
+einen eigenen Parser zu bauen. **Nur lesend:** nichts wird je nach Zotero zurückgeschrieben.
+
+* Neues Paket `src/crapai/zotero/` (`ZoteroClient`, `MockZoteroClient`), neues Extra `zotero`.
+* Neues Konfigurationsmodell `zotero:` (`project.yaml`): Bibliothekstyp/-ID, Sammlung, Schlüssel-
+  Umgebungsvariable, Format. Kein "enabled"-Schalter - läuft nur über den eigenen Befehl.
+* `crapai zotero-import` (CLI) und ein neuer Abschnitt auf der Daten-Seite (Oberfläche).
+* Kein eigener "schon synchronisiert"-Mechanismus: die bestehende Duplikat-Erkennung
+  (`crapai dedup`) erkennt erneut geholte, bereits bekannte Datensätze wie gewohnt.
+
+### PROSPERO-Protokoll-Entwurf (ADR 0031)
+
+PROSPERO (internationales Register für Review-Protokolle, University of York) hat keine
+öffentliche Einreichungs-API - nur ein Webformular. `crapai export mein-review --what prospero`
+schreibt deshalb einen **Entwurf** (`.docx`), der so viele Formularfelder wie möglich aus bereits
+vorhandenen Projektdaten (Titel, Ziele, Kriterien, Sprach-/Jahreseinschränkungen) vorausfüllt, mit
+sichtbarem Platzhalter überall dort, wo PROSPERO mehr erfragt, als dieses Projekt erfasst
+(Suchstrategie, Risk-of-Bias-Methode, Synthese-Plan). Keine automatische Einreichung, keine neue
+Abhängigkeit (nutzt das bestehende Extra `report`).
+
+* Neues Konfigurationsmodell `prospero:` (`project.yaml`): Start-/Abschlussdatum, Stand, Team,
+  korrespondierende Autorin/Autor, Finanzierung, Interessenkonflikte, frühere Registrierung - alle
+  Felder leer per Vorgabe, wirken sich auf nichts anderes aus.
+* `crapai export --what prospero` (CLI) und eine vierte Auswahl auf der Export-Seite (Oberfläche).
+
 ### Optionaler KI-Vorfilter mit Jev (ADR 0029)
 
 Auf Wunsch der Projektleitung recherchiert und als expliziter Spezialmodus umgesetzt: Jev (TypeSafe AI) ist kein Chat-Completion-Modell, sondern beantwortet eine einzige typisierte Ja/Nein-Frage mit kalibrierter Wahrscheinlichkeit, nie mit Fliesstext - also ohne Zitat oder Begründung. Er ersetzt deshalb nie das eigentliche, begründungsfähige Screening, eignet sich aber als schneller, günstiger Vorfilter für klar themenfremde Datensätze.

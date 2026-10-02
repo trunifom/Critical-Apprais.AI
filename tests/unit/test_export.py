@@ -25,7 +25,13 @@ from crapai.io.writers.tables import neutralise_formula, write_csv, write_xlsx
 from crapai.project import atomic
 from crapai.project.workspace import Workspace
 from crapai.services.dedup import dedup_project
-from crapai.services.export import export_flow, export_records, export_report, select_records
+from crapai.services.export import (
+    export_flow,
+    export_prospero,
+    export_records,
+    export_report,
+    select_records,
+)
 from crapai.services.importing import ImportRequest, import_source
 from crapai.services.preflight import check_project
 from crapai.services.project import create_project
@@ -471,6 +477,40 @@ def test_docx_report_with_a_finished_run(tmp_path: Path) -> None:
     assert "PRISMA step" in headers and "Decision" in headers
 
 
+def test_prospero_export_without_metadata_shows_placeholders(project: Workspace) -> None:
+    pytest.importorskip("docx")
+    from docx import Document
+
+    summary = export_prospero(project, now=NOW)
+    assert summary.path.suffix == ".docx" and summary.what == "prospero"
+    text = "\n".join(p.text for p in Document(summary.path).paragraphs)
+    tables = [cell.text for t in Document(summary.path).tables for row in t.rows for cell in row.cells]
+    assert "PROSPERO" in text and "no public submission API" in text
+    assert "(please complete -- not tracked by this project)" in tables
+    assert "Include Population" in text  # the project fixture's own criteria still show up
+
+
+def test_prospero_export_fills_in_configured_metadata(tmp_path: Path) -> None:
+    pytest.importorskip("docx")
+    import yaml
+    from docx import Document
+
+    workspace = create_project(tmp_path / "p2", template="demo")
+    data = yaml.safe_load(workspace.project_yaml.read_text(encoding="utf-8"))
+    data["prospero"] = {
+        "anticipated_start_date": "2026-01-01",
+        "team_members": ["Jane Doe", "John Roe"],
+        "funding": "None",
+        "conflicts_of_interest": "None known",
+    }
+    workspace.project_yaml.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    summary = export_prospero(workspace, now=NOW)
+    tables = [cell.text for t in Document(summary.path).tables for row in t.rows for cell in row.cells]
+    assert "2026-01-01" in tables
+    assert "Jane Doe; John Roe" in tables
+    assert "None" in tables and "None known" in tables
+
+
 def test_flow_export_carries_stale_warnings(project: Workspace, tmp_path: Path) -> None:
     more = tmp_path / "more.ris"
     more.write_text(
@@ -565,3 +605,12 @@ def test_export_command_rejects_bad_options(project: Workspace, args: list[str],
 def test_export_command_on_a_non_project(tmp_path: Path) -> None:
     result = runner.invoke(app, ["export", str(tmp_path / "nothing"), "--lang", "en"])
     assert result.exit_code == 1 and "E404" in result.output
+
+
+def test_export_command_writes_the_prospero_draft(project: Workspace) -> None:
+    pytest.importorskip("docx")
+    result = runner.invoke(
+        app, ["export", str(project.root), "--what", "prospero", "--lang", "en"]
+    )
+    assert result.exit_code == 0
+    assert "PROSPERO protocol draft written" in result.output

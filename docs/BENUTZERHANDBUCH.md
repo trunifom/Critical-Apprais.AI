@@ -189,6 +189,39 @@ Für das Volltext-Screening (Abschnitt 6o) werden PDFs **einem bestehenden Daten
 * **Lesbarkeitsprobleme** einer zugeordneten PDF werden trotzdem gespeichert, mit Grund: `NO_TEXT` (vermutlich gescannt, kein Textlayer - unter 100 Zeichen pro Seite), `ENCRYPTED` (passwortgeschützt) oder `IMPORT_ERROR` (beschädigt oder zu gross, Grenze 50 MB). So unterscheidet das spätere Volltext-Screening "keine PDF gefunden" von "eine PDF wurde gefunden, ist aber nicht lesbar".
 * Der Text wird bereinigt (Trennstriche am Zeilenende zusammengezogen, Ligaturen wie „ﬁ“ aufgelöst, wiederkehrende Kopf-/Fusszeilen entfernt) und ab einer Literaturverzeichnis-Überschrift abgeschnitten.
 
+### 5.6 Von Zotero importieren: `crapai zotero-import` (nur lesend, ADR 0030)
+
+Statt eine Datei von Hand aus Zotero zu exportieren und wieder einzulesen, kann `crapai
+zotero-import` eine Zotero-Bibliothek oder -Sammlung direkt abrufen. **Nur lesend:** Es wird nie
+etwas nach Zotero zurückgeschrieben (keine Tags, keine Notizen) - Entscheidungen bleiben allein in
+diesem Projekt.
+
+```powershell
+crapai config set mein-review zotero.library_id=1234567 zotero.library_type=user
+$env:ZOTERO_API_KEY = "..."    # Schlüssel nur als Umgebungsvariable, nie in project.yaml
+crapai zotero-import mein-review --label "Meine Zotero-Bibliothek"
+```
+
+* **Einstellungen** (`zotero:` in `project.yaml`, auch über die Einstellungen-Seite): `library_type`
+  (`user` oder `group`), `library_id` (die numerische Zotero-Benutzer- oder Gruppen-ID, in Zoteros
+  eigenen Einstellungen oder der Bibliotheks-URL zu finden), `collection_key` (leer = ganze
+  Bibliothek, sonst nur diese Sammlung), `api_key_env` (Name der Umgebungsvariable mit dem
+  Zotero-Schlüssel, leer nur bei einer öffentlichen Bibliothek ohne Schlüssel), `format` (`ris`
+  oder `bibtex` - beide werden von diesem Projekt gelesen).
+* **Wie es funktioniert:** Der abgerufene Text wird als echte Datei unter `sources/` abgelegt
+  (`zotero-<ID>-<Zeitstempel>.ris`) und danach **genau wie jede andere importierte Datei**
+  behandelt - gleiche Prüfungen, gleiche Sicherung, gleiches Importprotokoll.
+* **Erneuter Sync:** Es gibt keine eigene "schon synchronisiert"-Markierung. Ein erneuter Abruf
+  liefert fast nie denselben Text wie zuvor (Reihenfolge/Zeitstempel ändern sich), daher wird er
+  normalerweise nicht als "bereits importiert" (E106) abgelehnt - neu geholte Datensätze, die
+  inhaltlich schon im Projekt stehen, erkennt stattdessen die gewöhnliche Duplikat-Erkennung
+  (`crapai dedup`, Abschnitt 6a), genau wie bei jedem anderen wiederholten Import.
+* Auch über die Oberfläche: Daten-Seite, Abschnitt "Oder: von Zotero importieren" (erscheint erst,
+  sobald eine Bibliotheks-ID gesetzt ist).
+* Fehler: `E301`, wenn der Schlüssel fehlt oder abgelehnt wird; `E101`, wenn Bibliothek/Sammlung
+  nicht gefunden wird; `E102`, wenn sie leer ist; `E302`/`E305` bei zu vielen Anfragen bzw.
+  Verbindungsproblemen.
+
 ## 6a. Duplikate markieren: `crapai dedup`
 
 ```powershell
@@ -750,6 +783,7 @@ crapai export mein-review --format nbib                        # als MEDLINE/.nb
 crapai export mein-review --what flow                  # PRISMA-Flusszahlen als prisma_flow.json
 crapai export mein-review --what flow --format png     # ... oder als Grafik (PNG/SVG)
 crapai export mein-review --what report                # lesbarer Word-Bericht (.docx)
+crapai export mein-review --what prospero               # PROSPERO-Protokoll-Entwurf (.docx, ADR 0031)
 crapai export mein-review --delimiter semicolon        # Semikolon für Excel mit deutscher Einstellung
 ```
 
@@ -757,7 +791,7 @@ Der Export **verändert das Projekt nicht**. Die Dateien landen im Ordner `expor
 
 | Option | Bedeutung |
 |---|---|
-| `--what records` (Standard) / `results` / `flow` / `report` | Datensätze; Screening-Ergebnisse; die PRISMA-Flusszahlen mit Warnungen, Modus und Zahl der zugrunde liegenden Ereignisse; oder ein lesbarer Word-Zusammenfassungsbericht |
+| `--what records` (Standard) / `results` / `flow` / `report` / `prospero` | Datensätze; Screening-Ergebnisse; die PRISMA-Flusszahlen mit Warnungen, Modus und Zahl der zugrunde liegenden Ereignisse; ein lesbarer Word-Zusammenfassungsbericht; oder ein vorausgefüllter PROSPERO-Protokoll-Entwurf (Abschnitt 6r) |
 | `--format csv` (Standard) / `xlsx` / `ris` / `bibtex` / `nbib` | Tabellen für Excel; RIS/BibTeX/NBIB für Literaturverwaltung und Screening-Werkzeuge (Zotero, EndNote, Covidence, Rayyan) |
 | `--format json` (Standard bei `--what flow`) / `png` / `svg` | nur für `--what flow`: Zahlen als Datei, oder dasselbe als PRISMA-2020-Flussdiagramm (Kästen mit Pfeilen); braucht das Paket `matplotlib` (Extra `stats`), sonst `E203` |
 | `--scope all` (Standard) / `screenable` / `excluded` | alle Datensätze, nur die, die ans Modell gehen, oder nur die mit Ausschlussgrund |
@@ -772,8 +806,39 @@ Der Export **verändert das Projekt nicht**. Die Dateien landen im Ordner `expor
 * **NBIB/MEDLINE:** Jeder Datensatz ein Block im PubMed-Format (`PMID-`, `TI  -`, `FAU -`, ...). Anders als bei RIS/BibTeX gibt es **kein** Feld für Ausschlussgrund/Duplikat/Rückzug (MEDLINE kennt kein passendes freies Textfeld dafür); für diese Vermerke RIS oder BibTeX verwenden. **Wichtig:** Ein Export ohne jegliche PMID (`pmid`-Spalte überall leer) lässt sich von unserem eigenen NBIB-Lesemodul nicht wieder einlesen, weil MEDLINE PMID als Erkennungsmerkmal braucht - eine Eigenschaft des Formats, kein Fehler dieses Programms.
 * **Schutz vor Formeln (CSV-Injektion):** Ein Titel wie `=HYPERLINK(...)` würde in Excel als Formel laufen. Zellen, die mit `=`, `+`, `-`, `@`, Tabulator oder Zeilenumbruch beginnen, erhalten darum ein vorangestelltes `'` und bleiben Text. Mit `--raw` entfällt der Schutz; öffnen Sie solche Dateien dann nicht in Excel.
 * **Zusammenfassungsbericht (`--what report`):** eine lesbare `.docx`-Datei für Publikationen oder Anträge - Ziele, Kriterien, PRISMA-Fluss als Tabelle und die Ergebnisse des neusten abgeschlossenen Laufs (falls vorhanden; ohne Lauf steht dort ein Hinweis statt einer Tabelle). Erfindet keine Zahl: alles stammt aus bereits vorhandenen Werten. Braucht das Paket `python-docx` (Extra `report`), sonst Fehler `E203`.
+* **PROSPERO-Protokoll-Entwurf (`--what prospero`):** siehe Abschnitt 6r.
 * **Datei in Excel geöffnet?** Die Zieldatei wird nicht überschrieben: Der Export wird unter einem Namen mit Zeitstempel gespeichert, das Programm sagt es, und der Rückgabecode ist 4.
 * Fehler: `E203` bei unbekanntem Format, Umfang oder Modus oder ungültigem Zielpfad; `E404` für einen Ordner ohne Projekt; `E401`/`E403`, wenn nicht geschrieben werden kann.
+
+## 6r. PROSPERO-Protokoll-Entwurf (ADR 0031)
+
+PROSPERO (das internationale Register für systematische-Review-Protokolle, University of York) hat
+**keine öffentliche Einreichungs-API** - nur ein Webformular, das eine benannte Person bestätigen
+muss. `crapai export mein-review --what prospero` schreibt deshalb **kein** eingereichtes
+Protokoll, sondern einen **Entwurf** (`.docx`), der so viele Formularfelder wie möglich aus den
+bereits vorhandenen Projektdaten vorausfüllt, damit Sie ihn schneller ins Webformular
+(https://www.crd.york.ac.uk/prospero/) übertragen können.
+
+* **Was automatisch ausgefüllt wird:** Titel und Beschreibung (`project.title`/`.description`),
+  Ziele (`objectives`), die Übersichtsfrage als Ein-/Ausschlusskriterien (`criteria`, je nach
+  gewähltem Framework PICOS/SPIDER/PECO/PIRD/CUSTOM), sowie Sprach- und Jahreseinschränkungen
+  (`prefilters.language`/`.year`), falls gesetzt.
+* **Was Sie selbst ergänzen müssen** (das Dokument markiert diese Stellen ausdrücklich, statt sie
+  wegzulassen): die eigentliche Suchstrategie und Datenbankliste (dieses Projekt erfasst nur eine
+  grobe Sprach-/Jahreseinschränkung, keine Suchstrings), die geplante Methode für
+  Datenextraktion, Risk-of-Bias-Bewertung und Synthese, sowie alle Angaben unter dem neuen
+  Einstellungs-Abschnitt `prospero:` (Start-/Abschlussdatum, Stand des Reviews, Team-Mitglieder,
+  korrespondierende Autorin/Autor, Finanzierung, Interessenkonflikte, frühere Registrierung) -
+  diese acht Felder sind in `project.yaml` leer per Vorgabe und wirken sich auf nichts anderes aus.
+
+```powershell
+crapai config set mein-review prospero.anticipated_start_date="2026-03-01" prospero.funding="None"
+crapai export mein-review --what prospero
+```
+
+* Braucht das Paket `python-docx` (Extra `report`, dasselbe wie beim Zusammenfassungsbericht),
+  sonst Fehler `E203`. Kein Netzwerkzugriff, keine Einreichung - das Dokument verlässt Ihren
+  Rechner erst, wenn Sie es selbst irgendwo hochladen oder abschreiben.
 
 ## 6f. Veraltete Sperre entfernen: `crapai unlock`
 

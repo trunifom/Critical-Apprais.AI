@@ -31,3 +31,5 @@ Kurze Entscheidungsprotokolle. Neue Datei `NNNN-titel.md` mit *Entscheidung / Al
 - 0027 - Wiederverwendbare Settings-Profile
 - 0028 - Drei zusätzliche Export-Formate (BibTeX/NBIB, PRISMA-Bild, DOCX-Bericht)
 - 0029 - KI-Vorfilter mit Jev (TypeSafe AI) als expliziter Spezialmodus
+- 0030 - Zotero-Import (nur lesend: Bibliothek/Sammlung → Projekt)
+- 0031 - PROSPERO-Protokoll-Export (vorausgefülltes Dokument, keine Einreichung)

@@ -123,6 +123,29 @@ SECTIONS: tuple[Section, ...] = (
         ),
     ),
     Section(
+        "prospero",
+        (
+            Field("prospero.anticipated_start_date", "text"),
+            Field("prospero.anticipated_completion_date", "text"),
+            Field("prospero.review_stage", "choice", ("not_started", "started", "completed")),
+            Field("prospero.team_members", "list"),
+            Field("prospero.corresponding_author", "text"),
+            Field("prospero.funding", "text"),
+            Field("prospero.conflicts_of_interest", "text"),
+            Field("prospero.prior_registration", "text"),
+        ),
+    ),
+    Section(
+        "zotero",
+        (
+            Field("zotero.library_type", "choice", ("user", "group")),
+            Field("zotero.library_id", "text"),
+            Field("zotero.collection_key", "text"),
+            Field("zotero.api_key_env", "text"),
+            Field("zotero.format", "choice", ("ris", "bibtex")),
+        ),
+    ),
+    Section(
         "discussion",
         (
             Field("discussion.max_rounds", "int", minimum=1, maximum=20),

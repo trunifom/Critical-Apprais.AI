@@ -35,6 +35,8 @@ bereitet sie auf und wird sie zusammen mit Ihren Ein- und Ausschlusskriterien ei
 | Wiederverwendbare Settings-Profile (`crapai profile save/load/list/show/delete`), ADR 0027 | **umgesetzt** |
 | DOCX-Zusammenfassungsbericht (`crapai export --what report`), ADR 0028 | **umgesetzt** |
 | Optionaler KI-Vorfilter mit Jev (`crapai jev-prefilter`, nie automatisch, muss aktiviert und separat gestartet werden), ADR 0029 | **umgesetzt**, experimentell |
+| PROSPERO-Protokoll-Entwurf (`crapai export --what prospero`; vorausgefülltes DOCX, keine Einreichung - PROSPERO hat keine API), ADR 0031 | **umgesetzt** |
+| Zotero-Import, nur lesend (`crapai zotero-import`; Bibliothek/Sammlung → Projekt über die Zotero-Web-API), ADR 0030 | **umgesetzt** |
 | Vergleich mit menschlichen Entscheidungen (Plan Kap. 14) | in Planung |
 
 Meilenstein A („Import steht“) ist erreicht: Alle Beispieldateien in `tests/data/` lassen sich importieren und die Zahlen stimmen mit `tests/data/EXPECTED.json` überein.

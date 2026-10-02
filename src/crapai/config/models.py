@@ -202,6 +202,40 @@ class AiPrefilterOptions(_Strict):
         return value
 
 
+class ZoteroSettings(_Strict):
+    """Where to pull records from with ``crapai zotero-import`` (ADR 0030; read-only).
+
+    Unlike :class:`AiPrefilterOptions` there is no ``enabled`` gate: this never runs on its own,
+    only through the dedicated ``crapai zotero-import`` command (or its own GUI action), so there
+    is no risk of an unwanted background run that a second gate would guard against.
+
+    Attributes:
+        library_type: ``"user"`` for a personal library, ``"group"`` for a shared one.
+        library_id: The numeric Zotero user or group ID.
+        collection_key: A collection's key, or ``""`` to pull the whole library.
+        api_key_env: Name of the environment variable that holds the Zotero API key (never the
+            key itself, same rule as ``llm.api_key_env``). Empty is allowed for a public library
+            that needs no key.
+        format: Which export format to request from Zotero; both are parsed by this project's
+            existing readers, so pick whichever matches your records best.
+    """
+
+    library_type: Literal["user", "group"] = "user"
+    library_id: str = ""
+    collection_key: str = ""
+    api_key_env: str = "ZOTERO_API_KEY"
+    format: Literal["ris", "bibtex"] = "ris"
+
+    @field_validator("api_key_env")
+    @classmethod
+    def _must_be_a_variable_name_or_empty(cls, value: str) -> str:
+        if value and not _ENV_NAME.fullmatch(value):
+            raise ValueError(
+                "api_key_env must be the NAME of an environment variable, not a key or secret"
+            )
+        return value
+
+
 class FulltextOptions(_Strict):
     """How full-text screening handles a document that is longer than the model's context window.
 
@@ -397,6 +431,37 @@ class Acknowledgements(_Strict):
     data_transfer: bool = False
 
 
+class Prospero(_Strict):
+    """Metadata PROSPERO's registration form asks for that nothing else in this project tracks.
+
+    PROSPERO (the international register of systematic review protocols, University of York) has
+    no public submission API, only a web form that a named guarantor must confirm. These fields
+    exist only so :func:`crapai.io.writers.prospero_protocol.build_prospero_protocol` can pre-fill
+    a document to copy into that form faster (ADR 0031) -- they drive no other behaviour. All
+    default to empty/unset; an empty field becomes a visible placeholder in the generated document
+    rather than being silently left out.
+
+    Attributes:
+        anticipated_start_date: Free text (PROSPERO accepts a date or "not yet started").
+        anticipated_completion_date: Free text, same reason.
+        review_stage: Coarse status PROSPERO's form asks for.
+        team_members: Named review team members, one per entry.
+        corresponding_author: Name and contact of the corresponding author.
+        funding: Funding source(s) of the review.
+        conflicts_of_interest: Free text; "none" is a valid, explicit answer.
+        prior_registration: Any prior or related registration (PROSPERO ID, other registry).
+    """
+
+    anticipated_start_date: str = ""
+    anticipated_completion_date: str = ""
+    review_stage: Literal["not_started", "started", "completed"] = "not_started"
+    team_members: list[str] = Field(default_factory=list)
+    corresponding_author: str = ""
+    funding: str = ""
+    conflicts_of_interest: str = ""
+    prior_registration: str = ""
+
+
 class ImportSettings(_Strict):
     """Settings for repeatable imports (plan chapter 25.5).
 
@@ -420,6 +485,8 @@ class ProjectConfig(_Strict):
     dedup: Dedup = Field(default_factory=Dedup)
     prefilters: Prefilters = Field(default_factory=Prefilters)
     ai_prefilter: AiPrefilterOptions = Field(default_factory=AiPrefilterOptions)
+    prospero: Prospero = Field(default_factory=Prospero)
+    zotero: ZoteroSettings = Field(default_factory=ZoteroSettings)
     screening: ScreeningOptions = Field(default_factory=ScreeningOptions)
     discussion: DiscussionSettings = Field(default_factory=DiscussionSettings)
     llm: LlmSettings = Field(default_factory=LlmSettings)

@@ -25,6 +25,7 @@ import = ["rispy", "pybtex", "openpyxl", "pymupdf", "pdfplumber", "pylatexenc"]
 llm-openai = ["openai", "tiktoken"]
 llm-anthropic = ["anthropic"]
 prefilter-jev = ["httpx"]  # ADR 0029: optional Jev pre-filter, a single typed-decision HTTP call
+zotero = ["httpx"]  # ADR 0030: pull a Zotero library/collection into a project (read-only)
 cli = ["typer", "rich"]
 ui = ["streamlit", "streamlit-aggrid"]
 stats = ["scikit-learn", "matplotlib"]

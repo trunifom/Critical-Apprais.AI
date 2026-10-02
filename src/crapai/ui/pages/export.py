@@ -35,7 +35,7 @@ def render(st: Any, ctx: Context) -> None:
     st.caption(ctx.t("export.step1_hint"))
     what = st.radio(
         ctx.t("export.what"),
-        ["records", "results", "flow", "report"],
+        ["records", "results", "flow", "report", "prospero"],
         format_func=lambda value: ctx.t(f"export.what_{value}"),
         horizontal=True,
         key="export_what",
@@ -110,6 +110,8 @@ def _show_outcome(st: Any, ctx: Context, outcome: Any) -> None:
         st.success(ctx.messages.text("cli.export.done_flow", path=summary.path))
     elif summary.what == "report":
         st.success(ctx.messages.text("cli.export.done_report", path=summary.path))
+    elif summary.what == "prospero":
+        st.success(ctx.messages.text("cli.export.done_prospero", path=summary.path))
     else:
         st.success(
             ctx.messages.text(

@@ -78,6 +78,49 @@ def _import(st: Any, ctx: Context, files: list[PreparedFile], force: bool) -> No
     st.session_state.pop("prepared", None)
 
 
+def _zotero_section(st: Any, ctx: Context) -> None:
+    """A small, separate section to pull a Zotero library/collection in (ADR 0030, read-only)."""
+    assert ctx.folder is not None
+    with st.expander(ctx.t("data.zotero_title")):
+        st.caption(ctx.t("data.zotero_hint"))
+        config_outcome = actions.read_project_config(ctx.messages, ctx.folder)
+        if config_outcome.error is not None:
+            show_error(st, ctx, config_outcome.error)
+            return
+        config = config_outcome.value
+        assert config is not None
+        if not config.zotero.library_id:
+            st.info(ctx.t("data.zotero_not_configured"))
+            return
+        st.caption(
+            ctx.t(
+                "data.zotero_line",
+                library_type=config.zotero.library_type,
+                library_id=config.zotero.library_id,
+                collection=config.zotero.collection_key or "-",
+            )
+        )
+        label = st.text_input(ctx.t("data.zotero_label"), value="Zotero", key="zotero_label")
+        if st.button(ctx.t("data.zotero_button"), key="zotero_import_button"):
+            outcome = actions.zotero_import(ctx.messages, ctx.folder, label=label or "Zotero")
+            if outcome.error is not None:
+                show_error(st, ctx, outcome.error)
+                return
+            summary = outcome.value
+            assert summary is not None
+            st.success(
+                ctx.messages.text(
+                    "cli.import.done",
+                    records=summary.records,
+                    file=summary.source_file,
+                    label=summary.source_label,
+                    abstracts=summary.abstracts,
+                    total=summary.total_records,
+                )
+            )
+            st.session_state.pop("overview_token", None)
+
+
 def render(st: Any, ctx: Context) -> None:
     """Draw the data page: file choice, dry-read table, import button and records preview."""
     folder = ctx.folder
@@ -114,6 +157,8 @@ def render(st: Any, ctx: Context) -> None:
             _import(st, ctx, files, force)
     else:
         st.session_state.pop("prepared", None)
+
+    _zotero_section(st, ctx)
 
     overview = ctx.overview
     if overview is None or overview.records == 0:

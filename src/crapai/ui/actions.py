@@ -46,12 +46,19 @@ from crapai.services.cost import (
     estimate_project,
 )
 from crapai.services.events import project_flow
-from crapai.services.export import ExportSummary, export_flow, export_records, export_report
+from crapai.services.export import (
+    ExportSummary,
+    export_flow,
+    export_prospero,
+    export_records,
+    export_report,
+)
 from crapai.services.importing import ImportRequest, ImportSummary, import_source
 from crapai.services.preflight import PreflightFileResult, ProjectReport, check_file, check_project
 from crapai.services.project import DEFAULT_TEMPLATE, create_project, project_status
 from crapai.services.results import compare_runs as compare_runs_service
 from crapai.services.results import export_results, results_table
+from crapai.services.zotero_import import zotero_import_project
 from crapai.stats.agreement import ComparisonSummary
 from crapai.stats.results import read_table_file
 from crapai.ui import definition as definition_module
@@ -353,6 +360,17 @@ def _importer(folder: Path, item: PreparedFile, force: bool) -> Callable[[], Imp
     return run
 
 
+def zotero_import(
+    messages: Messages, folder: Path, *, label: str = "Zotero", force: bool = False
+) -> Outcome[ImportSummary]:
+    """Pull the configured Zotero library/collection into the project (ADR 0030)."""
+    return guarded(
+        messages,
+        lambda: zotero_import_project(Workspace(folder), label=label, force=force),
+        name="zotero import",
+    )
+
+
 # --- check, flow, export ----------------------------------------------------------------------
 
 
@@ -413,6 +431,8 @@ def run_export(
             summary = export_flow(workspace, fmt="json" if fmt == "csv" else fmt)
         elif what == "report":
             summary = export_report(workspace)
+        elif what == "prospero":
+            summary = export_prospero(workspace)
         elif what == "results":
             summary = export_results(workspace, fmt, delimiter=delimiter)
         else:

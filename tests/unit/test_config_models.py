@@ -86,6 +86,46 @@ def test_ai_prefilter_is_off_and_well_calibrated_by_default() -> None:
     assert "ai_prefilter.confidence_floor" in error_locs(info.value)
 
 
+def test_prospero_metadata_is_empty_by_default_and_round_trips() -> None:
+    """ADR 0031: all fields are optional free text/lists, used only by the PROSPERO export."""
+    config = ProjectConfig.model_validate(
+        {"project": {"title": "T"}, "criteria": {"inclusion": {"Population": "adults"}}}
+    )
+    assert config.prospero.review_stage == "not_started"
+    assert config.prospero.team_members == []
+    data = example()
+    data["prospero"] = {"team_members": ["Jane Doe"], "review_stage": "started"}
+    filled = ProjectConfig.model_validate(data)
+    assert filled.prospero.team_members == ["Jane Doe"]
+    assert filled.prospero.review_stage == "started"
+
+
+def test_zotero_settings_default_to_a_personal_library_with_no_gate() -> None:
+    """ADR 0030: no 'enabled' flag -- it only ever runs through its own command."""
+    config = ProjectConfig.model_validate(
+        {"project": {"title": "T"}, "criteria": {"inclusion": {"Population": "adults"}}}
+    )
+    assert config.zotero.library_type == "user"
+    assert config.zotero.collection_key == ""
+    assert config.zotero.api_key_env == "ZOTERO_API_KEY"
+    data = example()
+    data["zotero"] = {"api_key_env": "not a name"}
+    with pytest.raises(ValidationError) as info:
+        ProjectConfig.model_validate(data)
+    assert "zotero.api_key_env" in error_locs(info.value)
+
+
+def test_zotero_api_key_env_may_be_empty_for_a_public_library() -> None:
+    config = ProjectConfig.model_validate(
+        {
+            "project": {"title": "T"},
+            "criteria": {"inclusion": {"Population": "adults"}},
+            "zotero": {"api_key_env": ""},
+        }
+    )
+    assert config.zotero.api_key_env == ""
+
+
 @pytest.mark.parametrize("value", ["sk-abc123DEF456ghi789", "my key", "KEY-WITH-DASH", "", "a=b"])
 def test_api_key_field_accepts_only_variable_names(value: str) -> None:
     data = example()
