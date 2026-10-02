@@ -44,7 +44,7 @@ Laufender Stand mit Datum und Commit: `docs/UMSETZUNGSPLAN_UND_FORTSCHRITT.md`.
 
 ## Grundsätze
 
-* **Lokal.** Nur der Aufruf an den Modellanbieter (später) verlässt den Rechner. Keine Telemetrie. Schlüssel nie in Dateien.
+* **Lokal.** Der Rechner verlässt nur, was Sie ausdrücklich anstossen: der Aufruf an den Modellanbieter beim Screening (`crapai screen`), der optionale KI-Vorfilter (`crapai jev-prefilter`, ADR 0029, muss erst eingeschaltet werden) und der optionale, nur lesende Zotero-Import (`crapai zotero-import`, ADR 0030). Der PROSPERO-Protokoll-Entwurf (ADR 0031) braucht kein Netzwerk. Keine Telemetrie. Schlüssel nie in Dateien, nur als Umgebungsvariable.
 * **Nichts geht still verloren.** Duplikate und Datensätze ohne Abstract werden *markiert*, nie gelöscht. Originaldateien bleiben unverändert (`sources/`).
 * **Nie ein Label aus einer unbrauchbaren Modellantwort** (Lehre aus dem Vorgänger): Fehler erhalten einen Status, nie „Einschluss“.
 * **Sensitivität zuerst.** Unklare Fälle bleiben zur menschlichen Prüfung erhalten.
@@ -63,6 +63,8 @@ crapai init mein-review --from-template demo
 crapai import mein-review tests/data/example_db_nr2_total-10_duplicates-3.ris --label PubMed
 crapai status mein-review
 ```
+
+Für optionale Funktionen weitere Extras installieren, z. B. `pip install -e ".[report]"` (PROSPERO-/Zusammenfassungs-Entwurf, DOCX), `".[zotero]"` (Zotero-Import) oder `".[prefilter-jev]"` (KI-Vorfilter).
 
 Ausführlich: **`docs/BENUTZERHANDBUCH.md`**.
 
