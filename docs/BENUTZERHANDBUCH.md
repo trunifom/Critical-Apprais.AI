@@ -94,6 +94,8 @@ Sie enthält, was Sie über Ihr Review festlegen. Die wichtigsten Abschnitte:
 | `llm` | Anbieter und Modell *(geplant)*; `api_key_env` ist der **Name** der Umgebungsvariable mit Ihrem Schlüssel |
 | `limits` | Parallelität, Aufruflimits, Kostenlimit *(geplant)* |
 | `import` | `mappings`: gespeicherte Spaltenzuordnung je Tabellendatei, damit ein Import wiederholbar ist (Abschnitt 5.2) |
+| `zotero` | Einstellungen für `crapai zotero-import` (Abschnitt 5.6, ADR 0030): Bibliothekstyp/-ID, Sammlung, Schlüssel-Umgebungsvariable, Format |
+| `prospero` | Angaben für den PROSPERO-Protokoll-Entwurf (Abschnitt 6r, ADR 0031): Start-/Abschlussdatum, Stand, Team, Finanzierung, Interessenkonflikte, frühere Registrierung - wirken sich auf nichts anderes aus |
 
 **Schreiben Sie nie einen API-Schlüssel in die Datei.** Das Programm lehnt so etwas ab. Setzen Sie den Schlüssel als Umgebungsvariable
 und tragen Sie nur deren Namen ein (z. B. `SWISSGPT_API_KEY`).
@@ -971,12 +973,14 @@ kann die Software noch nicht; legen Sie in diesem Fall ein neues Projekt an. *(E
 
 **Warum sind Angaben in `extra_json`?** Damit nichts verloren geht, auch wenn es keine eigene Spalte gibt.
 
-**Muss ich online sein?** Für Import, Prüfung und Export nicht. Nur `crapai screen` und, falls eingeschaltet, `crapai jev-prefilter` rufen einen Anbieter auf (ausser mit dem Mock-Anbieter bzw. `ai_prefilter.model: mock`, Abschnitte 6k und 6q).
+**Muss ich online sein?** Für den Import aus Dateien, Prüfung und die meisten Exporte nicht. Ein Anbieter wird nur bei `crapai screen`, bei eingeschaltetem `crapai jev-prefilter` (ausser mit dem Mock-Anbieter bzw. `ai_prefilter.model: mock`, Abschnitte 6k und 6q) und bei `crapai zotero-import` (Abschnitt 5.6) aufgerufen. Der PROSPERO-Protokoll-Entwurf (Abschnitt 6r) braucht **kein** Netzwerk - er liest nur bereits vorhandene Projektdaten.
 
-**Werden meine Daten an Dritte gesendet?** Der Import sendet nichts. Beim Screening gehen Titel und Abstracts an den von Ihnen gewählten Anbieter; das müssen Sie vorher
-bestätigen (Rückfrage oder `--yes`). Beim optionalen KI-Vorfilter (Abschnitt 6q) gehen Titel/Abstract an Jev (TypeSafe AI), ebenfalls nur nach ausdrücklicher Bestätigung und nur, wenn Sie ihn zuvor eingeschaltet haben. Es gibt keine Telemetrie.
+**Werden meine Daten an Dritte gesendet?** Der Import aus Dateien sendet nichts. Beim Screening gehen Titel und Abstracts an den von Ihnen gewählten Anbieter; das müssen Sie vorher
+bestätigen (Rückfrage oder `--yes`). Beim optionalen KI-Vorfilter (Abschnitt 6q) gehen Titel/Abstract an Jev (TypeSafe AI), ebenfalls nur nach ausdrücklicher Bestätigung und nur, wenn Sie ihn zuvor eingeschaltet haben. `crapai zotero-import` (Abschnitt 5.6) sendet nichts an Zotero - es **holt** nur Daten ab (nur lesend, kein Zurückschreiben); dafür verlässt Ihr Zotero-Schlüssel (sofern gesetzt) den Rechner in Richtung `api.zotero.org`. Der PROSPERO-Protokoll-Entwurf (Abschnitt 6r) sendet überhaupt nichts; er verlässt Ihren Rechner erst, wenn Sie ihn selbst irgendwo hochladen oder abschreiben. Es gibt keine Telemetrie.
 
 **Soll ich den KI-Vorfilter (Jev) einschalten?** Nur wenn Sie grosse, klar themenfremde Teile Ihrer Treffer schnell und günstig vorsortieren möchten, bevor der eigentliche, begründete Lauf beginnt. Er ist kein Ersatz für `crapai screen`: er liefert keine Begründung und kein Zitat, kann nur ausschliessen (nie einschliessen), und ist bei kleineren Projekten oder wenn jede Begründung zählt meist nicht nötig. Lesen Sie Abschnitt 6q, bevor Sie ihn aktivieren.
+
+**Muss ich Zotero oder PROSPERO benutzen?** Nein, beide sind vollständig optional und wirken sich auf nichts anderes aus, solange Sie sie nicht benutzen. Der Zotero-Import (Abschnitt 5.6) ist nur eine bequemere Art zu importieren, als eine Datei von Hand aus Zotero zu exportieren; der PROSPERO-Entwurf (Abschnitt 6r) ist nur eine Abschreibhilfe für ein Formular, das Sie ohnehin selbst ausfüllen müssten.
 
 ## 10. Was noch kommt
 

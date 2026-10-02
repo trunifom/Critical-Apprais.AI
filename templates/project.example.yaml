@@ -121,3 +121,25 @@ quality:
 # Thresholds of 'crapai check'.
 preflight:
   min_abstract_ratio: 0.60         # a source with a smaller share of abstracts gets a warning
+
+# Optional, read-only: 'crapai zotero-import' (ADR 0030). Never runs on its own, only through that
+# command or its Data-page action. Leave library_id empty (the default) to not use this at all.
+zotero:
+  library_type: user               # user | group
+  library_id: ""                   # the numeric Zotero user or group ID
+  collection_key: ""               # a collection's key, or "" for the whole library
+  api_key_env: ZOTERO_API_KEY       # NAME of the environment variable; "" only for a public library
+  format: ris                      # ris | bibtex -- both are parsed by this project's own readers
+
+# Optional: metadata only used by 'crapai export --what prospero' (ADR 0031), a pre-filled draft to
+# copy into PROSPERO's own registration web form (it has no submission API). All free text; empty
+# fields appear as a visible placeholder in the draft instead of being silently left out.
+prospero:
+  anticipated_start_date: ""
+  anticipated_completion_date: ""
+  review_stage: not_started        # not_started | started | completed
+  team_members: []                 # one name per entry
+  corresponding_author: ""
+  funding: ""
+  conflicts_of_interest: ""
+  prior_registration: ""
