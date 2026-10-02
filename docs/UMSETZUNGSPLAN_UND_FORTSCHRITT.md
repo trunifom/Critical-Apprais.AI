@@ -271,3 +271,23 @@ Im Chat recherchiert (Jev/TypeSafe AI, ein "typisiertes Entscheidungsmodell" ohn
 | [x] | ADR 0029; `prisma/reasons.py` (neuer, isolierter Grund `AI_PREFILTER_JEV`, bewusst ausserhalb der automatischen Dedup-/Vorfilter-/Gültigkeits-Kette); `config/models.py` (`AiPrefilterOptions`); `llm/jev_client.py` (`JevClient`/`MockJevClient`, kein `LLMProvider`); `services/ai_prefilter.py`; PRISMA-Fold-Zweig (`prisma/events.py`/`flow.py`); `services/cost.py` (`estimate_ai_prefilter`); neuer Befehl `crapai jev-prefilter`; Oberfläche (neue Seite `jev`, Einstellungen-Abschnitt, Aktionen); `pyproject.toml`-Extra `prefilter-jev`; `templates/pricing.example.csv` | 2026-10-02 | `780d0e0ef` |
 
 Zurückgestellt (ADR 0029 nennt sie ausdrücklich): kein Hintergrundprozess für den Vorfilter-Lauf selbst; keine eigene Box im PRISMA-Bild; kein Vergleich gegen menschliche Entscheidungen; `choice`/`score`-Primitive von Jev ungenutzt.
+
+## PROSPERO-Protokoll-Entwurf (ADR 0031, 2026-10-02)
+
+Auf die Frage, was für eine Literaturrecherche-Software noch wichtig wäre, wurden Zotero und PROSPERO genannt; die Projektleitung hat sich für beide entschieden. PROSPERO zuerst umgesetzt (kleiner, keine neue Abhängigkeit, kein Netzwerk): PROSPERO hat keine Einreichungs-API, daher nur ein vorausgefüllter Dokument-Entwurf, keine automatische Einreichung.
+
+| Status | Schritt | Datum / Uhrzeit | Commit |
+|---|---|---|---|
+| [x] | ADR 0031; `config/models.py` (`Prospero`); `io/writers/prospero_protocol.py` (Muster von `docx_report.py`, Platzhaltertext statt weggelassener Abschnitte); `services/export.py` (`export_prospero`); `crapai export --what prospero`; Oberfläche (Export-Seite vierte Auswahl, Einstellungen-Abschnitt `prospero`) | 2026-10-02 | `ea5aeb241` |
+
+Zurückgestellt (ADR 0031 nennt sie ausdrücklich): jede automatische Einreichung; Abgleich mit bereits registrierten PROSPERO-Protokollen; Validierung gegen PROSPERO-Pflichtfelder-Regeln.
+
+## Zotero-Import, nur lesend (ADR 0030, 2026-10-02)
+
+Zweiter Teil desselben Auftrags (Zotero und PROSPERO). Zotero hat eine erreichbare Web-API, die Treffer direkt als RIS-/BibTeX-Text liefert; die bestehende Import-Pipeline wird deshalb unverändert wiederverwendet statt ein eigener Parser gebaut.
+
+| Status | Schritt | Datum / Uhrzeit | Commit |
+|---|---|---|---|
+| [x] | ADR 0030; neues Paket `zotero/client.py` (`ZoteroClient`/`MockZoteroClient`, synchroner `httpx.Client`, Fehlerklassen wiederverwendet); `config/models.py` (`ZoteroSettings`, kein `enabled`-Schalter); `services/zotero_import.py` (holt Text, legt ihn unter `sources/` ab, reicht ihn an `services.importing.import_source()` weiter); neuer Befehl `crapai zotero-import`; Oberfläche (Daten-Seite neuer Abschnitt, Einstellungen-Abschnitt `zotero`); `pyproject.toml`-Extra `zotero` | 2026-10-02 | `ea5aeb241` |
+
+Zurückgestellt (ADR 0030 nennt sie ausdrücklich): Zurückschreiben von Entscheidungen als Tags nach Zotero; ein lokaler Zotero-Connector; eine eigene "schon synchronisiert"-Markierung (die bestehende Duplikat-Erkennung genügt).
