@@ -409,6 +409,29 @@ def test_the_run_page_offers_a_start_that_needs_the_consent(
     assert not at.button(key="run_start").disabled
 
 
+def test_the_run_page_shows_the_fulltext_strategy_and_blocks_map_reduce(
+    monkeypatch: pytest.MonkeyPatch, filled_project: Path
+) -> None:
+    import yaml
+
+    use_mock_provider(filled_project)
+    path = filled_project / "project.yaml"
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    data["project"]["mode"] = "fulltext"
+    data["screening"]["prompt_variant"] = "structured_fulltext"
+    data["screening"]["fulltext"] = {"strategy": "map_reduce"}
+    path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+
+    at = fresh(monkeypatch, filled_project).run()
+    goto(at, "run")
+    assert not at.exception
+    assert "map_reduce" in page_text(at)
+    at.checkbox(key="run_confirm").check()
+    at.run()
+    # unlike the ordinary case, ticking consent is not enough: map_reduce cannot run at all yet.
+    assert at.button(key="run_start").disabled
+
+
 def test_starting_from_the_page_spawns_one_process_and_says_so(
     monkeypatch: pytest.MonkeyPatch, filled_project: Path
 ) -> None:

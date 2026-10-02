@@ -827,10 +827,10 @@ ui:
       how: "1. Enter name and description. 2. Enter the research questions (one per line). 3. Choose a framework (PICOS, SPIDER ...) and write for each element what is included and what is excluded. 4. Save."
       result: "The project is described; step 1 counts as done as soon as at least one inclusion criterion is set."
     data:
-      goal: "Read the hits of your literature search into the project."
-      what: "Files from databases (PubMed, Embase, Web of Science ...) are read and stored as records. The original file stays unchanged in the folder sources/. You see a dry read first; only \"Import\" saves."
-      how: "1. Choose files (RIS, BibTeX, NBIB, CSV, Excel). 2. Give each file a source name, for example \"PubMed\". 3. Import. Import several databases one after the other or together."
-      result: "The records appear in the table below; the list \"Files already imported\" shows what was read and when."
+      goal: "Read the hits of your literature search into the project; later, bring in the full text of the papers you want to screen in full text."
+      what: "Files from databases (PubMed, Embase, Web of Science ...) are read and stored as records. The original file stays unchanged in the folder sources/. You see a dry read first; only \"Import\" saves. A ZIP of PDFs is also accepted (full-text screening, ADR 0026): each PDF is matched to an existing record by its DOI, then by its title -- it adds full text to that record, it is never imported as a new paper of its own. A PDF that matches nothing is not dropped; it is listed in reports/unmatched_pdfs.csv."
+      how: "1. Choose files (RIS, BibTeX, NBIB, CSV, Excel, or later a ZIP of PDFs). 2. Give each file a source name, for example \"PubMed\". 3. Import. Import several databases one after the other or together; import the PDF ZIP only once the records it belongs to are already in the project, usually after title/abstract screening."
+      result: "The records appear in the table below; the list \"Files already imported\" shows what was read and when. For a PDF ZIP, the notes also say how many PDFs were matched."
     check:
       goal: "Tidy up the data and estimate before the run what it costs and how long it takes."
       what: "Duplicate records, unwanted languages and years and records without an abstract are marked, never deleted. Then tokens, cost and duration are estimated."
@@ -838,7 +838,7 @@ ui:
       result: "A report with reasons per record and a cost estimate. Use it to decide whether to start the run."
     run:
       goal: "Let the language model assess the records: include, exclude or uncertain, each with a reason."
-      what: "Titles and abstracts are sent to the configured provider and processed in batches. The run works in its own process; nothing is lost if it stops and it can be resumed."
+      what: "Titles and abstracts (or, in full-text mode, each matched PDF's text, fitted to the context window) are sent to the configured provider and processed in batches. The run works in its own process; nothing is lost if it stops and it can be resumed."
       how: "First a trial run with 20 records, then the full run. Tick the consent box, \"Start the run\". The bar shows progress; \"Pause\" and \"Stop\" are possible at any time."
       result: "A suggestion for every record. Suggestions do not replace your decision: humans review every decision."
     flow:
@@ -847,20 +847,20 @@ ui:
       how: "Choose how duplicates are counted and read off the numbers. Warnings point to outdated steps."
       result: "The numbers for your methods section. As a file you get them on the page \"Export results\"."
     export:
-      goal: "Hand data out of the project as a file: for Excel, a reference manager or the later evaluation."
-      what: "Files are created in the folder exports/ of the project. The project itself is not changed. If a target file is open in Excel it is saved under a new name."
-      how: "1. Choose what is exported (records, screening results or PRISMA numbers). 2. Choose format and scope. 3. Export and download. Files created earlier are listed below."
-      result: "A file. You can upload the file \"Screening results\" again on the page \"Evaluation\" and evaluate it with charts."
+      goal: "Hand data out of the project as a file: for Excel, a reference manager, the later evaluation, or a readable report for a publication or application."
+      what: "Files are created in the folder exports/ of the project. The project itself is not changed. If a target file is open in Excel it is saved under a new name. Records: CSV/XLSX (Excel) or RIS/BibTeX/NBIB (reference managers, screening tools). PRISMA flow: the numbers as JSON, or the same numbers drawn as a flow diagram (PNG/SVG; needs matplotlib). Report: a Word (.docx) summary of objectives, criteria, the PRISMA flow and the newest run's results (needs python-docx)."
+      how: "1. Choose what is exported (records, screening results, PRISMA numbers or the summary report). 2. For records/results/flow, choose format and scope; the report always writes one .docx, nothing to choose. 3. Export and download. Files created earlier are listed below."
+      result: "A file. You can upload the file \"Screening results\" again on the page \"Evaluation\" and evaluate it with charts; the report and the flow picture are meant to be read directly."
     results:
       goal: "Evaluate the results with charts: distribution of the decisions, comparison of sources, trend over time, abstract length, quality and cost of the run."
       what: "The page reads the results of a run of your project or a previously exported results file (CSV or Excel). Nothing is changed and nothing is sent."
       how: "Choose the source: \"Run of the project\" or \"Upload exported file\". The sections can be folded; the filterable table is at the bottom."
       result: "Charts and tables you can look at or take over into reports."
     settings:
-      goal: "Change all settings of the project in one place."
-      what: "Changes are checked and saved in project.overrides.yaml; the project file stays unchanged. \"Reset\" undoes all changes."
-      how: "Open a section, change the value and save. Hover over the \"?\" next to a field to see an explanation with an example."
-      result: "The new values apply immediately to check and screening."
+      goal: "Change all settings of the project in one place, including switching to full-text screening (ADR 0026), and save or load a reusable settings profile across projects (ADR 0027)."
+      what: "Changes are checked and saved in project.overrides.yaml; the project file stays unchanged. \"Reset\" undoes all changes. A settings profile (objectives, criteria, screening and model settings) is saved outside any project, in your user folder, so it can be loaded into a different project later; loading one also only changes project.overrides.yaml, never project.yaml."
+      how: "Settings: open a section, change the value and save. Hover over the \"?\" next to a field to see an explanation with an example. To switch to full-text screening, set project.mode to fulltext, choose a matching prompt variant (one made for fulltext, not abstract) and a strategy, after importing a ZIP of PDFs on the Data page. Profiles: at the top, give a name and click \"Save as profile\", or pick a saved one and click \"Load profile\"."
+      result: "The new values apply immediately to check and screening. A saved profile shows up in \"Saved profile\" immediately, ready to load into this or another project."
     help:
       goal: "Look things up: privacy, meaning of the error codes and the log of the project."
       what: "The log contains no keys and no abstracts."
@@ -1235,6 +1235,8 @@ ui:
     intro: "Sends the records that passed the check to the language model, in batches. The run works in its own process: you can close this page and come back, nothing is lost. The results are proposals for human review."
     model_line: "Provider: {provider} / model: {model} / prompt: {variant} / batch size: {batch_size}"
     key_hint: "The key is read from the environment variable {variable}. It must be set in the terminal where the interface was started. It is never stored."
+    fulltext_line: "Full-text mode (ADR 0026): each record's PDF text is fitted to the model's context window by \"{strategy}\" before it is sent."
+    map_reduce_warning: "The strategy \"map_reduce\" is not implemented yet (ADR 0026): the run cannot start. Change screening.fulltext.strategy to truncate or sections on the Settings page."
     sample: "Trial run: only this many random records (0 = all records)"
     confirm: "I understand that the records are sent to the provider and may cost money."
     start: "Start the run"

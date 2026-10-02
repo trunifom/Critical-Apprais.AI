@@ -152,6 +152,12 @@ def _start_panel(st: Any, ctx: Context, *, resume_view: RunView | None) -> None:
             batch_size=config.run.batch_size,
         )
     )
+    map_reduce_blocked = False
+    if config.project.mode == "fulltext":
+        st.caption(ctx.t("run.fulltext_line", strategy=config.screening.fulltext.strategy))
+        if config.screening.fulltext.strategy == "map_reduce":
+            map_reduce_blocked = True
+            st.warning(ctx.t("run.map_reduce_warning"))
     if config.llm.provider not in ("mock",):
         st.caption(ctx.t("run.key_hint", variable=config.llm.api_key_env))
     estimate = actions.estimate_run(ctx.messages, ctx.folder)
@@ -167,7 +173,9 @@ def _start_panel(st: Any, ctx: Context, *, resume_view: RunView | None) -> None:
         )
     agreed = st.checkbox(ctx.t("run.confirm"), key="run_confirm")
     label = ctx.t("run.resume") if resume_view is not None else ctx.t("run.start")
-    if st.button(label, key="run_start", type="primary", disabled=not agreed):
+    if st.button(
+        label, key="run_start", type="primary", disabled=not agreed or map_reduce_blocked
+    ):
         outcome = actions.start_run(
             ctx.messages,
             ctx.folder,
