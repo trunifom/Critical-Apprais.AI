@@ -240,4 +240,13 @@ Zweiter Teil des Auftrags (nach Volltext-Screening). Kein Plankapitel dafür vor
 |---|---|---|---|
 | [x] | `config/profiles.py` (`SettingsProfile`, speichert `objectives`/`criteria`/`screening`/`llm` aus der wirksamen Konfiguration, lädt in `project.overrides.yaml`, nie in `project.yaml`), Befehle `crapai profile save/load/list/show/delete`, Oberfläche (Einstellungen-Seite) | 2026-10-02 | `e8d57bd7f` |
 
-Danach folgt laut Auftrag: die drei zusätzlichen Export-Formate (BibTeX/NBIB, PRISMA-Fluss als PNG/SVG, DOCX-Bericht).
+## Drei zusätzliche Export-Formate (ADR 0028, 2026-10-02)
+
+Dritter und letzter Teil des Auftrags. Kein Plankapitel dafür vorhanden.
+
+| Status | Schritt | Datum / Uhrzeit | Commit |
+|---|---|---|---|
+| [x] | `io/writers/bibtex.py`, `io/writers/nbib.py` (symmetrisch zu den Lesern; NBIB bewusst ohne Screening-Vermerke, kein passendes Feld); `io/writers/prisma_image.py` (PRISMA-2020-Diagramm als PNG/SVG, reines `matplotlib` ohne `pyplot`); `crapai export --format bibtex/nbib`, `--what flow --format png/svg` | 2026-10-02 | `35d0c00a8` |
+| [x] | `io/writers/docx_report.py` (Ziele, Kriterien, PRISMA-Fluss, Ergebnisse des neusten Laufs); neue Abhängigkeit `python-docx` (Extra `report`, von der Projektleitung freigegeben); `crapai export --what report`; Oberfläche: Formatauswahl jetzt auch für `flow` (vorher fehlte sie dort); CI installiert neu `stats`/`report` | 2026-10-02 | `b1e764c1d` |
+
+Damit sind alle drei Teile des Auftrags (Volltext-Screening, Settings-Profile, Export-Formate) umgesetzt. Offen bleiben die an den jeweiligen Stellen dokumentierten, bewusst zurückgestellten Punkte (u. a. `map_reduce`-Strategie in der Engine, Vergleich mit menschlichen Entscheidungen, PRISMA-Bild im DOCX-Bericht einbetten).
