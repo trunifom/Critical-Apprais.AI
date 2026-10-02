@@ -35,21 +35,14 @@ class ProjectInfo(_Strict):
     title: str = Field(min_length=1)
     description: str = ""
     language: Literal["de", "en"] = "de"
-    mode: Literal["abstract"] = "abstract"
+    # ADR 0015 restricted v1 to "abstract"; ADR 0026 adds "fulltext" (full-text screening).
+    mode: Literal["abstract", "fulltext"] = "abstract"
 
     @field_validator("title")
     @classmethod
     def _title_not_blank(cls, value: str) -> str:
         if not value.strip():
             raise ValueError("title must not be blank")
-        return value
-
-    @field_validator("mode", mode="before")
-    @classmethod
-    def _fulltext_is_not_in_v1(cls, value: object) -> object:
-        # ADR 0015: full-text screening is not part of version 1; give a clear message.
-        if value == "fulltext":
-            raise ValueError("full-text screening is not supported in version 1; use 'abstract'")
         return value
 
 
@@ -162,7 +155,18 @@ class Prefilters(_Strict):
 
 
 class FulltextOptions(_Strict):
-    """Reserved for a later version; accepted in the file so templates validate."""
+    """How full-text screening handles a document that is longer than the model's context window.
+
+    Attributes:
+        strategy: ``truncate`` cuts the text to fit the context window; ``sections`` keeps only
+            Methods/Results/Discussion (Abstract/Introduction/References are dropped or shortened);
+            ``map_reduce`` splits the text into chunks, asks the model for evidence per chunk,
+            then asks a final call to weigh the evidence (plan chapter 29.8) -- the most thorough
+            but also the most expensive strategy (roughly 20-40x an abstract-only call).
+        repeat_criteria_after_text: Repeat the inclusion/exclusion criteria again after the full
+            text (plan chapter 8.9): models weigh context placed right before the question more
+            heavily, which matters for long documents.
+    """
 
     strategy: Literal["truncate", "sections", "map_reduce"] = "truncate"
     repeat_criteria_after_text: bool = False

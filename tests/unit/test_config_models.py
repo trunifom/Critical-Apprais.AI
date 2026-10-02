@@ -55,12 +55,20 @@ def test_unknown_key_is_rejected() -> None:
     assert "llm.temprature" in error_locs(info.value)
 
 
-def test_fulltext_mode_is_rejected_with_clear_message() -> None:
+def test_fulltext_mode_is_accepted() -> None:
+    """ADR 0026 lifted ADR 0015's v1 restriction to abstract-only screening."""
     data = example()
     data["project"]["mode"] = "fulltext"
-    with pytest.raises(ValidationError) as info:
+    config = ProjectConfig.model_validate(data)
+    assert config.project.mode == "fulltext"
+    assert config.screening.fulltext.strategy == "truncate"
+
+
+def test_an_unknown_mode_is_still_rejected() -> None:
+    data = example()
+    data["project"]["mode"] = "section"
+    with pytest.raises(ValidationError):
         ProjectConfig.model_validate(data)
-    assert "not supported in version 1" in str(info.value)
 
 
 @pytest.mark.parametrize("value", ["sk-abc123DEF456ghi789", "my key", "KEY-WITH-DASH", "", "a=b"])

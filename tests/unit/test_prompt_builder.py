@@ -126,10 +126,43 @@ def test_the_legacy_format_needs_a_legacy_variant_and_has_no_schema_version() ->
     assert builder_for(make_config()).schema_version >= 1
 
 
-def test_fulltext_variants_are_refused_in_version_1() -> None:
+def test_a_fulltext_variant_is_refused_when_project_mode_is_abstract() -> None:
     config = make_config(output_format="legacy_xxx_yyy", prompt_variant="baseline_fulltext")
-    with pytest.raises(ConfigError):
+    with pytest.raises(ConfigError) as info:
         builder_for(config)
+    assert info.value.code == "E203" and "project.mode" in str(info.value)
+
+
+def test_an_abstract_variant_is_refused_when_project_mode_is_fulltext() -> None:
+    config = make_config(mode="fulltext", prompt_variant="structured_abstract")
+    with pytest.raises(ConfigError) as info:
+        builder_for(config)
+    assert info.value.code == "E203" and "project.mode" in str(info.value)
+
+
+def test_the_fulltext_prompt_holds_the_full_text_not_an_abstract() -> None:
+    config = make_config(
+        mode="fulltext", output_format="legacy_xxx_yyy", prompt_variant="baseline_fulltext"
+    )
+    builder = builder_for(config)
+    parts = builder.build_fulltext("A title", "Methods: we enrolled adults. Results: it helped.")
+    assert "<record>\nTitle: A title\nFull text:\nMethods: we enrolled adults." in parts.user
+    assert "scope" not in builder.system  # format string was filled in, not left as a template
+
+
+def test_the_fulltext_prompt_can_repeat_the_criteria_after_the_text() -> None:
+    config = make_config(
+        mode="fulltext",
+        output_format="legacy_xxx_yyy",
+        prompt_variant="baseline_fulltext",
+        fulltext={"repeat_criteria_after_text": True},
+    )
+    builder = builder_for(config)
+    parts = builder.build_fulltext("A title", "Methods: we enrolled participants.")
+    # "adults" only comes from the criteria: once in the stable prefix, once repeated after the
+    # record -- the fulltext body itself never mentions it, so a second hit proves the repeat.
+    assert parts.user.count("adults") == 2
+    assert parts.user.rindex("adults") > parts.user.index("</record>")
 
 
 def test_a_project_variant_overrides_and_extends(tmp_path: Path) -> None:

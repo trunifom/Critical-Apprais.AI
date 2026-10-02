@@ -1,6 +1,8 @@
 # ADR 0015: Volltext-Screening nicht in Version 1
 
-Status: Angenommen (Entscheid der Projektleitung, 2026-09-30)
+Status: **Ersetzt durch ADR 0026** (Entscheid der Projektleitung, 2026-10-02). Dieser Eintrag bleibt als Verlauf stehen, siehe `docs/adr/0026-volltext-screening.md` für die aktuelle Lage.
+
+Ursprünglicher Status: Angenommen (Entscheid der Projektleitung, 2026-09-30)
 
 ## Entscheidung
 Version 1 macht **Titel-/Abstract-Screening**. Volltext-Screening wird später ergänzt (Plan Kap. 8.9, 25.6, 29.8, Meilenstein M7).

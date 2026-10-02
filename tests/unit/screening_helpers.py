@@ -11,10 +11,10 @@ from crapai.screening.engine import EngineSettings, PlanItem, ScreeningEngine
 from crapai.screening.store import Manifest, RunStore
 
 
-def make_config(**screening: object) -> ProjectConfig:
+def make_config(*, mode: str = "abstract", **screening: object) -> ProjectConfig:
     return ProjectConfig.model_validate(
         {
-            "project": {"title": "Exercise review"},
+            "project": {"title": "Exercise review", "mode": mode},
             "objectives": ["Does exercise help?"],
             "criteria": {
                 "framework": "PICOS",
