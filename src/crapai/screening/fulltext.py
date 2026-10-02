@@ -32,6 +32,10 @@ CountTokens = Callable[[str], int]
 RESERVED_TOKENS = 2000
 MIN_BUDGET_TOKENS = 500
 TRUNCATION_NOTICE = "\n\n[... text truncated to fit the model's context window ...]"
+#: conservative fallback when ``llm.context_tokens`` is not set and the provider does not report
+#: its context window either; better to truncate more than to risk overshooting an unknown,
+#: possibly small, context window (used by both the engine and the cost estimate).
+DEFAULT_CONTEXT_TOKENS = 16_000
 
 
 @dataclass(frozen=True)

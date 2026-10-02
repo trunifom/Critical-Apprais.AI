@@ -337,6 +337,26 @@ def test_the_settings_form_saves_a_change_and_can_reset_it(
     assert not at.exception and not (empty_project / "project.overrides.yaml").exists()
 
 
+def test_the_settings_form_offers_fulltext_mode_and_strategy(
+    monkeypatch: pytest.MonkeyPatch, empty_project: Path
+) -> None:
+    at = fresh(monkeypatch, empty_project).run()
+    goto(at, "settings")
+    assert not at.exception
+    mode = at.selectbox(key="set::project.mode::0")
+    assert set(mode.options) == {"abstract", "fulltext"} and mode.value == "abstract"
+    strategy = at.selectbox(key="set::screening.fulltext.strategy::0")
+    # map_reduce is not implemented in the engine yet (ADR 0026): not offered as a choice at all.
+    assert set(strategy.options) == {"truncate", "sections"}
+    mode.set_value("fulltext")
+    at.run()
+    at.button[0].click()
+    at.run()
+    assert not at.exception
+    overrides = (empty_project / "project.overrides.yaml").read_text(encoding="utf-8")
+    assert "mode: fulltext" in overrides
+
+
 # --- the run page -----------------------------------------------------------------------------------
 
 

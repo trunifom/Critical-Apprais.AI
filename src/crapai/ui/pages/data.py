@@ -12,7 +12,7 @@ from crapai.ui.context import Context
 from crapai.ui.pages.common import intro, show_error
 from crapai.ui.viewmodels import percent, status_icon
 
-ACCEPTED = ["ris", "nbib", "bib", "txt", "csv", "tsv", "xlsx"]
+ACCEPTED = ["ris", "nbib", "bib", "txt", "csv", "tsv", "xlsx", "zip"]
 PREVIEW_ROWS = 200
 PREVIEW_COLUMNS = ["title", "year", "authors", "source_label", "exclusion_reason", "doi"]
 
@@ -71,8 +71,9 @@ def _import(st: Any, ctx: Context, files: list[PreparedFile], force: bool) -> No
         )
         for note in summary.notes:
             st.caption(ctx.messages.text("cli.import.note", note=note))
+        counts = {"empty_records": summary.empty_records, "fulltext_unmatched": summary.unmatched}
         for warning in summary.warnings:
-            st.warning(ctx.messages.text(f"cli.warning.{warning}", count=summary.empty_records))
+            st.warning(ctx.messages.text(f"cli.warning.{warning}", count=counts.get(warning, 0)))
     st.session_state.pop("overview_token", None)
     st.session_state.pop("prepared", None)
 

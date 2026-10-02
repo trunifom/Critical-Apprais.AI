@@ -136,6 +136,9 @@ preflight:
     error_unparseable: "Error — file could not be parsed"
     error_no_records: "Error — file contains no records"
     error_no_abstracts: "Error — no abstracts found for Abstract mode"
+    fulltext_ok: "OK — every PDF in this ZIP is readable (matching to records happens on import)"
+    fulltext_some_unreadable: "Warning — some PDFs are not readable (scanned, encrypted or damaged); they are still imported, marked with the reason"
+    fulltext_none_readable: "Error — no PDF in this ZIP is readable"
   note: |
     *Note:* These checks inform you before a run.  
     The official PRISMA numbers are recorded in the run itself.
@@ -703,6 +706,7 @@ errors:
 # --- Local interface (crapai ui). Keys are read as ui.<key>. -------------------------------------
 ui:
   section:
+    project: "Project"
     dedup: "Duplicates"
     prefilters: "Pre-filters"
     quality: "Abstract quality and check"
@@ -729,6 +733,9 @@ ui:
     quality_min_words_for_mean: "Fewest words needed to judge the mean word length"
     quality_short_abstract_chars_unspaced: "'Short' limit in characters for Chinese, Japanese, Korean, Thai"
     preflight_min_abstract_ratio: "Warn if a source has a smaller share of abstracts (0 to 1)"
+    project_mode: "Mode: abstract (title/abstract) or fulltext (full-text screening, ADR 0026; needs a matching prompt variant below and a ZIP of PDFs imported first)"
+    screening_prompt_variant: "Prompt variant (must match the mode above: an abstract or a fulltext variant)"
+    screening_output_format: "Answer format the chosen variant produces"
     screening_include_title_only: "Also send records without abstract to the model (title only)"
     screening_include_keywords_in_prompt: "Also send the record's keywords to the model"
     discussion_max_rounds: "Reconsideration rounds before giving up on consensus"
@@ -736,6 +743,8 @@ ui:
     screening_uncertain_policy: "Treat uncertain records as"
     screening_decision_source: "Decision taken from"
     screening_reasoning_language: "Language of the reasons"
+    screening_fulltext_strategy: "Full-text mode: fit the article to the context window by (map_reduce is not implemented yet)"
+    screening_fulltext_repeat_criteria_after_text: "Full-text mode: repeat the criteria again after the article text"
     llm_provider: "Provider"
     llm_model: "Model"
     llm_base_url: "Base URL (openai_compatible only)"
@@ -1018,7 +1027,7 @@ ui:
     create_button: "Creates the project folder with a project file and opens it."
     yaml_text: "The project file as plain text (YAML). It holds the title, inclusion and exclusion criteria and settings. It is checked before saving; if it is invalid nothing is written."
     save_yaml: "Checks the project file and saves it only if it is valid."
-    uploader: "Drag one or more files from a literature database here. Allowed: RIS, BibTeX, NBIB, CSV, Excel. The originals are kept unchanged in the folder sources/."
+    uploader: "Drag one or more files from a literature database here. Allowed: RIS, BibTeX, NBIB, CSV, Excel, or a ZIP of PDFs for full-text screening (ADR 0026). The originals are kept unchanged in the folder sources/."
     label: "Name of the source the file comes from, for example \"PubMed\" or \"Embase\". It is used for the statistics per source and for counting duplicates."
     force_import: "Tick only if you really want to read the same file a second time. Normally a file that was already imported is refused."
     import_button: "Reads the chosen files into the project. Existing records are kept."
@@ -1059,6 +1068,9 @@ ui:
       quality_min_words_for_mean: "The mean word length is judged only from this many words; shorter texts vary too much."
       quality_short_abstract_chars_unspaced: "Like \"short\" but in characters, for scripts without spaces (Chinese, Japanese, Korean, Thai)."
       preflight_min_abstract_ratio: "If a source has a smaller share of records with an abstract than this, a warning appears. 0.6 means 60 %."
+      project_mode: "\"abstract\": screen title and abstract (default). \"fulltext\": screen the full text of a PDF matched to the record (ADR 0026) -- needs a ZIP of PDFs imported first (data page) and a prompt variant of the same mode below."
+      screening_prompt_variant: "Which wording the model is asked with. Must be a variant of the same mode as above (an abstract variant for abstract mode, a fulltext variant for fulltext mode); a mismatch is refused when the run starts."
+      screening_output_format: "Must match what the chosen variant produces: \"structured\" (a JSON object, the default) or \"legacy_xxx_yyy\" (the ported baseline/gpt_improved variants, last line XXX/YYY)."
       screening_include_title_only: "Also assess records without an abstract, from the title only. Less reliable, but nothing drops out."
       screening_include_keywords_in_prompt: "The model additionally sees the record's keywords (not only title and abstract). It does not change which records are excluded on its own; combine with the keyword pre-filter for a hard cut."
       discussion_max_rounds: "'crapai discuss' lets the original models of two or more compared runs reconsider a record they disagreed on, each seeing the others' decision and reasoning. This is how many rounds are tried before applying the tie-break rule. More rounds cost more, with no guarantee of convergence."
@@ -1066,6 +1078,8 @@ ui:
       screening_uncertain_policy: "How \"uncertain\" is counted later: as include (nothing is lost), as exclude, or kept separate."
       screening_decision_source: "\"model\": the decision comes from the model; \"rule\": it is derived from the single verdicts."
       screening_reasoning_language: "Language in which the model writes its reasoning (de or en)."
+      screening_fulltext_strategy: "\"truncate\": cut the text to the context window (simple, cheapest). \"sections\": keep only Methods/Results/Discussion, falling back to truncate if no heading is recognised. map_reduce is not implemented yet and therefore not offered here."
+      screening_fulltext_repeat_criteria_after_text: "Repeat the inclusion/exclusion criteria once more right after the article text. Models weigh context placed close to the question more heavily, which can help for long articles."
       llm_provider: "Provider of the language model: \"openai_compatible\" for SwissGPT and similar services, \"openai\" for OpenAI, \"mock\" to try things out for free without a network."
       llm_model: "Name of the model at the provider. Example: gpt-4o-mini. With \"mock\" the name selects the test scenario (S1 to S15)."
       llm_base_url: "Address of the service, only for \"openai_compatible\". Example: https://api.prod.alpineai.ch/v1"

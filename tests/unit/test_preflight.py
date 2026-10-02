@@ -109,6 +109,48 @@ def test_unusable_files_become_error_results_and_never_raise(tmp_path: Path) -> 
     assert missing.issues == [PreflightIssueCode.PARSE_FAILED]
 
 
+def test_a_zip_of_pdfs_is_routed_to_the_fulltext_dry_read(tmp_path: Path) -> None:
+    import zipfile
+
+    import pymupdf
+
+    def make_pdf(text: str) -> bytes:
+        doc = pymupdf.open()
+        page = doc.new_page()
+        page.insert_textbox(pymupdf.Rect(50, 50, 550, 750), text, fontsize=10)
+        data = doc.tobytes()
+        doc.close()
+        return data
+
+    body = "Methods: a randomised trial of a digital health intervention. " * 10
+    archive = tmp_path / "pdfs.zip"
+    with zipfile.ZipFile(archive, "w") as zf:
+        zf.writestr("good.pdf", make_pdf(body))
+        zf.writestr("blank.pdf", make_pdf(""))
+    result = check_file(archive, "Fulltext")
+    assert result.format == "zip" and result.records_total == 2
+    assert result.records_with_abstract == 1  # one usable, one blank/NO_TEXT
+    assert result.status is PreflightStatus.WARNING
+    assert result.message_key == "preflight.status.fulltext_some_unreadable"
+
+
+def test_a_zip_with_no_readable_pdf_is_an_error(tmp_path: Path) -> None:
+    import zipfile
+
+    import pymupdf
+
+    blank = pymupdf.open()
+    blank.new_page()
+    data = blank.tobytes()
+    blank.close()
+    archive = tmp_path / "pdfs.zip"
+    with zipfile.ZipFile(archive, "w") as zf:
+        zf.writestr("blank.pdf", data)
+    result = check_file(archive, "Fulltext")
+    assert result.status is PreflightStatus.ERROR
+    assert result.message_key == "preflight.status.fulltext_none_readable"
+
+
 def test_column_problems_of_a_table_are_reported_with_their_code(tmp_path: Path) -> None:
     table = tmp_path / "in.csv"
     table.write_text("Name,Body\nA,x\nB,y\n", encoding="utf-8")

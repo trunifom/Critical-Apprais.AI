@@ -31,7 +31,9 @@ from crapai.config.loader import describe_config_problem, load_project_config
 from crapai.enums import PreflightIssueCode, PreflightStatus, StringEnum
 from crapai.errors import ImportFailed, SaraError
 from crapai.io.normalize import ImportContext, to_records
+from crapai.io.readers.detect import SourceFormat, detect_format
 from crapai.io.readers.dispatch import read_source
+from crapai.io.readers.pdf_zip import extract_pdf_zip
 from crapai.io.records_store import read_records
 from crapai.project.workspace import Workspace
 from crapai.services.dedup import apply_dedup
@@ -101,8 +103,16 @@ def check_file(
 ) -> PreflightFileResult:
     """Read ``path`` without importing it and judge the result.
 
-    Never raises for a bad file: the problem becomes an ``ERROR`` result with an issue code.
+    Never raises for a bad file: the problem becomes an ``ERROR`` result with an issue code. A
+    ZIP of PDFs (ADR 0026) is dispatched to :func:`check_fulltext_zip`: matching it to records
+    needs the project, which this dry read (one file, no project) does not have, so it can only
+    report what the ZIP itself contains.
     """
+    try:
+        if detect_format(path).format is SourceFormat.ZIP:
+            return check_fulltext_zip(path, label)
+    except SaraError:
+        pass  # fall through to the ordinary path, which reports the same problem consistently
     config = config or PreflightConfig()
     result = PreflightFileResult(filename=path.name, label=label)
     try:
@@ -116,7 +126,7 @@ def check_file(
         if exc.code == "E102":
             result.issues.append(PreflightIssueCode.NO_RECORDS)
             result.message_key = "preflight.status.error_no_records"
-        elif "detected" in exc.details:  # a PDF or ZIP: recognised, but not part of version 1
+        elif "detected" in exc.details:  # a bare PDF: recognised, but only a ZIP of PDFs works
             result.issues.append(PreflightIssueCode.UNSUPPORTED_TYPE)
             result.message_key = "preflight.status.error_unparseable"
         else:
@@ -149,6 +159,44 @@ def check_file(
         result.message_key = "preflight.status.warn_low_abstracts"
     if detection.extension_mismatch:
         logger.info("%s: %s", path.name, detection.reason)
+    return result
+
+
+def check_fulltext_zip(path: Path, label: str) -> PreflightFileResult:
+    """Dry read of a ZIP of PDFs (ADR 0026): how many PDFs, how many are readable.
+
+    Matching each PDF to a record happens only at import time (it needs the project's existing
+    records, which a dry read of one file in isolation does not have); this only reports what the
+    ZIP itself contains. ``records_total``/``records_with_abstract`` are reused for "PDFs
+    found"/"PDFs readable" so the data page's table needs no change for this file type.
+    """
+    result = PreflightFileResult(filename=path.name, label=label, format=SourceFormat.ZIP.value)
+    try:
+        zip_result = extract_pdf_zip(path)
+    except ImportFailed as exc:
+        logger.warning("Preflight of %s failed: %s", path.name, exc.code)
+        result.status = PreflightStatus.ERROR
+        result.error_code, result.detail = exc.code, exc.user_message
+        if exc.code == "E102":
+            result.issues.append(PreflightIssueCode.NO_RECORDS)
+            result.message_key = "preflight.status.error_no_records"
+        else:
+            result.issues.append(PreflightIssueCode.PARSE_FAILED)
+            result.message_key = "preflight.status.error_unparseable"
+        return result
+    usable = sum(1 for doc in zip_result.documents if not doc.quality)
+    result.records_total = len(zip_result.documents)
+    result.records_with_abstract = usable
+    if usable == 0:
+        result.status = PreflightStatus.ERROR
+        result.issues.append(PreflightIssueCode.NO_ABSTRACTS)
+        result.message_key = "preflight.status.fulltext_none_readable"
+    elif usable < result.records_total:
+        result.status = PreflightStatus.WARNING
+        result.issues.append(PreflightIssueCode.LOW_ABSTRACT_RATIO)
+        result.message_key = "preflight.status.fulltext_some_unreadable"
+    else:
+        result.message_key = "preflight.status.fulltext_ok"
     return result
 
 

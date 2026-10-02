@@ -131,6 +131,9 @@ preflight:
     error_unparseable: "Fehler – Datei konnte nicht gelesen werden"
     error_no_records: "Fehler – Datei enthält keine Datensätze"
     error_no_abstracts: "Fehler – keine Abstracts für den Abstract-Modus gefunden"
+    fulltext_ok: "OK – alle PDFs in diesem Zip sind lesbar (die Zuordnung zu Datensätzen geschieht beim Import)"
+    fulltext_some_unreadable: "Warnung – einige PDFs sind nicht lesbar (gescannt, geschützt oder beschädigt); sie werden trotzdem importiert, mit Grund markiert"
+    fulltext_none_readable: "Fehler – keine PDF in diesem Zip ist lesbar"
   note: |
     *Hinweis:* Diese Prüfungen informieren Sie vor einem Lauf.
     Die offiziellen PRISMA-Zahlen werden im Lauf selbst festgehalten.
@@ -694,6 +697,7 @@ errors:
 # --- Lokale Oberfläche (crapai ui). Die Schlüssel werden als ui.<schluessel> gelesen. ------------
 ui:
   section:
+    project: "Projekt"
     dedup: "Duplikate"
     prefilters: "Vorfilter"
     quality: "Abstract-Qualität und Prüfung"
@@ -720,6 +724,9 @@ ui:
     quality_min_words_for_mean: "Mindestzahl Wörter, um die mittlere Wortlänge zu beurteilen"
     quality_short_abstract_chars_unspaced: "Grenze „kurz“ in Zeichen für Chinesisch, Japanisch, Koreanisch, Thai"
     preflight_min_abstract_ratio: "Warnen, wenn eine Quelle weniger Abstracts hat (0 bis 1)"
+    project_mode: "Modus: abstract (Titel/Abstract) oder fulltext (Volltext-Screening, ADR 0026; braucht zuerst ein importiertes Zip mit PDFs und unten eine Prompt-Variante desselben Modus)"
+    screening_prompt_variant: "Wortlaut, mit dem das Modell gefragt wird. Muss zum Modus oben passen (Abstract- oder Volltext-Variante); ein Widerspruch wird beim Laufstart abgelehnt"
+    screening_output_format: "Muss zur gewählten Variante passen: «structured» (JSON, Standard) oder «legacy_xxx_yyy» (die ported baseline/gpt_improved-Varianten, letzte Zeile XXX/YYY)"
     screening_include_title_only: "Auch Datensätze ohne Abstract ans Modell senden (nur Titel)"
     screening_include_keywords_in_prompt: "Auch die Stichwörter des Datensatzes ans Modell senden"
     discussion_max_rounds: "Überdenkrunden, bevor der Konsens aufgegeben wird"
@@ -727,6 +734,8 @@ ui:
     screening_uncertain_policy: "Unsichere Datensätze behandeln als"
     screening_decision_source: "Entscheidung übernehmen von"
     screening_reasoning_language: "Sprache der Begründungen"
+    screening_fulltext_strategy: "Volltext-Modus: Artikel ins Kontextfenster einpassen durch (map_reduce ist noch nicht umgesetzt)"
+    screening_fulltext_repeat_criteria_after_text: "Volltext-Modus: Kriterien nach dem Artikeltext nochmals wiederholen"
     llm_provider: "Anbieter"
     llm_model: "Modell"
     llm_base_url: "Basis-URL (nur openai_compatible)"
@@ -1009,7 +1018,7 @@ ui:
     create_button: "Legt den Projektordner mit einer Projektdatei an und öffnet ihn."
     yaml_text: "Die Projektdatei im Klartext (YAML). Hier stehen Titel, Ein- und Ausschlusskriterien und Einstellungen. Vor dem Speichern wird sie geprüft; bei einem Fehler wird nichts geschrieben."
     save_yaml: "Prüft die Projektdatei und speichert sie nur, wenn sie gültig ist."
-    uploader: "Eine oder mehrere Dateien aus der Literaturdatenbank hierher ziehen. Erlaubt: RIS, BibTeX, NBIB, CSV, Excel. Die Originale bleiben unverändert im Ordner sources/."
+    uploader: "Eine oder mehrere Dateien aus der Literaturdatenbank hierher ziehen. Erlaubt: RIS, BibTeX, NBIB, CSV, Excel, oder ein Zip mit PDFs für das Volltext-Screening (ADR 0026). Die Originale bleiben unverändert im Ordner sources/."
     label: "Name der Quelle, aus der die Datei stammt, zum Beispiel «PubMed» oder «Embase». Er wird für die Statistik je Quelle und für die Duplikatzählung gebraucht."
     force_import: "Nur ankreuzen, wenn Sie dieselbe Datei absichtlich ein zweites Mal einlesen wollen. Normalerweise wird eine schon eingelesene Datei abgelehnt."
     import_button: "Liest die gewählten Dateien in das Projekt ein. Vorhandene Datensätze bleiben erhalten."
@@ -1050,6 +1059,9 @@ ui:
       quality_min_words_for_mean: "Erst ab dieser Zahl Wörter wird die mittlere Wortlänge beurteilt; kürzere Texte schwanken zu stark."
       quality_short_abstract_chars_unspaced: "Wie «kurz», aber in Zeichen, für Schriften ohne Leerzeichen (Chinesisch, Japanisch, Koreanisch, Thai)."
       preflight_min_abstract_ratio: "Hat eine Quelle weniger Datensätze mit Abstract als diesen Anteil, erscheint eine Warnung. 0,6 bedeutet 60 %."
+      project_mode: "«abstract»: Titel und Abstract bewerten (Standard). «fulltext»: den Volltext einer dem Datensatz zugeordneten PDF bewerten (ADR 0026) - braucht zuerst ein importiertes Zip mit PDFs (Seite Daten) und unten eine Prompt-Variante desselben Modus."
+      screening_prompt_variant: "Mit welchem Wortlaut das Modell gefragt wird. Muss eine Variante desselben Modus wie oben sein (eine Abstract-Variante im Abstract-Modus, eine Volltext-Variante im Volltext-Modus); ein Widerspruch wird beim Laufstart abgelehnt."
+      screening_output_format: "Muss zur gewählten Variante passen: «structured» (ein JSON-Objekt, Standard) oder «legacy_xxx_yyy» (die ported baseline/gpt_improved-Varianten, letzte Zeile XXX/YYY)."
       screening_include_title_only: "Auch Datensätze ohne Abstract bewerten, nur anhand des Titels. Weniger zuverlässig, aber nichts fällt weg."
       screening_include_keywords_in_prompt: "Das Modell sieht zusätzlich die Stichwörter des Datensatzes (nicht nur Titel und Abstract). Schliesst dadurch allein nichts aus; für einen harten Schnitt den Stichwort-Vorfilter dazu einsetzen."
       discussion_max_rounds: "„crapai discuss“ lässt die ursprünglichen Modelle zweier oder mehrerer verglichener Läufe einen Datensatz, bei dem sie uneinig waren, nochmals überdenken; jedes sieht die Entscheidung und Begründung der anderen. So viele Runden werden versucht, bevor die Entscheidungsregel greift. Mehr Runden kosten mehr, ohne Garantie auf Annäherung."
@@ -1057,6 +1069,8 @@ ui:
       screening_uncertain_policy: "Wie «unsicher» später gezählt wird: als Einschluss (nichts geht verloren), als Ausschluss oder getrennt."
       screening_decision_source: "«model»: die Entscheidung kommt vom Modell; «rule»: sie wird aus den Einzelurteilen abgeleitet."
       screening_reasoning_language: "Sprache, in der das Modell seine Begründung schreibt (de oder en)."
+      screening_fulltext_strategy: "«truncate»: Text auf das Kontextfenster kürzen (einfach, am günstigsten). «sections»: nur Methods/Results/Discussion behalten, ohne erkennbare Überschrift Rückfall auf truncate. map_reduce ist noch nicht umgesetzt und wird darum hier nicht angeboten."
+      screening_fulltext_repeat_criteria_after_text: "Die Ein-/Ausschlusskriterien nach dem Artikeltext nochmals wiederholen. Modelle gewichten Kontext kurz vor der Frage stärker, was bei langen Artikeln helfen kann."
       llm_provider: "Anbieter des Sprachmodells: «openai_compatible» für SwissGPT und ähnliche Dienste, «openai» für OpenAI, «mock» zum kostenlosen Ausprobieren ohne Netz."
       llm_model: "Name des Modells beim Anbieter. Beispiel: gpt-4o-mini. Bei «mock» wählt der Name das Testszenario (S1 bis S15)."
       llm_base_url: "Adresse des Dienstes, nur für «openai_compatible». Beispiel: https://api.prod.alpineai.ch/v1"

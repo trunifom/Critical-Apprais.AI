@@ -68,7 +68,7 @@ from crapai.llm.resilience import (
 )
 from crapai.prompts.builder import STRUCTURED, PromptBuilder, PromptParts
 from crapai.screening.answer import Answer, check_quotes, parse_answer, parse_legacy
-from crapai.screening.fulltext import prepare_fulltext
+from crapai.screening.fulltext import DEFAULT_CONTEXT_TOKENS, prepare_fulltext
 from crapai.screening.store import BatchInfo, Manifest, ResultRow, RunState, RunStore, now_iso
 
 logger = logging.getLogger(__name__)
@@ -76,10 +76,6 @@ logger = logging.getLogger(__name__)
 MIN_RECORDS_FOR_RATE = 5  # a batch smaller than this is not judged by its error rate
 LENGTH_RETRY_FACTOR = 2  # a cut-off answer is asked again with this many times the limit
 MAX_OUTPUT_CAP = 16_000
-# Conservative fallback when the provider does not report its context window (ADR 0026's
-# full-text mode needs a number to truncate/chunk against; better to truncate more than to risk
-# silently overshooting an unknown, possibly small, context window).
-DEFAULT_FULLTEXT_CONTEXT_TOKENS = 16_000
 
 
 @dataclass(frozen=True)
@@ -718,7 +714,7 @@ class ScreeningEngine:
         """
         if self.settings.mode != "fulltext":
             return self.builder.build(item.title, item.abstract, item.keywords)
-        context = self._capabilities.context_tokens or DEFAULT_FULLTEXT_CONTEXT_TOKENS
+        context = self._capabilities.context_tokens or DEFAULT_CONTEXT_TOKENS
         prepared = prepare_fulltext(
             item.fulltext,
             strategy=self.settings.fulltext_strategy,

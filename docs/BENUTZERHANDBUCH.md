@@ -452,11 +452,12 @@ Nach dem Titel-/Abstract-Screening (Abschnitt 6k) kann derselbe Befehl `crapai s
 * **`sections`**: Nur die Abschnitte Methods/Results/Discussion werden geschickt (automatisch erkannt an Überschriftzeilen); ohne erkennbare Überschrift fällt die Software auf `truncate` zurück, statt nichts zu schicken.
 * **`map_reduce`**: **Noch nicht umgesetzt.** Der Plan sieht vor, den Text in Abschnitte zu teilen, je Abschnitt Belege zu sammeln und am Ende zusammenzuführen (deutlich gründlicher, aber 20-40-fache Kosten eines Abstract-Laufs). `crapai screen` lehnt diese Einstellung beim Start klar ab (E203), statt sie falsch zu verarbeiten.
 
+Der Kostenvoranschlag vor `crapai screen` (Abschnitt 6k) berücksichtigt im Volltext-Modus die tatsächliche Länge jeder zugeordneten PDF, bereits auf das Kontextfenster zugeschnitten (bei `truncate`/`sections` also die gekürzte, nicht die rohe Länge) - so entspricht die Schätzung dem, was wirklich verschickt wird.
+
 ### Grenzen dieser Version
 
 * Nur **ZIP-Import** von PDFs wird unterstützt, keine einzelnen PDF-Dateien (Abschnitt 5.5).
 * Gescannte PDFs ohne Textlayer (`NO_TEXT`) werden nicht automatisch per OCR gelesen.
-* Es gibt noch keinen Kostenvoranschlag, der die Volltext-Länge berücksichtigt; der allgemeine Kostenvoranschlag vor `crapai screen` gilt unverändert.
 
 ## 6j. Einstellungen ändern: `project.yaml`, Oberfläche, `crapai config`
 

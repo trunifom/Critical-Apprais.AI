@@ -51,6 +51,10 @@ class Section:
 
 SECTIONS: tuple[Section, ...] = (
     Section(
+        "project",
+        (Field("project.mode", "choice", ("abstract", "fulltext")),),
+    ),
+    Section(
         "dedup",
         (
             Field(
@@ -91,11 +95,17 @@ SECTIONS: tuple[Section, ...] = (
     Section(
         "screening",
         (
+            Field("screening.prompt_variant", "text"),
+            Field("screening.output_format", "choice", ("structured", "legacy_xxx_yyy")),
             Field("screening.include_title_only", "bool"),
             Field("screening.include_keywords_in_prompt", "bool"),
             Field("screening.uncertain_policy", "choice", ("include", "exclude", "keep_separate")),
             Field("screening.decision_source", "choice", ("model", "rule")),
             Field("screening.reasoning_language", "choice", ("en", "de")),
+            # map_reduce is not implemented in the engine yet (ADR 0026); offering it here would
+            # let a run be refused only after the fact, at 'crapai screen'.
+            Field("screening.fulltext.strategy", "choice", ("truncate", "sections")),
+            Field("screening.fulltext.repeat_criteria_after_text", "bool"),
         ),
     ),
     Section(

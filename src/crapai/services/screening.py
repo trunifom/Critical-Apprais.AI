@@ -60,7 +60,6 @@ from crapai.screening.engine import (
     ScreeningEngine,
 )
 from crapai.screening.store import Manifest, RunState, RunStore
-from crapai.services.cost import find_price
 from crapai.services.events import append_events
 
 logger = logging.getLogger(__name__)
@@ -133,7 +132,7 @@ def eligible_records(records: list[Record], config: ProjectConfig) -> list[Recor
     return [r for r in records if not r.exclusion_reason and (r.abstract.strip() or title_only)]
 
 
-def _fulltext_lookup(records: list[Record], workspace: Workspace) -> Callable[[Record], str]:
+def fulltext_lookup(records: list[Record], workspace: Workspace) -> Callable[[Record], str]:
     """A function from an anchor record to its full text, re-read from its ZIP each time.
 
     The text itself is never stored in ``records.csv`` (too large for a CSV cell); only
@@ -186,7 +185,7 @@ def plan_items(
     fulltext_of = None
     if config.project.mode == "fulltext":
         assert workspace is not None, "full-text mode needs a workspace to re-read the ZIP"
-        fulltext_of = _fulltext_lookup(records, workspace)
+        fulltext_of = fulltext_lookup(records, workspace)
     return [_plan_item(r, config, fulltext_of=fulltext_of) for r in chosen]
 
 
@@ -524,10 +523,12 @@ def screen_project(workspace: Workspace, options: RunOptions | None = None) -> R
         builder = builder_for(config, workspace.prompts_dir)
         settings = settings_from_config(config)
         records = read_records(workspace.records_csv)
+        from crapai.services.cost import find_price  # deferred: cost.py imports this module too
+
         price = find_price(workspace, config.llm.provider, config.llm.model)[0]
         resumed = options.resume is not None
         fulltext_of = (
-            _fulltext_lookup(records, workspace) if config.project.mode == "fulltext" else None
+            fulltext_lookup(records, workspace) if config.project.mode == "fulltext" else None
         )
         if resumed:
             assert options.resume is not None

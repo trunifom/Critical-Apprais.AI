@@ -16,10 +16,13 @@ from crapai.config.models import ProjectConfig
 from crapai.cost.duration import DurationConfig, DurationEstimate, estimate_duration
 from crapai.cost.estimator import EstimatorConfig, RunEstimate, build_shared_payload, estimate_run
 from crapai.cost.pricing import CsvPriceSource, Price
-from crapai.cost.tokenizers import tokenizer_for
-from crapai.io.records_store import read_records
+from crapai.cost.tokenizers import Tokenizer, tokenizer_for
+from crapai.errors import ConfigError
+from crapai.io.records_store import Record, read_records
 from crapai.project.workspace import Workspace
 from crapai.prompts.builder import builder_for
+from crapai.screening.fulltext import DEFAULT_CONTEXT_TOKENS, prepare_fulltext
+from crapai.services.screening import eligible_records, fulltext_lookup
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +83,41 @@ def find_price(workspace: Workspace, provider: str, model: str) -> tuple[Price |
     return CsvPriceSource(workspace.pricing_csv).get_price(provider, model), True
 
 
+def _abstract_items(records: list[Record], config: ProjectConfig) -> list[tuple[str, str]]:
+    include_keywords = config.screening.include_keywords_in_prompt
+    return [
+        (
+            r.title,
+            f"{r.abstract}\nKeywords: {r.keywords}"
+            if include_keywords and r.keywords.strip()
+            else r.abstract,
+        )
+        for r in eligible_records(records, config)
+    ]
+
+
+def _fulltext_items(
+    records: list[Record], config: ProjectConfig, workspace: Workspace, tokenizer: Tokenizer
+) -> list[tuple[str, str]]:
+    """``(title, text)`` of every eligible record, already fitted to the context window.
+
+    Using the *prepared* (possibly truncated/reduced) text rather than the raw full text means
+    the estimate matches what :mod:`crapai.screening.engine` will actually send, instead of
+    overestimating a ``truncate``/``sections`` run by the length of the part that gets cut.
+    """
+    resolve = fulltext_lookup(records, workspace)
+    context = config.llm.context_tokens or DEFAULT_CONTEXT_TOKENS
+    strategy = config.screening.fulltext.strategy
+    items = []
+    for record in eligible_records(records, config):
+        prepared = prepare_fulltext(
+            resolve(record), strategy=strategy, max_context_tokens=context,
+            count_tokens=tokenizer.count,
+        )  # fmt: skip
+        items.append((record.title, prepared.text))
+    return items
+
+
 def estimate_project(workspace: Workspace, *, instructions: str = "") -> ProjectEstimate:
     """Estimate tokens and cost of screening all records that would go to the model.
 
@@ -98,25 +136,29 @@ def estimate_project(workspace: Workspace, *, instructions: str = "") -> Project
     """
     workspace = Workspace.open(workspace.root)
     config = load_project_config(workspace.project_yaml)
-    records = read_records(workspace.records_csv)
-    include_keywords = config.screening.include_keywords_in_prompt
-    items = [
-        (
-            r.title,
-            f"{r.abstract}\nKeywords: {r.keywords}" if include_keywords and r.keywords.strip()
-            else r.abstract,
+    if config.project.mode == "fulltext" and config.screening.fulltext.strategy == "map_reduce":
+        # Mirrors screen_project()'s own refusal (ADR 0026): the engine does not implement
+        # map_reduce yet, so an estimate for it would be an estimate for a run that cannot
+        # actually start -- misleading, not merely incomplete.
+        raise ConfigError(
+            "screening.fulltext.strategy 'map_reduce' is not implemented yet",
+            code="E203",
+            hint="Use 'truncate' or 'sections' for full-text screening.",
         )
-        for r in records
-        if not r.exclusion_reason
-    ]
+    records = read_records(workspace.records_csv)
+    provider, model = config.llm.provider, config.llm.model
+    tokenizer = tokenizer_for(provider, model)
+    if config.project.mode == "fulltext":
+        items = _fulltext_items(records, config, workspace, tokenizer)
+    else:
+        items = _abstract_items(records, config)
     builder = builder_for(config, workspace.prompts_dir)
     shared_text = builder.system + "\n\n" + builder.prefix
-    provider, model = config.llm.provider, config.llm.model
     price, found = find_price(workspace, provider, model)
     estimate = estimate_run(
         items,
         shared_text,
-        tokenizer_for(provider, model),
+        tokenizer,
         price=price,
         config=EstimatorConfig(
             output_tokens_per_item=config.llm.expected_output_tokens,
