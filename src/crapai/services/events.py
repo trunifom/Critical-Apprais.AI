@@ -204,6 +204,13 @@ def record_prefilter(workspace: Workspace, total: int, by_reason: Mapping[str, i
     return _safe_append(workspace, [ev.prefilter_applied(total, by_reason)])
 
 
+def record_ai_prefilter(
+    workspace: Workspace, total: int, removed: int, by_reason: Mapping[str, int]
+) -> bool:
+    """Write the Jev pre-filter snapshot (ADR 0029; records marked ``AI_PREFILTER_JEV``)."""
+    return _safe_append(workspace, [ev.ai_prefilter_applied(total, removed, by_reason)])
+
+
 def reporting_mode(workspace: Workspace) -> DuplicatesReportingMode:
     """``dedup.reporting_mode`` of ``project.yaml``; the default if the file is unusable."""
     try:

@@ -85,7 +85,7 @@ def current_overview(
 #: sidebar menu: (group title text key or "", pages); every page is a button
 NAV_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("", ("start", "overview")),
-    ("nav_group.work", ("project", "data", "check", "run", "flow", "export", "results")),
+    ("nav_group.work", ("project", "data", "check", "jev", "run", "flow", "export", "results")),
     ("nav_group.more", ("settings", "help")),
 )
 PAGE_ICONS = {
@@ -94,6 +94,7 @@ PAGE_ICONS = {
     "results": "📊",
     "settings": "⚙️",
     "help": "❓",
+    "jev": "⚡",  # deliberately not part of build_stepper(): an optional step, not a mandatory one
 }
 
 

@@ -154,6 +154,54 @@ class Prefilters(_Strict):
     exclude_retracted: bool = False
 
 
+class AiPrefilterOptions(_Strict):
+    """The optional Jev pre-filter (ADR 0029): a fast, cheap, typed-decision triage step.
+
+    Unlike :class:`Prefilters`, this calls an external service and costs money, so it is never run
+    by ``crapai check``/``crapai screen`` -- only by the dedicated ``crapai jev-prefilter`` command
+    (or its GUI page), and only when ``enabled`` is set here. Jev never gives a reason or a quote
+    for its answer (it returns a typed decision, not text), so it can only ever mark a record
+    excluded at high confidence; it never includes a record and never replaces the quote-bearing
+    screening step.
+
+    Attributes:
+        enabled: Gate 1 of 2 (the dedicated command/GUI confirmation is gate 2). Off by default.
+        model: Jev model name sent in every request.
+        base_url: The Jev "System One" endpoint.
+        api_key_env: Name of the environment variable that holds the API key (never the key
+            itself, same rule as ``llm.api_key_env``).
+        confidence_floor: Only a "does not meet the criteria" answer at or above this confidence
+            marks a record. The lower bound (0.85) follows the published calibration: Jev is only
+            well calibrated at confidence >= ~0.9, so the setting cannot be pushed below a safe
+            margin of that.
+        timeout_s: HTTP timeout of one request.
+        max_concurrency: Requests in flight at the same time.
+        rpm: Requests per minute allowed.
+        max_retries: Retries after a transient error (same semantics as ``limits.max_retries``).
+        max_cost: Stop the run before this amount is exceeded; ``null`` = no limit.
+    """
+
+    enabled: bool = False
+    model: str = Field(default="jev-latest", min_length=1)
+    base_url: str = "https://api.typesafe.ai/v1/systemone"
+    api_key_env: str = "TYPESAFE_API_KEY"
+    confidence_floor: float = Field(default=0.9, ge=0.85, le=0.99)
+    timeout_s: float = Field(default=30.0, gt=0.0)
+    max_concurrency: PositiveInt = 5
+    rpm: PositiveInt = 300
+    max_retries: int = Field(default=3, ge=0)
+    max_cost: float | None = Field(default=1.0, ge=0.0)
+
+    @field_validator("api_key_env")
+    @classmethod
+    def _must_be_a_variable_name(cls, value: str) -> str:
+        if not _ENV_NAME.fullmatch(value):
+            raise ValueError(
+                "api_key_env must be the NAME of an environment variable, not a key or secret"
+            )
+        return value
+
+
 class FulltextOptions(_Strict):
     """How full-text screening handles a document that is longer than the model's context window.
 
@@ -371,6 +419,7 @@ class ProjectConfig(_Strict):
     criteria: Criteria
     dedup: Dedup = Field(default_factory=Dedup)
     prefilters: Prefilters = Field(default_factory=Prefilters)
+    ai_prefilter: AiPrefilterOptions = Field(default_factory=AiPrefilterOptions)
     screening: ScreeningOptions = Field(default_factory=ScreeningOptions)
     discussion: DiscussionSettings = Field(default_factory=DiscussionSettings)
     llm: LlmSettings = Field(default_factory=LlmSettings)

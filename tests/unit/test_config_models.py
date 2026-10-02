@@ -71,6 +71,21 @@ def test_an_unknown_mode_is_still_rejected() -> None:
         ProjectConfig.model_validate(data)
 
 
+def test_ai_prefilter_is_off_and_well_calibrated_by_default() -> None:
+    """ADR 0029: the Jev pre-filter is opt-in; its confidence floor cannot go below the published
+    calibration margin (Jev is only well calibrated at confidence >= ~0.9)."""
+    config = ProjectConfig.model_validate(
+        {"project": {"title": "T"}, "criteria": {"inclusion": {"Population": "adults"}}}
+    )
+    assert config.ai_prefilter.enabled is False
+    assert config.ai_prefilter.confidence_floor == 0.9
+    data = example()
+    data["ai_prefilter"] = {"confidence_floor": 0.5}
+    with pytest.raises(ValidationError) as info:
+        ProjectConfig.model_validate(data)
+    assert "ai_prefilter.confidence_floor" in error_locs(info.value)
+
+
 @pytest.mark.parametrize("value", ["sk-abc123DEF456ghi789", "my key", "KEY-WITH-DASH", "", "a=b"])
 def test_api_key_field_accepts_only_variable_names(value: str) -> None:
     data = example()

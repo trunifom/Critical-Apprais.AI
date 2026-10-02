@@ -159,6 +159,15 @@ def test_a_fulltext_attachment_is_never_marked_no_abstract() -> None:
     assert result.valid_for_model == 1
 
 
+def test_an_ai_prefilter_mark_is_never_touched_by_the_validity_check() -> None:
+    """ADR 0029: AI_PREFILTER_JEV is set by a separate, manually started command, never by
+    'crapai check'/'crapai screen'. mark_validity() must leave it exactly as it is."""
+    marked = rec("Some study", "", exclusion_reason="AI_PREFILTER_JEV", exclusion_details="x")
+    result = mark_validity([marked])
+    assert result.records[0].exclusion_reason == "AI_PREFILTER_JEV"
+    assert result.records[0].exclusion_details == "x"
+
+
 def test_title_only_mode_sends_records_without_abstract_to_the_model() -> None:
     result = mark_validity([rec("Without", "")], ValidityConfig(include_title_only=True))
     assert reasons(result) == [""] and result.valid_for_model == 1

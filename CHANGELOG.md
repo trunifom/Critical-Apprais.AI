@@ -7,6 +7,17 @@ Jeder Eintrag verweist auf die Aufgabenkarte; die genauen Commits stehen in `doc
 
 ## [Unveröffentlicht] - 0.0.1
 
+### Optionaler KI-Vorfilter mit Jev (ADR 0029)
+
+Auf Wunsch der Projektleitung recherchiert und als expliziter Spezialmodus umgesetzt: Jev (TypeSafe AI) ist kein Chat-Completion-Modell, sondern beantwortet eine einzige typisierte Ja/Nein-Frage mit kalibrierter Wahrscheinlichkeit, nie mit Fliesstext - also ohne Zitat oder Begründung. Er ersetzt deshalb nie das eigentliche, begründungsfähige Screening, eignet sich aber als schneller, günstiger Vorfilter für klar themenfremde Datensätze.
+
+* **Neuer Befehl `crapai jev-prefilter FOLDER [--yes]`** (eigener Kostenvoranschlag, eigene Bestätigung wie bei `crapai screen`) und eine eigene Oberflächen-Seite - beide bewusst getrennt von `crapai check`/`crapai screen`: der Vorfilter läuft nie automatisch mit.
+* **Zwei Tore müssen beide offen sein:** `ai_prefilter.enabled: true` in den Einstellungen (Standard: aus) **und** der separate Start (Befehl oder Seite mit Bestätigungs-Häkchen).
+* **Neuer, isolierter Ausschlussgrund `AI_PREFILTER_JEV`**, bewusst ausserhalb der automatischen Dedup-/Vorfilter-/Gültigkeits-Kette, die `crapai check`/`crapai screen` bei jedem Lauf neu berechnen - die Markierung übersteht deshalb jeden weiteren Lauf unverändert.
+* Markiert wird nur bei hoher Konfidenz (Standard/Mindestwert 0.9, harte Untergrenze 0.85) und nur als Ausschluss, nie als Einschluss; alles andere geht unverändert ins gewöhnliche Screening.
+* PRISMA-Zahlen (`records_removed_by_ai_prefilter`, `ai_prefilter_reasons`) werden korrekt mitgezählt.
+* Neues Extra `prefilter-jev = ["httpx"]`; neue Preiszeile in `templates/pricing.example.csv`.
+
 ### Durchsicht: Fehlerbehandlung, Protokolle, Dokumentation (Stichwort-Filter, Lauf-Vergleich, Schiedsrichter/Diskussion)
 
 Auf Wunsch der Projektleitung wurden die drei Funktionen der letzten beiden Sitzungen nochmals vertieft durchgesehen (ADR 0025, Nachtrag). Behoben:

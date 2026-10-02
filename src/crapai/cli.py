@@ -45,9 +45,15 @@ from crapai.logging_setup import attach_project_log, enable_console_log
 from crapai.project.lock import pid_alive
 from crapai.project.workspace import Workspace, cloud_sync_marker
 from crapai.screening.store import RunStore
+from crapai.services import ai_prefilter as ai_prefilter_service
 from crapai.services import resolution as resolution_service
 from crapai.services import screening as screening_service
-from crapai.services.cost import ProjectEstimate, estimate_project
+from crapai.services.cost import (
+    AiPrefilterEstimate,
+    ProjectEstimate,
+    estimate_ai_prefilter,
+    estimate_project,
+)
 from crapai.services.dedup import dedup_project
 from crapai.services.export import (
     ExportSummary,
@@ -1640,6 +1646,104 @@ def _print_screen_result(
             json_mode=as_json,
         )
     return code
+
+
+@app.command("jev-prefilter")
+def jev_prefilter_command(
+    folder: Annotated[Path, typer.Argument(help="Project folder.")],
+    yes: Annotated[
+        bool, typer.Option("--yes", help="Start without asking for confirmation.")
+    ] = False,
+    as_json: JsonOption = False,
+    lang: LangOption = None,
+) -> None:
+    """Run the optional Jev pre-filter (ADR 0029): a fast, cheap, typed-decision triage step.
+
+    This is a special mode, separate from "crapai screen": it never runs automatically, and it
+    must be switched on first (ai_prefilter.enabled in the settings) before this command works at
+    all. Jev marks a record excluded only when it is highly confident the record does not meet
+    the inclusion criteria from the title/abstract alone -- it never includes a record, gives no
+    quote or reasoning for its answer, and never replaces the ordinary screening step. Everything
+    it does not mark goes to "crapai screen" exactly as before.
+    Example: crapai jev-prefilter my-review --yes
+    """
+    messages = Messages(resolve_language(lang, folder / "project.yaml"))
+    _setup_file_log(folder, messages)
+    try:
+        workspace = Workspace.open(folder)
+        estimate, problem = _estimate_for_jev(workspace)
+        if not yes:
+            _confirm_jev(estimate, problem, messages, as_json=as_json)
+        summary = ai_prefilter_service.ai_prefilter_project(workspace)
+    except typer.Exit:
+        raise
+    except Exception as error:  # noqa: BLE001 - boundary: every error becomes an exit code
+        raise _fail(error, messages, json_mode=as_json) from error
+    if as_json:
+        typer.echo(
+            json.dumps(
+                {
+                    "records": summary.records,
+                    "eligible": summary.eligible,
+                    "checked": summary.checked,
+                    "marked": summary.marked,
+                    "cost": round(summary.cost, 6),
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+    typer.secho(
+        messages.text(
+            "cli.jev.done",
+            marked=summary.marked,
+            eligible=summary.eligible,
+            checked=summary.checked,
+            records=summary.records,
+            cost=f"{summary.cost:.4f}",
+        ),
+        fg="green",
+        err=as_json,
+    )
+
+
+def _estimate_for_jev(workspace: Workspace) -> tuple[AiPrefilterEstimate | None, str]:
+    """The cost estimate shown before a Jev run, or ``(None, reason)`` if there is none."""
+    try:
+        return estimate_ai_prefilter(workspace), ""
+    except SaraError as error:
+        logger.warning("Jev pre-filter estimate not available: %s", error.code)
+        return None, f"{error.code}: {error.user_message}"
+    except Exception as error:  # noqa: BLE001 - the estimate is optional; the run goes on
+        logger.exception("Jev pre-filter estimate failed")
+        return None, type(error).__name__
+
+
+def _confirm_jev(
+    estimate: AiPrefilterEstimate | None, problem: str, messages: Messages, *, as_json: bool
+) -> None:
+    """Show the estimate and the data-transfer notice, then ask (mirrors ``_confirm_screen``)."""
+    if estimate is not None and estimate.cost is not None:
+        _echo(
+            messages.text(
+                "cli.jev.estimate",
+                n_items=estimate.n_items,
+                tokens_in=estimate.tokens_in,
+                cost=f"{estimate.cost:.4f}",
+                currency="USD",
+            ),
+            json_mode=as_json,
+        )
+    else:
+        reason = problem or messages.text("cli.check.cost.no_price")
+        _echo(messages.text("cli.jev.estimate_none", reason=reason), json_mode=as_json)
+    decision = decide_confirmation(yes=False, interactive=_interactive())
+    if decision is Confirmation.REFUSE:
+        typer.secho(messages.text("cli.jev.declined"), fg="yellow", err=True)
+        raise typer.Exit(EXIT_USER_ERROR)
+    if not typer.confirm(messages.text("cli.jev.confirm"), err=as_json):
+        typer.echo(messages.text("cli.jev.declined"), err=True)
+        raise typer.Exit(EXIT_USER_ERROR)
 
 
 @app.command("runs")

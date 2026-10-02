@@ -201,6 +201,27 @@ def prefilter_applied(total: int, removed_by_reason: Mapping[str, int]) -> Prism
     )
 
 
+def ai_prefilter_applied(total: int, removed: int, by_reason: Mapping[str, int]) -> PrismaEvent:
+    """The optional Jev pre-filter ran (ADR 0029): records marked ``AI_PREFILTER_JEV``.
+
+    A deliberately separate ``kind`` from ``"prefilter"``: this step is never run automatically
+    (unlike the deterministic pre-filters), so its snapshot must not be folded together with
+    theirs -- a rerun of the deterministic pre-filters must not make this snapshot look stale or
+    get merged into it (see :mod:`crapai.prisma.flow`).
+    """
+    return PrismaEvent(
+        step=PrismaStep.DEDUP_MERGED.value,
+        event_type=EventType.INFO.value,
+        message=f"Jev pre-filter marked {removed} of {total} records before screening.",
+        payload={
+            "kind": "ai_prefilter_jev",
+            "total_count": int(total),
+            "removed": int(removed),
+            "by_reason": {k: int(v) for k, v in by_reason.items()},
+        },
+    )
+
+
 def screening_done(
     phase: ScreeningPhase,
     included: int,

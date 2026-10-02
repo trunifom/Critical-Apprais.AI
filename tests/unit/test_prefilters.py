@@ -259,6 +259,19 @@ def test_reasons_of_import_and_dedup_are_never_replaced() -> None:
     assert result.skipped == 3 and result.removed == 0
 
 
+def test_an_ai_prefilter_mark_is_never_touched_by_the_deterministic_prefilters() -> None:
+    """ADR 0029: AI_PREFILTER_JEV is set by a separate, manually started command, never by
+    'crapai check'/'crapai screen'. mark_prefilters() must leave it exactly as it is, the same
+    way it leaves DUPLICATE/EMPTY_RECORD/IMPORT_ERROR alone -- otherwise the next automatic check
+    would silently erase a mark that nothing here recomputes."""
+    config = PrefilterConfig(language_allow=("eng",))
+    records = [rec("a", language="fre", exclusion_reason="AI_PREFILTER_JEV", exclusion_details="x")]
+    result = mark_prefilters(records, config)
+    assert result.records[0].exclusion_reason == "AI_PREFILTER_JEV"
+    assert result.records[0].exclusion_details == "x"
+    assert result.skipped == 1 and result.removed == 0
+
+
 def test_a_prefilter_replaces_a_validity_reason() -> None:
     config = PrefilterConfig(language_allow=("eng",))
     records = [rec("a", language="fre", exclusion_reason="NO_ABSTRACT", exclusion_details="x")]

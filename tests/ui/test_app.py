@@ -432,6 +432,59 @@ def test_the_run_page_shows_the_fulltext_strategy_and_blocks_map_reduce(
     assert at.button(key="run_start").disabled
 
 
+def enable_ai_prefilter(folder: Path, **overrides: object) -> None:
+    import yaml
+
+    path = folder / "project.yaml"
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    data["ai_prefilter"] = {"enabled": True, "model": "mock", **overrides}
+    path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+
+
+def test_the_jev_page_explains_itself_and_is_locked_until_enabled(
+    monkeypatch: pytest.MonkeyPatch, filled_project: Path
+) -> None:
+    at = fresh(monkeypatch, filled_project).run()
+    goto(at, "jev")
+    assert not at.exception
+    text = page_text(at)
+    assert "TypeSafe AI" in text and "68" in text  # the always-visible explanation
+    assert "switched off" in text
+    assert "jev_start" not in {b.key for b in at.button}  # no start control while disabled
+
+
+def test_the_jev_page_needs_the_consent_box_before_starting(
+    monkeypatch: pytest.MonkeyPatch, filled_project: Path
+) -> None:
+    enable_ai_prefilter(filled_project)
+    at = fresh(monkeypatch, filled_project).run()
+    goto(at, "jev")
+    assert not at.exception
+    assert at.button(key="jev_start").disabled
+    at.checkbox(key="jev_confirm").check()
+    at.run()
+    assert not at.button(key="jev_start").disabled
+
+
+def test_starting_the_jev_prefilter_marks_a_record_and_shows_the_summary(
+    monkeypatch: pytest.MonkeyPatch, filled_project: Path
+) -> None:
+    from crapai.io.records_store import read_records
+    from crapai.project.workspace import Workspace
+
+    enable_ai_prefilter(filled_project)
+    at = fresh(monkeypatch, filled_project).run()
+    goto(at, "jev")
+    at.checkbox(key="jev_confirm").check()
+    at.run()
+    at.button(key="jev_start").click()
+    at.run()
+    assert not at.exception
+    assert "Jev pre-filter done" in page_text(at)
+    records = read_records(Workspace(filled_project).records_csv)
+    assert {r.exclusion_reason for r in records} == {""}  # the demo text never clears Jev's floor
+
+
 def test_starting_from_the_page_spawns_one_process_and_says_so(
     monkeypatch: pytest.MonkeyPatch, filled_project: Path
 ) -> None:

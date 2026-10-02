@@ -103,6 +103,7 @@ EXCLUSION_REASONS = frozenset(
         "PREFILTER_YEAR",
         "PREFILTER_TYPE",
         "PREFILTER_KEYWORD",
+        "AI_PREFILTER_JEV",
     }
 )
 

@@ -145,6 +145,54 @@ def test_prefilter_snapshot_latest_wins() -> None:
     assert build_flow(events).records_removed_by_prefilter == 0
 
 
+def test_ai_prefilter_is_removed_before_screening_other_in_its_own_field() -> None:
+    """ADR 0029: a separate field from the deterministic prefilter, folded into the same
+    'other' total and subtracted from 'to screen', so the arithmetic still balances."""
+    reasons = {"AI_PREFILTER_JEV": 3}
+    events = scenario({}, 2, {"A": 20}) + [ev.ai_prefilter_applied(18, 3, reasons)]
+    for mode in (ALL, BETWEEN):
+        flow = build_flow(events, mode)
+        assert flow.records_removed_by_ai_prefilter == 3
+        assert flow.ai_prefilter_reasons == reasons
+        assert flow.records_removed_before_screening_other == 3
+        assert flow.records_after_deduplication == 18 and flow.records_to_screen == 15
+        assert validate_flow(flow) == []
+
+
+def test_ai_prefilter_and_deterministic_prefilter_add_up_independently() -> None:
+    events = (
+        scenario({}, 0, {"A": 20})
+        + [ev.prefilter_applied(20, {"PREFILTER_YEAR": 2})]
+        + [ev.ai_prefilter_applied(20, 3, {"AI_PREFILTER_JEV": 3})]
+    )
+    flow = build_flow(events, ALL)
+    assert flow.records_removed_by_prefilter == 2
+    assert flow.records_removed_by_ai_prefilter == 3
+    assert flow.records_removed_before_screening_other == 5
+    assert flow.records_to_screen == 20 - 2 - 3
+
+
+def test_ai_prefilter_snapshot_is_never_stale_after_a_later_dedup_run() -> None:
+    """Unlike the deterministic pre-filter, dedup never replaces AI_PREFILTER_JEV (ADR 0029), so
+    a dedup event coming after the AI pre-filter event must not flag it as stale."""
+    events = [
+        ev.ai_prefilter_applied(10, 2, {"AI_PREFILTER_JEV": 2}),
+        *scenario({}, 1, {"A": 10}),
+    ]
+    flow = build_flow(events, ALL)
+    assert flow.records_removed_by_ai_prefilter == 2
+    assert "ai_prefilter" not in flow.stale_steps
+    assert validate_flow(flow) == []
+
+
+def test_ai_prefilter_snapshot_latest_wins() -> None:
+    events = [
+        ev.ai_prefilter_applied(10, 5, {"AI_PREFILTER_JEV": 5}),
+        ev.ai_prefilter_applied(10, 0, {}),
+    ]
+    assert build_flow(events).records_removed_by_ai_prefilter == 0
+
+
 def test_screening_phases_and_final_included() -> None:
     events = scenario({}, 0, {"A": 100}) + [
         ev.screening_done(ScreeningPhase.ABSTRACT, 20, 70),

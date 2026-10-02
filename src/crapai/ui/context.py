@@ -16,6 +16,7 @@ PAGES: tuple[str, ...] = (
     "project",
     "data",
     "check",
+    "jev",
     "run",
     "flow",
     "export",
@@ -24,9 +25,9 @@ PAGES: tuple[str, ...] = (
     "help",
 )
 #: pages that need an open project (the others work without one)
-NEEDS_PROJECT = frozenset({"overview", "project", "data", "check", "run", "flow", "export"})
+NEEDS_PROJECT = frozenset({"overview", "project", "data", "check", "jev", "run", "flow", "export"})
 #: pages that need records
-NEEDS_RECORDS = frozenset({"check", "run", "flow", "export"})
+NEEDS_RECORDS = frozenset({"check", "jev", "run", "flow", "export"})
 
 
 @dataclass

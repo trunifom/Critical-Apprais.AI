@@ -24,6 +24,7 @@ crapai = "crapai.cli:main"  # needs the "cli" extra
 import = ["rispy", "pybtex", "openpyxl", "pymupdf", "pdfplumber", "pylatexenc"]
 llm-openai = ["openai", "tiktoken"]
 llm-anthropic = ["anthropic"]
+prefilter-jev = ["httpx"]  # ADR 0029: optional Jev pre-filter, a single typed-decision HTTP call
 cli = ["typer", "rich"]
 ui = ["streamlit", "streamlit-aggrid"]
 stats = ["scikit-learn", "matplotlib"]

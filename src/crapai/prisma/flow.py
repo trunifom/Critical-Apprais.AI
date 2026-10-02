@@ -29,10 +29,13 @@ Two ways to report duplicates (``DuplicatesReportingMode``):
     "removed before screening (other)" so the arithmetic still balances.
 
 Records removed by the pre-filters (and retracted studies, when they are excluded) are always
-"other". Records that are not sent to the model for another reason (front matter, no abstract)
-are **not** removed here: they stay in "records to screen" and are visible in
-``records_with_missing_abstracts``; the screening step reports them as not assessed. No I/O, no
-network.
+"other". The optional Jev pre-filter (ADR 0029, ``kind="ai_prefilter_jev"``) is folded the same
+way, but kept in its own field (``records_removed_by_ai_prefilter``/``ai_prefilter_reasons``) and
+never goes stale: unlike the deterministic pre-filters, dedup never replaces its mark, so a later
+dedup run cannot invalidate its snapshot. Records that are not sent to the model for another reason
+(front matter, no abstract) are **not** removed here: they stay in "records to screen" and are
+visible in ``records_with_missing_abstracts``; the screening step reports them as not assessed.
+No I/O, no network.
 """
 
 from __future__ import annotations
@@ -64,9 +67,14 @@ class PrismaFlow:
         records_identified_by_source: Imported records per source label.
         duplicates_removed: Duplicates, counted as the reporting mode says.
         records_removed_before_screening_other: Removed for other reasons before screening
-            (within-source duplicates in ``BETWEEN_DATABASES_ONLY`` mode, plus pre-filters).
+            (within-source duplicates in ``BETWEEN_DATABASES_ONLY`` mode, plus pre-filters, plus
+            the optional AI pre-filter).
         records_removed_by_prefilter: Part of the above that the pre-filters removed.
         prefilter_reasons: Pre-filter removals per reason code.
+        records_removed_by_ai_prefilter: Part of the above that the optional Jev pre-filter
+            removed (ADR 0029; 0 if it was never run).
+        ai_prefilter_reasons: AI pre-filter removals per reason code (today always just
+            ``AI_PREFILTER_JEV``, kept as a mapping for symmetry with ``prefilter_reasons``).
         records_after_deduplication: Identified minus all duplicates, before pre-filters.
         records_to_screen: Identified minus duplicates minus other removals.
         records_with_missing_abstracts: Records without an abstract, duplicates included
@@ -86,6 +94,8 @@ class PrismaFlow:
     records_removed_before_screening_other: int = 0
     records_removed_by_prefilter: int = 0
     prefilter_reasons: dict[str, int] = field(default_factory=dict)
+    records_removed_by_ai_prefilter: int = 0
+    ai_prefilter_reasons: dict[str, int] = field(default_factory=dict)
     records_after_deduplication: int = 0
     records_to_screen: int = 0
     records_with_missing_abstracts: int = 0
@@ -188,6 +198,7 @@ def build_flow(
     missing = 0
     retracted = 0
     prefilter_reasons: dict[str, int] = {}
+    ai_prefilter_reasons: dict[str, int] = {}
     screening: dict[str, list[PrismaEvent]] = {
         EventType.SCREEN_TA.value: [],
         EventType.SCREEN_FT.value: [],
@@ -215,6 +226,11 @@ def build_flow(
         elif event.event_type == EventType.INFO.value and event.kind == "prefilter":
             prefilter_reasons = _int_mapping(payload.get("by_reason"))
             last_prefilter = position
+        elif event.event_type == EventType.INFO.value and event.kind == "ai_prefilter_jev":
+            # No "latest among the latest dedup" staleness tracking here, unlike the deterministic
+            # pre-filter: dedup never replaces AI_PREFILTER_JEV, so this snapshot never goes stale
+            # (see the comment below, near `stale`). "Later event wins" is enough.
+            ai_prefilter_reasons = _int_mapping(payload.get("by_reason"))
         elif event.event_type in screening:
             screening[event.event_type].append(event)
 
@@ -224,6 +240,9 @@ def build_flow(
     if last_dedup >= 0 and 0 <= last_prefilter < last_dedup:
         stale.append("prefilter")
         prefilter_reasons = {}
+    # No staleness check for the AI pre-filter: unlike the deterministic pre-filters, dedup never
+    # replaces AI_PREFILTER_JEV (prisma/reasons.py), so a later dedup run cannot change what it
+    # already marked -- its snapshot stays accurate for as long as records.csv keeps the marks.
     if last_dedup >= 0 and 0 <= last_validity < last_dedup:
         stale.append("validity")
         missing, retracted = 0, 0
@@ -244,6 +263,7 @@ def build_flow(
         duplicates = min(identified_total, across_removed)
         other_dedup = all_duplicates - duplicates
     prefiltered = sum(prefilter_reasons.values())
+    ai_prefiltered = sum(ai_prefilter_reasons.values())
 
     ta_included, ta_excluded, _ = _screening(screening[EventType.SCREEN_TA.value])
     ft_included, ft_excluded, ft_reasons = _screening(screening[EventType.SCREEN_FT.value])
@@ -255,11 +275,13 @@ def build_flow(
         records_identified_total=identified_total,
         records_identified_by_source=dict(identified),
         duplicates_removed=duplicates,
-        records_removed_before_screening_other=other_dedup + prefiltered,
+        records_removed_before_screening_other=other_dedup + prefiltered + ai_prefiltered,
         records_removed_by_prefilter=prefiltered,
         prefilter_reasons=prefilter_reasons,
+        records_removed_by_ai_prefilter=ai_prefiltered,
+        ai_prefilter_reasons=ai_prefilter_reasons,
         records_after_deduplication=after_dedup,
-        records_to_screen=max(0, after_dedup - prefiltered),
+        records_to_screen=max(0, after_dedup - prefiltered - ai_prefiltered),
         records_with_missing_abstracts=missing,
         records_screened_title_abstract=ta_included + ta_excluded,
         records_excluded_title_abstract=ta_excluded,

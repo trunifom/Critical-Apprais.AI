@@ -261,6 +261,17 @@ def test_existing_reasons_are_kept_and_a_new_run_starts_clean() -> None:
     assert changed.records[0].exclusion_reason == ""
 
 
+def test_an_ai_prefilter_mark_is_never_replaced_by_dedup() -> None:
+    """ADR 0029: AI_PREFILTER_JEV is not in REPLACEABLE_BY_DEDUP (unlike validity/prefilter
+    reasons), so a record the AI pre-filter already excluded keeps that exact reason even if
+    dedup would otherwise consider it a duplicate."""
+    marked = rec("Paper", "10.1/a", exclusion_reason="AI_PREFILTER_JEV", exclusion_details="x")
+    other = rec("Paper", "10.1/a")
+    result = mark_duplicates([other, marked])
+    assert result.records[1].exclusion_reason == "AI_PREFILTER_JEV"
+    assert result.records[1].exclusion_details == "x"
+
+
 def test_clear_marks_only_removes_the_duplicate_reason() -> None:
     marked = mark_duplicates([rec("P", "10.1/a"), rec("P", "10.1/a")]).records
     cleared = clear_duplicate_marks(marked)

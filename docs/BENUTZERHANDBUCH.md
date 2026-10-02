@@ -511,6 +511,27 @@ crapai profile delete mein-standard-entwurf
 * **`crapai profile load`** schreibt die vier Abschnitte in `project.overrides.yaml` - genau wie `crapai config set` oder die Oberfläche. **Die `project.yaml` wird nie verändert** (Ihre Kommentare bleiben); andere, schon vorhandene Overrides bleiben erhalten; rückgängig mit `crapai config reset`.
 * Ein unbekannter Profilname ist ein Fehler (E203), kein stilles Nichtstun.
 
+## 6q. KI-Vorfilter mit Jev (experimentell, ADR 0029)
+
+Ein **optionaler, eigenständiger** Vorsortierungs-Schritt, der vor dem eigentlichen Screening läuft. Er nutzt Jev (TypeSafe AI), ein "typisiertes Entscheidungsmodell": es beantwortet eine einzige Ja/Nein-Frage pro Datensatz mit einer kalibrierten Wahrscheinlichkeit, **nie mit Fliesstext** - also ohne Zitat und ohne Begründung, anders als das Modell, das für das eigentliche Screening (Abschnitt 6k) verwendet wird. Veröffentlichte Benchmarks zeigen eine Genauigkeit von rund 68 % insgesamt (einige Punkte unter Spitzen-Sprachmodellen), aber gute Kalibrierung ab Konfidenz 0.9 aufwärts; dafür ist Jev deutlich schneller und günstiger.
+
+**Wichtig, bitte zuerst lesen:**
+
+* Dieser Schritt **läuft nie automatisch** - nicht bei `crapai check`, nicht bei `crapai screen`. Er muss in zwei Schritten bewusst angestossen werden: (1) in `project.yaml` (oder über die Einstellungen-Seite) `ai_prefilter.enabled: true` setzen, (2) den eigenen Befehl `crapai jev-prefilter` ausführen (oder die eigene Seite "KI-Vorfilter" in der Oberfläche benutzen, mit Bestätigungs-Häkchen).
+* Er kann einen Datensatz **nur ausschliessen, nie einschliessen**. Ein Datensatz, bei dem Jev sich nicht sehr sicher ist (unter `ai_prefilter.confidence_floor`, Standard 0.9, kann nicht unter 0.85 gesetzt werden), bleibt **unverändert** und geht genau wie bisher ins gewöhnliche Screening.
+* Er ersetzt nie `crapai screen` - er kann nur die Anzahl Datensätze verkleinern, die dort tatsächlich angefragt werden (und damit Zeit und Kosten sparen), nie die eigentliche, begründete Entscheidung.
+* Markierte Datensätze tragen den Grund `AI_PREFILTER_JEV` (sichtbar in `records.csv`, in der Tabelle der Oberfläche und in den PRISMA-Zahlen) und bleiben über beliebig viele weitere `crapai check`-Läufe hinweg so markiert.
+
+```powershell
+crapai config set mein-review ai_prefilter.enabled=true ai_prefilter.model=jev-latest
+$env:TYPESAFE_API_KEY = "..."    # Schlüssel nur als Umgebungsvariable, nie in project.yaml
+crapai jev-prefilter mein-review
+```
+
+* **Schlüssel:** `ai_prefilter.api_key_env` nennt den Namen der Umgebungsvariable (Standard `TYPESAFE_API_KEY`), genau wie bei `llm.api_key_env`. Mit `ai_prefilter.model: mock` funktioniert der Befehl auch ganz ohne Schlüssel und ohne echte Kosten, zum Ausprobieren.
+* **Kostenvoranschlag:** Wie bei `crapai screen` zeigt der Befehl vor dem Start eine Schätzung (Tokens, USD, aus `pricing.csv`) und fragt nach, sofern nicht `--yes` angegeben ist.
+* **Oberfläche:** Die Seite "KI-Vorfilter" erklärt Jev immer, auch solange er ausgeschaltet ist, und erscheint bewusst nicht im nummerierten Pflichtablauf (Projekt/Daten/Prüfen/Lauf/...) - sie ist ein Extra, kein Pflichtschritt.
+
 ## 6k. Das Screening: `crapai screen`
 
 Dieser Befehl schickt die Datensätze, die nicht ausgeschlossen sind, **einzeln** an das Sprachmodell und speichert für jeden Datensatz einen Vorschlag (`INCLUDE`, `EXCLUDE` oder `UNCERTAIN`) mit Begründung. **Die Vorschläge ersetzen nie Ihre Entscheidung:** jeder Vorschlag wird von Menschen geprüft.

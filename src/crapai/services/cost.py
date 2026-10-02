@@ -16,12 +16,13 @@ from crapai.config.models import ProjectConfig
 from crapai.cost.duration import DurationConfig, DurationEstimate, estimate_duration
 from crapai.cost.estimator import EstimatorConfig, RunEstimate, build_shared_payload, estimate_run
 from crapai.cost.pricing import CsvPriceSource, Price
-from crapai.cost.tokenizers import Tokenizer, tokenizer_for
+from crapai.cost.tokenizers import CharTokenizer, Tokenizer, tokenizer_for
 from crapai.errors import ConfigError
 from crapai.io.records_store import Record, read_records
 from crapai.project.workspace import Workspace
 from crapai.prompts.builder import builder_for
 from crapai.screening.fulltext import DEFAULT_CONTEXT_TOKENS, prepare_fulltext
+from crapai.services.ai_prefilter import eligible_for_ai_prefilter
 from crapai.services.screening import eligible_records, fulltext_lookup
 
 logger = logging.getLogger(__name__)
@@ -116,6 +117,50 @@ def _fulltext_items(
         )  # fmt: skip
         items.append((record.title, prepared.text))
     return items
+
+
+@dataclass(frozen=True)
+class AiPrefilterEstimate:
+    """Rough cost estimate of a ``crapai jev-prefilter`` run (ADR 0029).
+
+    Jev pricing has no output cost (``usage.cost`` in the published pricing is input-tokens
+    only), so unlike :class:`ProjectEstimate` there is a single cost figure, not a worst/likely
+    case -- the character-based estimate already errs high (:class:`CharTokenizer`'s safety
+    factor), so no further band is added.
+
+    Attributes:
+        n_items: Records that would be offered to Jev (no exclusion reason yet).
+        tokens_in: Estimated input tokens across all of them (title + abstract + instructions).
+        cost: Estimated USD cost, or None if the model has no price in ``pricing.csv``.
+        price_file_found: Whether the project has a ``pricing.csv``.
+    """
+
+    n_items: int
+    tokens_in: int
+    cost: float | None
+    price_file_found: bool
+
+
+def estimate_ai_prefilter(workspace: Workspace) -> AiPrefilterEstimate:
+    """Estimate the input tokens and cost of running the Jev pre-filter on this project now.
+
+    Raises:
+        ConfigError: E203 if ``project.yaml`` or ``pricing.csv`` is unusable.
+        StorageError: E404 for a folder that is no project or a damaged ``records.csv``.
+    """
+    workspace = Workspace.open(workspace.root)
+    config = load_project_config(workspace.project_yaml)
+    records = read_records(workspace.records_csv)
+    targets = eligible_for_ai_prefilter(records)
+    tokenizer = CharTokenizer()
+    instructions_tokens = tokenizer.count(criteria_text(config))
+    tokens_in = sum(tokenizer.count(f"{r.title}\n{r.abstract}") for r in targets)
+    tokens_in += instructions_tokens * len(targets)
+    price, found = find_price(workspace, "typesafe", config.ai_prefilter.model)
+    cost = tokens_in / 1000 * price.input_per_1k if price is not None else None
+    return AiPrefilterEstimate(
+        n_items=len(targets), tokens_in=tokens_in, cost=cost, price_file_found=found
+    )
 
 
 def estimate_project(workspace: Workspace, *, instructions: str = "") -> ProjectEstimate:

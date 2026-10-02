@@ -109,6 +109,20 @@ SECTIONS: tuple[Section, ...] = (
         ),
     ),
     Section(
+        "ai_prefilter",
+        (
+            Field("ai_prefilter.enabled", "bool"),
+            Field("ai_prefilter.model", "text"),
+            Field("ai_prefilter.api_key_env", "text"),
+            Field("ai_prefilter.confidence_floor", "float", minimum=0.85, maximum=0.99, step=0.01),
+            Field("ai_prefilter.max_concurrency", "int", minimum=1, maximum=200),
+            Field("ai_prefilter.rpm", "int", minimum=1, maximum=1_000_000),
+            Field("ai_prefilter.max_retries", "int", minimum=0, maximum=100),
+            Field("ai_prefilter.max_cost", "optional_float", minimum=0.0),
+            Field("ai_prefilter.timeout_s", "float", minimum=1.0, maximum=3600.0, step=5.0),
+        ),
+    ),
+    Section(
         "discussion",
         (
             Field("discussion.max_rounds", "int", minimum=1, maximum=20),

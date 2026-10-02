@@ -38,7 +38,13 @@ from crapai.prisma.flow import FlowWarning, PrismaFlow
 from crapai.project.atomic import atomic_write_text
 from crapai.project.workspace import Workspace
 from crapai.services import screening as screening_service
-from crapai.services.cost import ProjectEstimate, estimate_project
+from crapai.services.ai_prefilter import AiPrefilterSummary, ai_prefilter_project
+from crapai.services.cost import (
+    AiPrefilterEstimate,
+    ProjectEstimate,
+    estimate_ai_prefilter,
+    estimate_project,
+)
 from crapai.services.events import project_flow
 from crapai.services.export import ExportSummary, export_flow, export_records, export_report
 from crapai.services.importing import ImportRequest, ImportSummary, import_source
@@ -511,6 +517,20 @@ def read_project_config(messages: Messages, folder: Path) -> Outcome[ProjectConf
     """``project.yaml``, validated (no ``try`` needed on the page that only shows it)."""
     return guarded(
         messages, lambda: load_project_config(folder / "project.yaml"), name="read project config"
+    )
+
+
+def estimate_jev(messages: Messages, folder: Path) -> Outcome[AiPrefilterEstimate]:
+    """The cost estimate shown before a Jev pre-filter run starts (ADR 0029)."""
+    return guarded(
+        messages, lambda: estimate_ai_prefilter(Workspace.open(folder)), name="estimate jev"
+    )
+
+
+def run_jev_prefilter(messages: Messages, folder: Path) -> Outcome[AiPrefilterSummary]:
+    """Run the Jev pre-filter once, synchronously (it is fast/cheap; no background process)."""
+    return guarded(
+        messages, lambda: ai_prefilter_project(Workspace.open(folder)), name="jev pre-filter"
     )
 
 
