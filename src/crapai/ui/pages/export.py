@@ -16,6 +16,8 @@ MIME = {
     "csv": "text/csv",
     "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "ris": "application/x-research-info-systems",
+    "bibtex": "application/x-bibtex",
+    "nbib": "text/plain",
     "json": "application/json",
 }
 

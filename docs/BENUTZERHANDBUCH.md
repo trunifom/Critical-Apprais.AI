@@ -724,7 +724,10 @@ Jedes Projekt hat ein Protokoll `.crapai/app.log` (rotierend, 1 MB, drei ältere
 crapai export mein-review                              # alle Datensätze als CSV (Excel-tauglich)
 crapai export mein-review --format xlsx --scope screenable
 crapai export mein-review --format ris --output fuer-covidence.ris
+crapai export mein-review --format bibtex --scope excluded     # ausgeschlossene als .bib
+crapai export mein-review --format nbib                        # als MEDLINE/.nbib
 crapai export mein-review --what flow                  # PRISMA-Flusszahlen als prisma_flow.json
+crapai export mein-review --what flow --format png     # ... oder als Grafik (PNG/SVG)
 crapai export mein-review --delimiter semicolon        # Semikolon für Excel mit deutscher Einstellung
 ```
 
@@ -733,7 +736,8 @@ Der Export **verändert das Projekt nicht**. Die Dateien landen im Ordner `expor
 | Option | Bedeutung |
 |---|---|
 | `--what records` (Standard) / `flow` | Datensätze, oder die PRISMA-Flusszahlen mit Warnungen, Modus und Zahl der zugrunde liegenden Ereignisse |
-| `--format csv` (Standard) / `xlsx` / `ris` | Tabellen für Excel; RIS für Literaturverwaltung und Screening-Werkzeuge (Zotero, EndNote, Covidence, Rayyan) |
+| `--format csv` (Standard) / `xlsx` / `ris` / `bibtex` / `nbib` | Tabellen für Excel; RIS/BibTeX/NBIB für Literaturverwaltung und Screening-Werkzeuge (Zotero, EndNote, Covidence, Rayyan) |
+| `--format json` (Standard bei `--what flow`) / `png` / `svg` | nur für `--what flow`: Zahlen als Datei, oder dasselbe als PRISMA-2020-Flussdiagramm (Kästen mit Pfeilen); braucht das Paket `matplotlib` (Extra `stats`), sonst `E203` |
 | `--scope all` (Standard) / `screenable` / `excluded` | alle Datensätze, nur die, die ans Modell gehen, oder nur die mit Ausschlussgrund |
 | `--output DATEI` | Zieldatei; der Ordner muss existieren |
 | `--delimiter` | CSV-Trennzeichen: `,` `;` `tab` `semicolon`; Standard `,` |
@@ -742,6 +746,8 @@ Der Export **verändert das Projekt nicht**. Die Dateien landen im Ordner `expor
 
 * **CSV** wird mit UTF-8-Kennung (BOM) geschrieben, damit Excel Umlaute richtig zeigt; alle 40 Spalten der `records.csv`. **XLSX** hat eine fixierte, fett gesetzte Kopfzeile mit Filter; dafür braucht es das Paket `openpyxl` (Extra `import`), sonst Fehler `E203`.
 * **RIS:** Jeder Datensatz ist ein Eintrag. `ID` trägt die `study_uid` (damit Entscheidungen später den Datensätzen zugeordnet werden können); `N1` nennt Ausschlussgrund, Duplikatsverweis und zurückgezogene Publikation.
+* **BibTeX:** Jeder Datensatz ein `@typ{study_uid, ...}`-Eintrag; Ausschlussgrund, Duplikatsverweis und zurückgezogene Publikation stehen im Feld `note`, wie bei RIS.
+* **NBIB/MEDLINE:** Jeder Datensatz ein Block im PubMed-Format (`PMID-`, `TI  -`, `FAU -`, ...). Anders als bei RIS/BibTeX gibt es **kein** Feld für Ausschlussgrund/Duplikat/Rückzug (MEDLINE kennt kein passendes freies Textfeld dafür); für diese Vermerke RIS oder BibTeX verwenden. **Wichtig:** Ein Export ohne jegliche PMID (`pmid`-Spalte überall leer) lässt sich von unserem eigenen NBIB-Lesemodul nicht wieder einlesen, weil MEDLINE PMID als Erkennungsmerkmal braucht - eine Eigenschaft des Formats, kein Fehler dieses Programms.
 * **Schutz vor Formeln (CSV-Injektion):** Ein Titel wie `=HYPERLINK(...)` würde in Excel als Formel laufen. Zellen, die mit `=`, `+`, `-`, `@`, Tabulator oder Zeilenumbruch beginnen, erhalten darum ein vorangestelltes `'` und bleiben Text. Mit `--raw` entfällt der Schutz; öffnen Sie solche Dateien dann nicht in Excel.
 * **Datei in Excel geöffnet?** Die Zieldatei wird nicht überschrieben: Der Export wird unter einem Namen mit Zeitstempel gespeichert, das Programm sagt es, und der Rückgabecode ist 4.
 * Fehler: `E203` bei unbekanntem Format, Umfang oder Modus oder ungültigem Zielpfad; `E404` für einen Ordner ohne Projekt; `E401`/`E403`, wenn nicht geschrieben werden kann.
@@ -791,7 +797,7 @@ Jeder Import, jede Duplikat-Markierung und jede Gültigkeitsprüfung schreibt ei
 * Fehlt ein Ereignis (zum Beispiel weil die Platte voll war), bleibt die Arbeit gültig; `crapai import`, `dedup` und `check` melden das mit einer Warnung (Rückgabecode 4). Führen Sie `crapai check` später erneut aus.
 * **Veraltete Zahlen werden gemeldet, nicht verschwiegen.** Importieren Sie nach dem letzten `dedup`, erscheint `STALE_DEDUP`: Die neuen Datensätze zählen dann als "zum Screening" und nicht als Duplikate, bis Sie `crapai check` ausführen. Läuft `dedup` allein nach Vorfilter oder Gültigkeitsprüfung, werden deren ältere Zahlen nicht abgezogen (`STALE_PREFILTER`, `STALE_VALIDITY`), damit nichts doppelt gezählt wird.
 * Wiederholtes `crapai check` schreibt nichts Neues, wenn sich nichts geändert hat; die Datei wächst nicht.
-* Die Zahlen lassen sich als Datei ausgeben (`crapai export mein-review --what flow`, Abschnitt 6l) → `prisma_flow.json`. Nur die Grafik (PNG/SVG) folgt noch.
+* Die Zahlen lassen sich als Datei ausgeben (`crapai export mein-review --what flow`, Abschnitt 6l) → `prisma_flow.json`, oder gleich als Grafik (`--format png` oder `svg`, Abschnitt 6g).
 
 ## 7. Die Tabelle `records.csv` lesen
 
@@ -880,5 +886,5 @@ bestätigen (Rückfrage oder `--yes`). Es gibt keine Telemetrie.
 
 ## 10. Was noch kommt
 
-Der PRISMA-Fluss als Grafik (PNG/SVG) und der Vergleich mit menschlichen Entscheidungen. Den Stand finden Sie in
+Der Vergleich mit menschlichen Entscheidungen, die `map_reduce`-Strategie für das Volltext-Screening, und ein DOCX-Zusammenfassungsbericht. Den Stand finden Sie in
 `docs/UMSETZUNGSPLAN_UND_FORTSCHRITT.md`; die Änderungen je Version in `CHANGELOG.md`.

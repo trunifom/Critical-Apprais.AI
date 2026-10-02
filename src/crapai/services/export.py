@@ -4,9 +4,10 @@ Two things can be exported, both read-only with respect to the project (nothing 
 lock is needed: ``records.csv`` is replaced atomically, so a read never sees half a file):
 
 ``records``
-    The records as CSV or XLSX (all 40 columns of ``records.csv``, sanitised for spreadsheets) or as
-    RIS (for reference managers and screening tools). The scope selects all records, only those
-    that go to the model, or only those that are marked with an exclusion reason.
+    The records as CSV or XLSX (all 40 columns of ``records.csv``, sanitised for spreadsheets), or
+    as RIS, BibTeX or NBIB/MEDLINE (for reference managers and screening tools). The scope selects
+    all records, only those that go to the model, or only those that are marked with an exclusion
+    reason.
 ``flow``
     The PRISMA 2020 flow numbers as ``prisma_flow.json`` with the plausibility warnings, derived
     from the event stream (:mod:`crapai.services.events`).
@@ -27,6 +28,9 @@ from typing import Literal
 from crapai.enums import DuplicatesReportingMode
 from crapai.errors import ConfigError
 from crapai.io.records_store import RECORD_COLUMNS, Record, read_records
+from crapai.io.writers.bibtex import write_bibtex
+from crapai.io.writers.nbib import write_nbib
+from crapai.io.writers.prisma_image import write_prisma_image
 from crapai.io.writers.ris import write_ris
 from crapai.io.writers.tables import write_csv, write_xlsx
 from crapai.project.atomic import atomic_write_text
@@ -35,9 +39,11 @@ from crapai.services.events import project_flow, read_events
 
 logger = logging.getLogger(__name__)
 
-RecordFormat = Literal["csv", "xlsx", "ris"]
+RecordFormat = Literal["csv", "xlsx", "ris", "bibtex", "nbib"]
 Scope = Literal["all", "screenable", "excluded"]
-RECORD_FORMATS: tuple[str, ...] = ("csv", "xlsx", "ris")
+RECORD_FORMATS: tuple[str, ...] = ("csv", "xlsx", "ris", "bibtex", "nbib")
+# File extension per format (only "bibtex" differs from its own name: ".bib", the usual extension).
+_EXTENSIONS: dict[str, str] = {"bibtex": "bib"}
 SCOPES: tuple[str, ...] = ("all", "screenable", "excluded")
 FLOW_SCHEMA = 1
 
@@ -48,7 +54,8 @@ class ExportSummary:
 
     Attributes:
         what: ``records`` or ``flow``.
-        format: ``csv``, ``xlsx``, ``ris`` or ``json``.
+        format: ``csv``, ``xlsx``, ``ris``, ``bibtex``, ``nbib`` (records) or ``json``, ``png``,
+            ``svg`` (flow).
         path: The file that holds the content.
         requested_path: The file that was asked for (differs from ``path`` if it was locked).
         records: Number of records written (0 for the flow).
@@ -114,11 +121,11 @@ def export_records(
     guard_formulas: bool = True,
     now: datetime | None = None,
 ) -> ExportSummary:
-    """Write the records of the project to a CSV, XLSX or RIS file.
+    """Write the records of the project to a CSV, XLSX, RIS, BibTeX or NBIB/MEDLINE file.
 
     Args:
         workspace: The project.
-        fmt: ``csv``, ``xlsx`` or ``ris``.
+        fmt: ``csv``, ``xlsx``, ``ris``, ``bibtex`` or ``nbib``.
         scope: ``all``, ``screenable`` or ``excluded``.
         output: Target file; default ``exports/records-<scope>-<timestamp>.<fmt>``.
         delimiter: CSV separator (one character); ``;`` suits Excel with a German locale.
@@ -135,13 +142,14 @@ def export_records(
         raise ConfigError(
             f"Unknown export format '{fmt}' (valid: {', '.join(RECORD_FORMATS)})",
             code="E203",
-            hint="Use --format csv, xlsx or ris.",
+            hint="Use --format csv, xlsx, ris, bibtex or nbib.",
         )
     workspace = Workspace.open(workspace.root)
     everything = read_records(workspace.records_csv)
     selected = select_records(everything, scope)
     stamp = (now or datetime.now()).strftime("%Y%m%d-%H%M%S")
-    target = _target(workspace, output, f"records-{scope}-{stamp}.{fmt}")
+    extension = _EXTENSIONS.get(fmt, fmt)
+    target = _target(workspace, output, f"records-{scope}-{stamp}.{extension}")
     if fmt == "csv":
         written = write_csv(
             target,
@@ -154,6 +162,10 @@ def export_records(
         written = write_xlsx(
             target, RECORD_COLUMNS, (r.to_row() for r in selected), guard_formulas=guard_formulas
         )
+    elif fmt == "bibtex":
+        written = write_bibtex(target, selected)
+    elif fmt == "nbib":
+        written = write_nbib(target, selected)
     else:
         written = write_ris(target, selected)
     logger.info(
@@ -175,25 +187,50 @@ def export_records(
     )
 
 
+FLOW_FORMATS: tuple[str, ...] = ("json", "png", "svg")
+
+
 def export_flow(
     workspace: Workspace,
     *,
+    fmt: str = "json",
     output: Path | None = None,
     mode: DuplicatesReportingMode | str | None = None,
     now: datetime | None = None,
 ) -> ExportSummary:
-    """Write the PRISMA flow numbers as JSON (``exports/prisma_flow.json`` by default).
+    """Write the PRISMA flow as JSON (the numbers, warnings, mode) or as a PNG/SVG picture.
 
-    The file holds the numbers, the plausibility warnings (for example a stale dedup), the
-    reporting mode and the number of events they were derived from.
+    The JSON file (``exports/prisma_flow.json`` by default) holds the numbers, the plausibility
+    warnings (for example a stale dedup), the reporting mode and the number of events they were
+    derived from. A PNG/SVG picture (``exports/prisma_flow.png``/``.svg``) draws the same numbers
+    as a standard PRISMA 2020 box diagram (:mod:`crapai.io.writers.prisma_image`); it carries no
+    warnings of its own, only the numbers.
 
     Raises:
-        ConfigError: E203 for an unknown mode or a bad target.
+        ConfigError: E203 for an unknown format/mode or a bad target, or (PNG/SVG only) if
+            ``matplotlib`` is not installed.
         StorageError: E404 for a folder that is no project or a damaged event file; E401/E403 if
             the file cannot be written.
     """
+    if fmt not in FLOW_FORMATS:
+        raise ConfigError(
+            f"Unknown format '{fmt}' for the PRISMA flow (valid: {', '.join(FLOW_FORMATS)})",
+            code="E203",
+            hint="Use --format json, png or svg.",
+        )
     workspace = Workspace.open(workspace.root)
     flow, warnings = project_flow(workspace, mode)
+    if fmt != "json":
+        target = _target(workspace, output, f"prisma_flow.{fmt}")
+        written = write_prisma_image(target, flow, fmt)
+        logger.info("Exported the PRISMA flow as %s to %s", fmt, written.path.name)
+        return ExportSummary(
+            what="flow",
+            format=fmt,
+            path=written.path,
+            requested_path=target,
+            used_alternative=written.used_alternative,
+        )
     document = {
         "schema": FLOW_SCHEMA,
         "generated_at": (now or datetime.now()).astimezone().isoformat(timespec="seconds"),

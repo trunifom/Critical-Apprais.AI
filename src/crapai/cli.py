@@ -910,7 +910,12 @@ def export_command(
     what: Annotated[
         str, typer.Option("--what", help="records, results (screening results) or flow.")
     ] = "records",
-    fmt: Annotated[str, typer.Option("--format", help="csv, xlsx or ris (records only).")] = "csv",
+    fmt: Annotated[
+        str,
+        typer.Option(
+            "--format", help="records: csv, xlsx, ris, bibtex or nbib. flow: json, png or svg."
+        ),
+    ] = "csv",
     scope: Annotated[
         str, typer.Option(help="all, screenable (go to the model) or excluded (have a reason).")
     ] = "all",
@@ -935,7 +940,7 @@ def export_command(
     as_json: JsonOption = False,
     lang: LangOption = None,
 ) -> None:
-    """Export the records (CSV, XLSX, RIS), the screening results (CSV, XLSX) or the PRISMA flow.
+    """Export records (CSV, XLSX, RIS, BibTeX, NBIB), results (CSV, XLSX) or the PRISMA flow.
 
     The project is not changed. A target that is open in Excel is not overwritten: the export is
     saved under a timestamped name and the exit code is 4.
@@ -950,7 +955,10 @@ def export_command(
             )
         separator = {"tab": "\t", "semicolon": ";", "comma": ","}.get(delimiter.lower(), delimiter)
         if what == "flow":
-            summary = export_flow(Workspace(folder), output=output, mode=mode)
+            # --format defaults to "csv" (meant for records/results); for flow that default
+            # means "json", the original behaviour -- --format png/svg still works explicitly.
+            flow_fmt = "json" if fmt == "csv" else fmt
+            summary = export_flow(Workspace(folder), fmt=flow_fmt, output=output, mode=mode)
         elif what == "results":
             summary = export_results(
                 Workspace(folder),

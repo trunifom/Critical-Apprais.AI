@@ -12,9 +12,13 @@ import pytest
 from typer.testing import CliRunner
 
 from crapai.cli import app
-from crapai.errors import ConfigError, StorageError
+from crapai.errors import ConfigError, ImportFailed, StorageError
+from crapai.io.readers.bibtex import parse_bibtex_text
+from crapai.io.readers.nbib import parse_nbib_text
 from crapai.io.readers.ris import parse_ris_text
 from crapai.io.records_store import RECORD_COLUMNS, Record
+from crapai.io.writers.bibtex import record_to_bibtex, write_bibtex
+from crapai.io.writers.nbib import record_to_nbib, write_nbib
 from crapai.io.writers.ris import record_to_ris, write_ris
 from crapai.io.writers.tables import neutralise_formula, write_csv, write_xlsx
 from crapai.project import atomic
@@ -165,6 +169,110 @@ def test_an_empty_ris_export_is_an_empty_file(tmp_path: Path) -> None:
     assert path.read_text(encoding="utf-8") == ""
 
 
+def test_bibtex_entry_carries_the_bibliographic_fields() -> None:
+    entry = record_to_bibtex(
+        record(
+            authors="Doe, Jane; Roe, Richard", year=2020, journal="J Tests", volume="7",
+            issue="2", pages="10-20", doi="10.1000/a", keywords="a; b", keywords_mesh="m",
+            abstract="Line one\nline two", exclusion_reason="DUPLICATE", is_duplicate=True,
+            duplicate_of="uid-0", is_retracted=True, record_type="journal_article",
+        )
+    )  # fmt: skip
+    assert entry.startswith("@article{uid-1,")
+    for expected in (
+        "title = {A study of exercise}", "author = {Doe, Jane and Roe, Richard}",
+        "year = {2020}", "journal = {J Tests}", "volume = {7}", "number = {2}",
+        "pages = {10-20}", "doi = {10.1000/a}", "keywords = {a; b; m}",
+        "abstract = {Line one line two}",
+        "note = {Excluded before screening: DUPLICATE; Duplicate of: uid-0; Retracted publication}",
+    ):  # fmt: skip
+        assert expected in entry
+    assert entry.endswith("\n}")
+
+
+def test_bibtex_types_round_trip_and_unknown_types_become_misc() -> None:
+    assert record_to_bibtex(record(record_type="book")).startswith("@book{")
+    assert record_to_bibtex(record(record_type="thesis")).startswith("@phdthesis{")
+    assert record_to_bibtex(record(record_type="other")).startswith("@misc{")
+
+
+def test_bibtex_braces_and_backslashes_in_a_value_are_escaped() -> None:
+    entry = record_to_bibtex(record(title=r"A {nested} \value"))
+    assert r"A \{nested\} \\value" in entry
+    # the escaping must not leave the braces unbalanced
+    assert entry.count("{") == entry.count("}")
+
+
+def test_bibtex_written_by_us_is_read_back_by_our_reader(tmp_path: Path) -> None:
+    original = [
+        record(study_uid="u1", authors="Doe, Jane; Roe, Richard", year=2020, doi="10.1000/a",
+               abstract="An abstract", journal="J", pages="1-5"),
+        record(study_uid="u2", title="Second study", record_type="book"),
+    ]  # fmt: skip
+    path = tmp_path / "out.bib"
+    write_bibtex(path, original)
+    back = parse_bibtex_text(path.read_text(encoding="utf-8")).records
+    assert [r.fields["title"] for r in back] == ["A study of exercise", "Second study"]
+    assert back[0].fields["authors"] == "Doe, Jane; Roe, Richard"
+    assert back[0].fields["year"] == 2020 and back[0].fields["pages"] == "1-5"
+    assert back[1].fields["record_type"] == "book"
+
+
+def test_an_empty_bibtex_export_is_an_empty_file(tmp_path: Path) -> None:
+    path = tmp_path / "e.bib"
+    write_bibtex(path, [])
+    assert path.read_text(encoding="utf-8") == ""
+
+
+def test_nbib_entry_carries_the_bibliographic_fields() -> None:
+    entry = record_to_nbib(
+        record(
+            pmid="12345", authors="Doe, Jane; Roe, Richard", year=2020, journal="J Tests",
+            volume="7", issue="2", pages="10-20", doi="10.1000/a", keywords="a",
+            keywords_mesh="m", abstract="Line one\nline two", pmcid="PMC1",
+        )
+    )  # fmt: skip
+    lines = entry.split("\n")
+    for expected in (
+        "PMID- 12345", "UID - uid-1", "TI  - A study of exercise", "FAU - Doe, Jane",
+        "FAU - Roe, Richard", "JT  - J Tests", "TA  - J Tests", "DP  - 2020", "VI  - 7",
+        "IP  - 2", "PG  - 10-20", "AID - 10.1000/a [doi]", "PMC - PMC1", "MH  - m",
+        "OT  - a", "AB  - Line one line two",
+    ):  # fmt: skip
+        assert expected in lines
+
+
+def test_nbib_written_by_us_is_read_back_by_our_reader(tmp_path: Path) -> None:
+    original = [
+        record(study_uid="u1", pmid="111", authors="Doe, Jane", year=2020, doi="10.1000/a",
+               abstract="An abstract", journal="J", pages="1-5"),
+        record(study_uid="u2", pmid="222", title="Second study"),
+    ]  # fmt: skip
+    path = tmp_path / "out.nbib"
+    write_nbib(path, original)
+    back = parse_nbib_text(path.read_text(encoding="utf-8")).records
+    assert [r.fields["title"] for r in back] == ["A study of exercise", "Second study"]
+    assert back[0].fields["authors"] == "Doe, Jane"
+    assert back[0].fields["doi"] == "10.1000/a" and back[0].fields["pages"] == "1-5"
+
+
+def test_nbib_export_without_any_pmid_cannot_be_read_back(tmp_path: Path) -> None:
+    """A known limitation (documented in the writer): NBIB's own reader uses PMID as its
+    defining signal for "this file is MEDLINE", so a file with zero PMIDs fails to be recognised
+    at all, even though every record still has its own full, correctly tagged entry."""
+    path = tmp_path / "no_pmid.nbib"
+    write_nbib(path, [record(title="No PMID here")])
+    with pytest.raises(ImportFailed) as info:
+        parse_nbib_text(path.read_text(encoding="utf-8"))
+    assert info.value.code == "E102"
+
+
+def test_an_empty_nbib_export_is_an_empty_file(tmp_path: Path) -> None:
+    path = tmp_path / "e.nbib"
+    write_nbib(path, [])
+    assert path.read_text(encoding="utf-8") == ""
+
+
 # --- the service -------------------------------------------------------------------------------
 
 
@@ -221,6 +329,13 @@ def test_xlsx_and_ris_exports(project: Workspace) -> None:
     assert export_records(project, "xlsx", now=NOW).path.suffix == ".xlsx"
     ris = export_records(project, "ris", now=NOW)
     assert ris.path.read_text(encoding="utf-8").count("ER  - ") == 3
+
+
+def test_bibtex_and_nbib_exports(project: Workspace) -> None:
+    bibtex = export_records(project, "bibtex", now=NOW)
+    assert bibtex.path.suffix == ".bib" and bibtex.path.read_text(encoding="utf-8").count("@") >= 3
+    nbib = export_records(project, "nbib", now=NOW)
+    assert nbib.path.suffix == ".nbib"
 
 
 def test_an_explicit_output_path_is_used(project: Workspace, tmp_path: Path) -> None:
@@ -287,6 +402,22 @@ def test_flow_export_in_the_other_mode_and_with_a_bad_mode(project: Workspace) -
         export_flow(project, mode="sometimes")
 
 
+def test_flow_export_as_png_or_svg(project: Workspace) -> None:
+    pytest.importorskip("matplotlib")
+    png = export_flow(project, fmt="png", now=NOW)
+    assert png.path.suffix == ".png" and png.path.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
+    svg = export_flow(project, fmt="svg", now=NOW)
+    assert svg.path.suffix == ".svg" and "Records identified" in svg.path.read_text(
+        encoding="utf-8"
+    )
+
+
+def test_flow_export_rejects_an_unknown_format(project: Workspace) -> None:
+    with pytest.raises(ConfigError) as info:
+        export_flow(project, fmt="gif")
+    assert info.value.code == "E203"
+
+
 def test_flow_export_carries_stale_warnings(project: Workspace, tmp_path: Path) -> None:
     more = tmp_path / "more.ris"
     more.write_text(
@@ -331,6 +462,15 @@ def test_export_command_flow_json(project: Workspace) -> None:
     assert result.exit_code == 0
     data = json.loads(result.stdout)
     assert data["what"] == "flow" and Path(data["path"]).name == "prisma_flow.json"
+
+
+def test_export_command_flow_as_png(project: Workspace) -> None:
+    pytest.importorskip("matplotlib")
+    result = CliRunner().invoke(
+        app, ["export", str(project.root), "--what", "flow", "--format", "png"]
+    )
+    assert result.exit_code == 0, result.output
+    assert "prisma_flow.png" in result.output
 
 
 def test_export_command_reports_a_locked_target_with_exit_four(

@@ -21,11 +21,11 @@ bereitet sie auf und wird sie zusammen mit Ihren Ein- und Ausschlusskriterien ei
 | Gültigkeitsprüfung (fehlende Abstracts, Front-Matter, zurückgezogene Studien) | **umgesetzt** (läuft in `crapai check`) |
 | Vorprüfung, Kosten- und Dauerschätzung (`crapai check`) | **umgesetzt** |
 | Deterministische Vorfilter (Sprache, Jahr, Publikationstyp, Stichwörter) | **umgesetzt** |
-| Export (`crapai export`: CSV, XLSX, RIS, PRISMA-Fluss als JSON) und `crapai unlock` | **umgesetzt** |
+| Export (`crapai export`: CSV, XLSX, RIS, BibTeX, NBIB, PRISMA-Fluss als JSON) und `crapai unlock` | **umgesetzt** |
 | Lokale grafische Oberfläche (`crapai ui`, Streamlit) | **umgesetzt** (Seiten Projekt, Daten, Prüfen, Lauf, PRISMA-Fluss, Export, Auswertung, Einstellungen, Hilfe) |
 | Protokoll-System (`--verbose`, Sitzungskennung, Schutz vor Schlüsseln) und `scripts/qa.py` | **umgesetzt** |
 | Gesamtprüfung des Codes (Fehlerbehandlung, Protokolle, Datenverlust), ADR 0020, 0025-Nachtrag | **umgesetzt** |
-| PRISMA-Ereignisse und Flusszahlen (`data/events.jsonl`, Export als `prisma_flow.json`) | **umgesetzt**; als Bild (PNG/SVG) in Planung |
+| PRISMA-Ereignisse und Flusszahlen (`data/events.jsonl`, Export als `prisma_flow.json` oder als Grafik PNG/SVG) | **umgesetzt** |
 | Unscharfe Duplikatsuche (T-M2-02) | **zurückgestellt** (braucht `rapidfuzz`, Freigabe offen) |
 | Screening mit Sprachmodell (`crapai screen`): Päckchen, Prüfung, Fortschrittsbalken, Fortsetzen nach Abbruch (M3) | **umgesetzt** (getestet mit dem Mock-Anbieter; Live-Test mit Schlüssel folgt) |
 | Ergebnistabelle und Auswertung (Diagramme, Kennzahlen, Export/Wiedereinlesen) | **umgesetzt** |
