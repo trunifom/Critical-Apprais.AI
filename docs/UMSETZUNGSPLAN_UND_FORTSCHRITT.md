@@ -230,4 +230,14 @@ Auftrag der Projektleitung im Chat: Volltext-Screening umsetzen (bisher auf Meil
 
 | [x] | Kostenvoranschlag berücksichtigt im Volltext-Modus die tatsächliche (zugeschnittene) PDF-Länge, lehnt `map_reduce` wie `crapai screen` ab; Oberfläche: ZIP-Hochladen (Vorschau über `check_fulltext_zip`), Moduswahl samt `prompt_variant`/`output_format`/`fulltext.strategy` im Einstellungsformular | 2026-10-02 | `21efd0baf` |
 
-Noch offen (nicht Teil dieser Runde, bewusst zurückgestellt): `map_reduce`-Strategie in der Engine (bisher nur abgelehnt, nicht umgesetzt); Einzel-PDF-Import ohne Zip; OCR für gescannte PDFs. Danach folgen laut Auftrag: Settings-Profile, dann die drei Export-Formate.
+Noch offen (nicht Teil dieser Runde, bewusst zurückgestellt): `map_reduce`-Strategie in der Engine (bisher nur abgelehnt, nicht umgesetzt); Einzel-PDF-Import ohne Zip; OCR für gescannte PDFs.
+
+## Wiederverwendbare Settings-Profile (ADR 0027, 2026-10-02)
+
+Zweiter Teil des Auftrags (nach Volltext-Screening). Kein Plankapitel dafür vorhanden; Entwurf lehnt sich an die bestehende Überschreibdatei (ADR 0021) an.
+
+| Status | Schritt | Datum / Uhrzeit | Commit |
+|---|---|---|---|
+| [x] | `config/profiles.py` (`SettingsProfile`, speichert `objectives`/`criteria`/`screening`/`llm` aus der wirksamen Konfiguration, lädt in `project.overrides.yaml`, nie in `project.yaml`), Befehle `crapai profile save/load/list/show/delete`, Oberfläche (Einstellungen-Seite) | 2026-10-02 | `e8d57bd7f` |
+
+Danach folgt laut Auftrag: die drei zusätzlichen Export-Formate (BibTeX/NBIB, PRISMA-Fluss als PNG/SVG, DOCX-Bericht).
