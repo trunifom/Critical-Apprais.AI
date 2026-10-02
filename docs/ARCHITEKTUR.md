@@ -111,10 +111,12 @@ So bleibt der Kern ohne Oberfläche testbar und später von Streamlit und CLI ge
 | `io.readers.ris` / `nbib` / `bibtex` / `tabular` | Reader | liefern `ReadResult` mit `RawRecord`-Objekten |
 | `io.readers.base` | gemeinsame Typen | `RawRecord`, `ReadResult`, `decode_text` (Kodierungskette) |
 | `io.readers.dispatch` | ein Einstieg | `read_source` |
+| `io.readers.pdf_zip` | Volltext-PDFs aus einem ZIP lesen (nie entpackt, Zip-Slip-Schutz), Qualität bewerten (`pages`/`chars`/`chars_per_page`/`has_text_layer`), Text bereinigen (Trennstriche, Ligaturen, Kopf-/Fusszeilen, Literaturverzeichnis abschneiden); ADR 0026 | `extract_pdf_zip`, `extract_one`, `PdfDocument`, `PdfZipResult` |
+| `io.fulltext_link` | Eine gefundene PDF per DOI, sonst per Titel (wie `prisma.dedup`) einem bestehenden Datensatz zuordnen; ein Treffer wird eine **neue, zusätzliche** Zeile (`fulltext_of`, `zip_member`), kein Treffer erscheint in `reports/unmatched_pdfs.csv`, nie stillschweigend verworfen; ADR 0026 | `link_fulltext`, `write_unmatched_report`, `FulltextLinkResult` |
 | `io.normalize` | Bereinigung | `clean_text`, `normalize_doi`, `coerce_year`, `normalize_list`, `to_record(s)` |
 | `io.records_store` | `records.csv` | `Record` (40 Spalten), `write_records`, `read_records`, Sicherungen |
 | `io.import_log` | Import-Protokoll | SHA-256, `ImportLogEntry`, `ensure_not_imported` (E106) |
-| `services.importing` | Import ablaufen lassen | `import_source` |
+| `services.importing` | Import ablaufen lassen; ein ZIP mit PDFs geht an `io.fulltext_link` statt an die üblichen Leser (ADR 0026) | `import_source` |
 | `services.project` | Projekt anlegen, Status | `create_project`, `project_status` |
 | `i18n`, `i18n.messages` | Texte und Meldungen | `I18n` (geschichtet: Python-Rückfall → en → Sprache), `Messages` (Fehlerbericht: Fehler CODE, Warum, Einzelheiten, Was tun), `resolve_language`, `required_keys` |
 | `cli` | Befehle | `init`, `import`, `status` |

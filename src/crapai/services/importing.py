@@ -22,6 +22,11 @@ from pathlib import Path
 
 from crapai.config.loader import load_project_config
 from crapai.errors import ImportFailed, SaraError, StorageError
+from crapai.io.fulltext_link import (
+    UNMATCHED_REPORT_NAME,
+    link_fulltext,
+    write_unmatched_report,
+)
 from crapai.io.import_log import (
     ImportLogEntry,
     append_entry,
@@ -29,7 +34,9 @@ from crapai.io.import_log import (
     sha256_file,
 )
 from crapai.io.normalize import ImportContext, to_records
+from crapai.io.readers.detect import SourceFormat, detect_format
 from crapai.io.readers.dispatch import read_source
+from crapai.io.readers.pdf_zip import extract_pdf_zip
 from crapai.io.records_store import read_records, write_records
 from crapai.project.workspace import Workspace
 from crapai.services.events import record_import
@@ -68,6 +75,7 @@ class ImportSummary:
     format_reason: str
     warnings: tuple[str, ...]
     mapping_source: str | None = None  # "cli", "project" or None (aliases only)
+    unmatched: int = 0  # PDFs (ADR 0026) that matched no record; see reports/unmatched_pdfs.csv
 
 
 def import_source(
@@ -100,6 +108,13 @@ def _import_locked(workspace: Workspace, request: ImportRequest, now: datetime) 
     path = request.path
     digest = sha256_file(path)
     ensure_not_imported(workspace.import_log, digest, force=request.force)
+
+    if detect_format(path).format is SourceFormat.ZIP:
+        # A ZIP of PDFs (ADR 0026) is not a bibliographic export: it adds full text to records
+        # that (are expected to) already exist, matched by DOI/title, not new rows for every PDF.
+        # That matching needs the project's existing records, which the generic read_source()
+        # path below never sees, so it is handled separately from here on.
+        return _import_fulltext_zip_locked(workspace, request, digest, now)
 
     mapping, mapping_source = _effective_mapping(workspace, request)
     result, detection = read_source(
@@ -175,6 +190,92 @@ def _import_locked(workspace: Workspace, request: ImportRequest, now: datetime) 
         format_reason=detection.reason,
         warnings=tuple(warnings),
         mapping_source=mapping_source if result.column_map else None,
+    )
+
+
+def _import_fulltext_zip_locked(
+    workspace: Workspace, request: ImportRequest, digest: str, now: datetime
+) -> ImportSummary:
+    """Import a ZIP of PDFs (ADR 0026): match each to an existing record, add one row per match.
+
+    Unlike every other import, this never creates a "new paper": a PDF with no match is not
+    added to ``records.csv`` at all (there is nothing in the project to attach it to), but it is
+    never silently dropped either -- it goes to ``reports/unmatched_pdfs.csv``.
+    """
+    path = request.path
+    zip_result = extract_pdf_zip(path)
+    stored = _copy_to_sources(path, workspace.sources_dir, digest)
+    label = request.label or path.stem
+    existing = read_records(workspace.records_csv)
+    link_result = link_fulltext(
+        existing, zip_result.documents, source_label=label, source_file=stored.name
+    )
+
+    notes = list(zip_result.notes)
+    warnings: list[str] = []
+    if link_result.unmatched:
+        report_path = workspace.reports_dir / UNMATCHED_REPORT_NAME
+        write_unmatched_report(report_path, link_result.unmatched)
+        notes.append(
+            f"{len(link_result.unmatched)} of {len(zip_result.documents)} PDF(s) could not be "
+            f"matched to a record; see {report_path.relative_to(workspace.root)}"
+        )
+        warnings.append("fulltext_unmatched")
+
+    write_records(
+        workspace.records_csv,
+        [*existing, *link_result.new_records],
+        backup_dir=workspace.backup_dir,
+        now=now,
+    )
+    quality_issues = sum(1 for r in link_result.new_records if r.exclusion_reason)
+    entry = ImportLogEntry(
+        timestamp=now,
+        source_file=stored.name,
+        sha256=digest,
+        source_label=label,
+        format=SourceFormat.ZIP.value,
+        records=len(link_result.new_records),
+        abstracts=0,  # a fulltext row never carries its own abstract
+        notes=notes,
+        forced=request.force,
+    )
+    try:
+        append_entry(workspace.import_log, entry)
+    except OSError as exc:
+        logger.error("Import log not written (%s); the records were saved", type(exc).__name__)
+        raise StorageError(
+            f"The records of {path.name} were saved, but the import log could not be written "
+            f"({type(exc).__name__})",
+            code="E401",
+            hint="Do not import this file again. Check data/records.import.jsonl and run "
+            "'crapai status'.",
+            details={"path": str(workspace.import_log)},
+        ) from exc
+    events_ok = record_import(
+        workspace, label, stored.name, SourceFormat.ZIP.value, len(link_result.new_records)
+    )
+    if not events_ok:
+        warnings.append("events_not_written")
+    logger.info(
+        "Imported %d PDF(s) from %s as '%s' (%d unmatched, %d with a quality problem)",
+        len(link_result.new_records), path.name, label, len(link_result.unmatched), quality_issues,
+    )  # fmt: skip
+    return ImportSummary(
+        source_file=stored.name,
+        source_label=label,
+        format=SourceFormat.ZIP.value,
+        sha256=digest,
+        records=len(link_result.new_records),
+        abstracts=0,
+        empty_records=0,
+        total_records=len(existing) + len(link_result.new_records),
+        encoding=None,
+        notes=tuple(notes),
+        column_map={},
+        format_reason="ZIP archive of PDFs (full text, ADR 0026)",
+        warnings=tuple(warnings),
+        unmatched=len(link_result.unmatched),
     )
 
 

@@ -108,6 +108,39 @@ def test_import_several_files_with_labels_and_status(demo: Path) -> None:
     assert "Configuration: OK" in status.output
 
 
+def test_import_a_pdf_zip_links_full_text_to_an_existing_record(demo: Path) -> None:
+    """crapai import also accepts a ZIP of PDFs (ADR 0026), matched by DOI/title."""
+    import zipfile
+
+    import pymupdf
+
+    invoke("import", demo, RIS10, "--label", "PubMed", "--lang", "en")
+    known_doi = "10.2468/eai.2022.005"  # the first record of RIS10
+
+    pdf = pymupdf.open()
+    page = pdf.new_page()
+    page.insert_textbox(
+        pymupdf.Rect(50, 50, 550, 750),
+        f"DOI: {known_doi}\n" + "Methods: a trial of a digital health intervention. " * 10,
+        fontsize=10,
+    )
+    data = pdf.tobytes()
+    pdf.close()
+
+    archive = demo.parent / "pdfs.zip"
+    with zipfile.ZipFile(archive, "w") as zf:
+        zf.writestr("paper.pdf", data)
+
+    result = invoke("import", demo, archive, "--label", "Fulltext", "--lang", "en")
+    assert result.exit_code == 0, result.output
+    assert "Format: zip" in result.output
+    records = read_records(demo / "data" / "records.csv")
+    linked = [r for r in records if r.zip_member == "paper.pdf"]
+    assert len(linked) == 1 and linked[0].has_fulltext is True
+    anchor = next(r for r in records if r.doi == known_doi)
+    assert linked[0].fulltext_of == anchor.study_uid
+
+
 def test_one_label_applies_to_all_files_and_wrong_count_is_an_error(demo: Path) -> None:
     ok = invoke(
         "import",

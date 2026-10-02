@@ -243,6 +243,7 @@ cli:
     no_abstracts: "Warnung: Keiner dieser Datensätze hat einen Abstract. Das Screening braucht Abstracts (oder die Option nur Titel)."
     low_abstract_ratio: "Warnung: Weniger als 60 % dieser Datensätze haben einen Abstract."
     empty_records: "Warnung: {count} Datensatz/Datensätze haben weder Titel noch Abstract und sind als EMPTY_RECORD markiert."
+    fulltext_unmatched: "Warnung: {count} PDF(s) in diesem Zip liessen sich keinem Datensatz zuordnen (DOI/Titel); siehe reports/unmatched_pdfs.csv."
     events_not_written: "Warnung: Die PRISMA-Ereignisdatei (data/events.jsonl) konnte nicht geschrieben werden. Die Datensätze sind gespeichert; führen Sie später 'crapai check' erneut aus, um das Ereignis nachzutragen."
   check:
     status:

@@ -117,7 +117,8 @@ crapai import mein-review pubmed.ris embase.bib --label PubMed --label Embase
 | NBIB/MEDLINE | `.nbib`, oft fälschlich `.ris` | PubMed „Send to → Citation manager“ bzw. Format MEDLINE |
 | BibTeX | `.bib` | auch die Exporte von Cochrane (mit Zeilen wie `Record #1 of 48`) |
 | Tabellen | `.csv`, `.tsv`, `.xlsx` | Spalten wie `title`, `abstract`, `authors`, `year`, `doi` werden automatisch zugeordnet (auch deutsche Namen wie `Titel`) |
-| PDF, ZIP | – | nicht Teil von Version 1 |
+| ZIP mit PDFs | `.zip` | Volltexte für bereits importierte Datensätze, siehe Abschnitt 5.5 (ADR 0026) |
+| einzelne PDF-Datei | `.pdf` | nicht unterstützt; PDFs in ein ZIP packen und das importieren |
 
 Das Programm erkennt das Format am **Inhalt**, nicht an der Endung. Beispiel: Eine PubMed-Datei mit der Endung `.ris` wird als NBIB gelesen und Sie erhalten den Hinweis
 *„read as nbib although the extension says .ris“*.
@@ -174,6 +175,19 @@ Nach dem Import erscheinen bei Bedarf Warnungen, und der Rückgabecode ist **4**
 | 1 | Eingabefehler (falsche Datei, falsche Angabe, kein Projektordner) |
 | 2 | Systemproblem (Datei gesperrt, Speicher voll, Projekt in Benutzung, unerwarteter Fehler) |
 | 4 | Ergebnis mit Warnungen |
+
+### 5.5 Volltexte importieren: ZIP mit PDFs
+
+```powershell
+crapai import mein-review fulltexte.zip --label Volltexte
+```
+
+Für das Volltext-Screening (Abschnitt 6o) werden PDFs **einem bestehenden Datensatz zugeordnet**, nicht als neue Datensätze angelegt: Das Programm liest jede PDF im ZIP (nie auf die Festplatte entpackt), sucht zuerst eine DOI auf der ersten Seite, sonst gleicht es den Titel ab (wie bei `crapai dedup`), und findet so den passenden Datensatz. Der Treffer wird als **neue, zusätzliche Zeile** in `records.csv` gespeichert (`has_fulltext: true`, `fulltext_of: <study_uid des Treffers>`, `zip_member: <Pfad in der ZIP>`); der ursprüngliche Datensatz bleibt unverändert.
+
+* **Ordner und versteckte Dateien** (`__MACOSX/`, `._Datei.pdf`) werden ohne Meldung übersprungen und gezählt; alles ausser `.pdf` ebenso.
+* **Kein Treffer:** Die PDF wird nicht verworfen, aber auch nicht als Datensatz angelegt (es gibt ja nichts, dem sie zugeordnet werden könnte) - sie erscheint in `reports/unmatched_pdfs.csv` mit Titel-/DOI-Vermutung, Seitenzahl und Qualität, und der Rückgabecode ist **4** (Warnung).
+* **Lesbarkeitsprobleme** einer zugeordneten PDF werden trotzdem gespeichert, mit Grund: `NO_TEXT` (vermutlich gescannt, kein Textlayer - unter 100 Zeichen pro Seite), `ENCRYPTED` (passwortgeschützt) oder `IMPORT_ERROR` (beschädigt oder zu gross, Grenze 50 MB). So unterscheidet das spätere Volltext-Screening "keine PDF gefunden" von "eine PDF wurde gefunden, ist aber nicht lesbar".
+* Der Text wird bereinigt (Trennstriche am Zeilenende zusammengezogen, Ligaturen wie „ﬁ“ aufgelöst, wiederkehrende Kopf-/Fusszeilen entfernt) und ab einer Literaturverzeichnis-Überschrift abgeschnitten.
 
 ## 6a. Duplikate markieren: `crapai dedup`
 

@@ -1,8 +1,11 @@
 """Read any supported import file: detect the format, then call the matching reader.
 
 This is the single entry point the import service uses, so the format decision (content first,
-extension second, plan chapter 25.1) lives in one place. PDF and ZIP files are recognised but
-refused: full-text screening is not part of version 1 (ADR 0015).
+extension second, plan chapter 25.1) lives in one place. A ZIP is handled one level up, in
+:mod:`crapai.services.importing`: a ZIP of PDFs (ADR 0026) is matched against the project's
+*existing* records, which this function has no access to (it only ever sees one file in
+isolation), so it never reaches here. A bare, single PDF file is recognised but refused: only a
+ZIP of PDFs is a supported way to bring in full text (ADR 0026).
 """
 
 from __future__ import annotations
@@ -43,16 +46,28 @@ def read_source(
         ``detection.extension_mismatch`` tells the caller to show it.
 
     Raises:
-        ImportFailed: E101 (unknown format, or PDF/ZIP which v1 does not import), E102 (no
-            records), E103 (undecodable), E104 (column not found).
+        ImportFailed: E101 (unknown format, or a bare PDF file -- zip it to import full text),
+            E102 (no records), E103 (undecodable), E104 (column not found).
     """
     detection = detect_format(path)
     fmt = detection.format
-    if fmt in (SourceFormat.PDF, SourceFormat.ZIP):
+    if fmt is SourceFormat.PDF:
         raise ImportFailed(
-            f"{path.name}: importing PDF files or ZIP archives is not part of version 1",
+            f"{path.name}: a single PDF file cannot be imported directly",
             code="E101",
-            hint="Import a bibliographic export (RIS, NBIB, BibTeX, CSV or XLSX).",
+            hint="Put PDFs in a ZIP archive and import that (ADR 0026), "
+            "or import a bibliographic export (RIS, NBIB, BibTeX, CSV or XLSX).",
+            details={"path": str(path), "detected": fmt.value},
+        )
+    if fmt is SourceFormat.ZIP:
+        # services.importing intercepts a ZIP before calling read_source (it needs the project's
+        # existing records to match PDFs against, which this function does not have); a direct
+        # call here (or a ZIP that is not actually a PDF archive) is refused, not mis-read as a
+        # table.
+        raise ImportFailed(
+            f"{path.name}: a ZIP archive is only supported as a ZIP of PDFs via 'crapai import'",
+            code="E101",
+            hint="Check that the ZIP contains PDF files, or import a bibliographic export.",
             details={"path": str(path), "detected": fmt.value},
         )
     if fmt is SourceFormat.RIS:

@@ -272,7 +272,12 @@ def import_command(
 ) -> None:
     """Import bibliographic exports into the project (records are added, never deleted).
 
+    A ZIP of PDFs is also accepted (ADR 0026): each PDF is matched to an existing record by DOI,
+    then by title, and adds full text to it (zip_member/fulltext_of), not a new paper. A PDF that
+    matches nothing is reported in reports/unmatched_pdfs.csv, never silently dropped.
+
     Example: crapai import my-review pubmed.ris embase.bib --label PubMed --label Embase
+    Example: crapai import my-review fulltexts.zip --label Fulltext
     """
     messages = Messages(resolve_language(lang, folder / "project.yaml"))
     _setup_file_log(folder, messages)
@@ -332,9 +337,10 @@ def _print_import(summary: ImportSummary, messages: Messages, *, json_mode: bool
         _echo(messages.text(key, mapping=used), json_mode=json_mode)
     for note in summary.notes:
         _echo(messages.text("cli.import.note", note=note), json_mode=json_mode)
+    counts = {"empty_records": summary.empty_records, "fulltext_unmatched": summary.unmatched}
     for warning in summary.warnings:
         _echo(
-            messages.text(f"cli.warning.{warning}", count=summary.empty_records),
+            messages.text(f"cli.warning.{warning}", count=counts.get(warning, 0)),
             json_mode=json_mode,
             colour="yellow",
         )

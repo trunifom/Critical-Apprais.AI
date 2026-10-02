@@ -251,6 +251,7 @@ cli:
     no_abstracts: "Warning: none of these records has an abstract. Screening needs abstracts (or the title-only option)."
     low_abstract_ratio: "Warning: fewer than 60 % of these records have an abstract."
     empty_records: "Warning: {count} record(s) have neither title nor abstract and are marked EMPTY_RECORD."
+    fulltext_unmatched: "Warning: {count} PDF(s) in this ZIP could not be matched to a record by DOI or title; see reports/unmatched_pdfs.csv."
     events_not_written: "Warning: the PRISMA event file (data/events.jsonl) could not be written. The records are saved; run 'crapai check' again later to rebuild the event."
   check:
     status:
