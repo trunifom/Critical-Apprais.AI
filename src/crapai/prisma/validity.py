@@ -179,7 +179,16 @@ def classify_abstract(abstract: str, thresholds: QualityThresholds | None = None
 
 
 def _reason_for(record: Record, config: ValidityConfig) -> tuple[str, str] | None:
-    """The validity reason and its details for one record, or None."""
+    """The validity reason and its details for one record, or None.
+
+    A full-text attachment (``fulltext_of`` set, ADR 0026) is a PDF reference, not a
+    bibliographic record: it has no abstract of its own by design, and its (guessed) title is
+    not meant to be judged as "front/back matter" or anything else a real record's title would
+    be. None of these checks apply to it -- it is never excluded by validity, only by its own
+    PDF-quality flag (``NO_TEXT``/``ENCRYPTED``/``IMPORT_ERROR``, set on import).
+    """
+    if record.fulltext_of:
+        return None
     if is_not_screenable(record.title, config):
         return REASON_NOT_SCREENABLE, f"title is front or back matter: {record.title.strip()!r}"
     if config.exclude_retracted and record.is_retracted:

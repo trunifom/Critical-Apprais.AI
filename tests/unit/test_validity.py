@@ -147,6 +147,18 @@ def test_no_abstract_is_marked_but_the_record_is_kept() -> None:
     assert result.by_reason == {"NO_ABSTRACT": 1}
 
 
+def test_a_fulltext_attachment_is_never_marked_no_abstract() -> None:
+    """Regression test (found live, end-to-end with crapai screen): a PDF attachment (ADR 0026)
+    has no abstract of its own by design -- it is a PDF reference, not a bibliographic record.
+    Marking it NO_ABSTRACT made every one of its anchors permanently "unusable" for full-text
+    screening (services.screening._fulltext_anchors requires an attachment with no exclusion
+    reason), so a full-text run would find no eligible record at all."""
+    attachment = rec("DOI: 10.1/exc", "", fulltext_of="anchor-1")
+    result = mark_validity([attachment])
+    assert reasons(result) == [""]
+    assert result.valid_for_model == 1
+
+
 def test_title_only_mode_sends_records_without_abstract_to_the_model() -> None:
     result = mark_validity([rec("Without", "")], ValidityConfig(include_title_only=True))
     assert reasons(result) == [""] and result.valid_for_model == 1

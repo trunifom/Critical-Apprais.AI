@@ -339,6 +339,35 @@ def test_bibtex_and_nbib_exports(project: Workspace) -> None:
     assert nbib.path.suffix == ".nbib"
 
 
+def test_a_fulltext_attachment_is_not_exported_as_its_own_bibliographic_entry(
+    project: Workspace,
+) -> None:
+    """Regression test (found live, end-to-end): a full-text attachment (ADR 0026) legitimately
+    shares its DOI/title with the record it belongs to. CSV keeps it (the full data dump), but a
+    reference-manager format must not gain a spurious near-duplicate entry for every PDF import."""
+    from crapai.io.records_store import read_records, write_records
+
+    anchor_uid = "uid-1"  # the "Effects of exercise on mood" record already in `project`
+    attachment = record(
+        study_uid="uid-attachment",
+        title="DOI: 10.1000/a",
+        doi="10.1000/a",
+        fulltext_of=anchor_uid,
+        has_fulltext=True,
+    )
+    write_records(project.records_csv, [*read_records(project.records_csv), attachment])
+
+    bibtex = export_records(project, "bibtex", now=NOW)
+    assert "DOI: 10.1000/a" not in bibtex.path.read_text(encoding="utf-8")
+    nbib = export_records(project, "nbib", now=NOW)
+    assert "DOI: 10.1000/a" not in nbib.path.read_text(encoding="utf-8")
+    ris = export_records(project, "ris", now=NOW)
+    assert "DOI: 10.1000/a" not in ris.path.read_text(encoding="utf-8")
+
+    csv_export = export_records(project, "csv", now=NOW)
+    assert "DOI: 10.1000/a" in csv_export.path.read_text(encoding="utf-8-sig")
+
+
 def test_an_explicit_output_path_is_used(project: Workspace, tmp_path: Path) -> None:
     target = tmp_path / "mine.csv"
     assert export_records(project, "csv", output=target).path == target and target.exists()

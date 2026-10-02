@@ -150,6 +150,13 @@ def export_records(
     workspace = Workspace.open(workspace.root)
     everything = read_records(workspace.records_csv)
     selected = select_records(everything, scope)
+    if fmt in ("ris", "bibtex", "nbib"):
+        # A full-text attachment (``fulltext_of`` set, ADR 0026) is a PDF reference, not a
+        # bibliographic record of its own -- it legitimately shares its DOI/title with the record
+        # it belongs to (crapai.io.fulltext_link matches it by exactly that). A reference-manager
+        # format would otherwise gain a spurious, near-duplicate entry for every full-text import;
+        # CSV/XLSX keep it (they are the full data dump, all 40 columns of records.csv).
+        selected = [r for r in selected if not r.fulltext_of]
     stamp = (now or datetime.now()).strftime("%Y%m%d-%H%M%S")
     extension = _EXTENSIONS.get(fmt, fmt)
     target = _target(workspace, output, f"records-{scope}-{stamp}.{extension}")

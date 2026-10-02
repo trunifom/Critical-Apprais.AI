@@ -373,6 +373,20 @@ def clear_duplicate_marks(records: list[Record]) -> list[Record]:
     return cleaned
 
 
+def _blanked_for_fulltext_attachments(records: list[Record]) -> list[Record]:
+    """A view for matching only: a full-text attachment (``fulltext_of`` set, ADR 0026) has its
+    DOI/PMID/title/authors blanked, so it can never be linked to anything -- not its own anchor
+    (which it legitimately shares a DOI or title with) and not another record. The real records
+    (with their real fields) are still what gets marked and returned; only this view is linked.
+    """
+    return [
+        record.model_copy(update={"doi": "", "pmid": "", "title": "", "authors": ""})
+        if record.fulltext_of
+        else record
+        for record in records
+    ]
+
+
 def mark_duplicates(records: list[Record], config: DedupConfig | None = None) -> DedupResult:
     """Mark duplicates among ``records``. Earlier dedup marks are discarded first.
 
@@ -392,20 +406,27 @@ def mark_duplicates(records: list[Record], config: DedupConfig | None = None) ->
     min_words = config.min_title_words
 
     current = clear_duplicate_marks(records)
+    # A full-text attachment (ADR 0026: fulltext_of set) is not a paper of its own -- it
+    # legitimately shares its DOI/title/PMID with the record it belongs to, which would otherwise
+    # mark it (or that record) a "duplicate" of the other. It is matched (io.fulltext_link) by the
+    # same DOI/title it would now be compared against, so it never takes part in deduplication at
+    # all: a blanked view is linked instead of `current`, while `current` itself (unmodified) is
+    # still what gets marked and returned.
+    matching = _blanked_for_fulltext_attachments(current)
     groups = _Groups(len(current))
     if config.strategy == "doi_or_title":
-        _link_by_key(groups, {i: doi_key(r.doi) if r.doi else "" for i, r in enumerate(current)})
-        _link_pmids(groups, current)
-        _link_titles_avoiding_doi_conflicts(groups, current, min_words)
+        _link_by_key(groups, {i: doi_key(r.doi) if r.doi else "" for i, r in enumerate(matching)})
+        _link_pmids(groups, matching)
+        _link_titles_avoiding_doi_conflicts(groups, matching, min_words)
     elif config.strategy == "strict_ids":
-        _link_by_key(groups, {i: doi_key(r.doi) if r.doi else "" for i, r in enumerate(current)})
-        _link_pmids(groups, current)
+        _link_by_key(groups, {i: doi_key(r.doi) if r.doi else "" for i, r in enumerate(matching)})
+        _link_pmids(groups, matching)
     elif config.strategy == "title":
-        _link_by_key(groups, {i: title_key(r.title, min_words) for i, r in enumerate(current)})
+        _link_by_key(groups, {i: title_key(r.title, min_words) for i, r in enumerate(matching)})
     else:
-        _link_title_and_authors(groups, current, min_words)
+        _link_title_and_authors(groups, matching, min_words)
     if config.fuzzy and config.strategy != "strict_ids":
-        compared = _link_fuzzy(groups, current, config)
+        compared = _link_fuzzy(groups, matching, config)
         logger.info("Fuzzy dedup compared %d candidate pair(s)", compared)
 
     result = DedupResult(records=list(current))

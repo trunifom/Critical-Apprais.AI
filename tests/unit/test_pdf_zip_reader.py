@@ -180,6 +180,18 @@ def test_a_title_guess_falls_back_to_the_file_name_when_text_is_too_short() -> N
     assert extracted.quality == "NO_TEXT"
 
 
+def test_a_leading_doi_line_is_not_mistaken_for_the_title() -> None:
+    """Regression test: a real PDF found live where the DOI happened to be the first line."""
+    body = (
+        "DOI: 10.1234/excdep.2021.001\n"
+        "Exercise therapy for adults with depression: a randomised trial\n"
+        + "Methods: a randomised controlled trial of a structured exercise programme. " * 5
+    )
+    extracted = extract_one("x.pdf", make_pdf(body))
+    assert extracted.quality == ""
+    assert extracted.title == "Exercise therapy for adults with depression: a randomised trial"
+
+
 @pytest.mark.large
 @pytest.mark.skipif(not LARGE.exists(), reason="tests/data_large is not versioned")
 def test_the_large_fixture_has_six_usable_pdfs_and_skips_macosx_entries() -> None:

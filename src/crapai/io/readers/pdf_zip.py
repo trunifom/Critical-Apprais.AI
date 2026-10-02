@@ -158,13 +158,20 @@ def _clean_text(raw_pages: list[str]) -> str:
     return _cut_at_references(text).strip()
 
 
+_DOI_LINE = re.compile(r"^\s*doi\s*:?\s*10\.", re.IGNORECASE)
+
+
 def _guess_title(meta_title: str, text: str, member: str) -> str:
     cleaned_meta = meta_title.strip()
     if len(cleaned_meta) >= 8:
         return cleaned_meta
     for line in text.split("\n"):
         candidate = line.strip()
-        if len(candidate) >= 8 and not _PAGE_NUMBER_LINE.match(candidate):
+        if (
+            len(candidate) >= 8
+            and not _PAGE_NUMBER_LINE.match(candidate)
+            and not _DOI_LINE.match(candidate)
+        ):
             return candidate
     stem = member.rsplit("/", 1)[-1].rsplit(".", 1)[0]
     return re.sub(r"[_-]+", " ", stem).strip()

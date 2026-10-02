@@ -143,6 +143,28 @@ def test_doi_or_title_matches_by_doi_then_by_title() -> None:
     assert result.groups == 2
 
 
+def test_a_fulltext_attachment_is_never_marked_a_duplicate_of_its_own_anchor() -> None:
+    """Regression test (found live, end-to-end with crapai screen): a PDF attachment (ADR 0026)
+    legitimately shares its DOI/title with the record it belongs to (crapai.io.fulltext_link
+    matches it by exactly that). Treating it as an ordinary record used to mark one of the two a
+    DUPLICATE of the other -- and crapai screen re-runs dedup before every run, so a full-text
+    screening run would then find no eligible record at all."""
+    anchor = rec("Exercise therapy for depression", "10.1/exc", study_uid="anchor-1")
+    attachment = rec(
+        "Exercise therapy for depression", "10.1/exc", study_uid="pdf-1", fulltext_of="anchor-1"
+    )
+    result = mark_duplicates([anchor, attachment])
+    assert result.marked == 0
+    for record in result.records:
+        assert not record.is_duplicate and record.exclusion_reason != "DUPLICATE"
+
+
+def test_two_fulltext_attachments_of_different_anchors_are_never_merged_with_each_other() -> None:
+    first = rec("Study A", "10.1/same", study_uid="pdf-1", fulltext_of="anchor-1")
+    second = rec("Study A", "10.1/same", study_uid="pdf-2", fulltext_of="anchor-2")
+    assert mark_duplicates([first, second]).marked == 0
+
+
 def test_same_title_but_different_dois_are_not_merged() -> None:
     records = [rec("Editorial", "10.1/x"), rec("Editorial", "10.1/y"), rec("Editorial", "")]
     result = mark_duplicates(records)
