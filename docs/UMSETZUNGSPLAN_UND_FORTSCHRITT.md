@@ -261,3 +261,13 @@ Auftrag der Projektleitung: GUI-Texte/Hinweise nach den drei vorangehenden Erwei
 | [x] | Echter Ende-zu-Ende-Lauf von Hand (eigenes Projekt, `mine.ris` mit echten Abstracts, selbstgebautes PDF-Zip): Abstract-Screening → PDF-Zip-Import → Moduswechsel → Volltext-Screening scheiterte zunächst zweimal (`E102`, kein Datensatz übrig); dabei drei echte, von der bestehenden Testsuite nicht erfasste Fehler gefunden und behoben: (1) `prisma/dedup.py` markierte einen PDF-Anhang (`fulltext_of` gesetzt) als Duplikat seines eigenen Ankers, weil er dieselbe DOI/denselben Titel trägt; (2) `prisma/validity.py` markierte denselben Anhang `NO_ABSTRACT` (er hat naturgemäss keinen), was seinen Anker dauerhaft "nicht screenbar" machte; (3) `services/export.py` exportierte den Anhang als eigenen, unsinnigen Eintrag in BibTeX/NBIB/RIS. Jede Behebung mit Regressionstest, jeder Test nachweislich rot ohne die jeweilige Behebung (`git stash` der einen Datei, Testlauf, Wiederherstellung). Danach lief derselbe Ende-zu-Ende-Fall vollständig durch: Volltext-Screening (1 Anker geplant, Volltext tatsächlich gesendet), alle Export-Formate (CSV/XLSX/RIS/BibTeX/NBIB, PRISMA-Fluss JSON/PNG/SVG, DOCX-Bericht) | 2026-10-02 | `91a6bbf8d` |
 
 Gesamte Suite (2000 bestanden, 2 übersprungen), `ruff check .` und `mypy src` nach beiden Commits sauber.
+
+## Optionaler KI-Vorfilter mit Jev (ADR 0029, 2026-10-02)
+
+Im Chat recherchiert (Jev/TypeSafe AI, ein "typisiertes Entscheidungsmodell" ohne Fliesstext/Zitat/Begründung) und auf Auftrag der Projektleitung als expliziter Spezialmodus umgesetzt: nie automatisch Teil von `crapai check`/`crapai screen`, muss aktiviert (`ai_prefilter.enabled`) und separat gestartet werden (`crapai jev-prefilter` oder eigene GUI-Seite mit Bestätigung).
+
+| Status | Schritt | Datum / Uhrzeit | Commit |
+|---|---|---|---|
+| [x] | ADR 0029; `prisma/reasons.py` (neuer, isolierter Grund `AI_PREFILTER_JEV`, bewusst ausserhalb der automatischen Dedup-/Vorfilter-/Gültigkeits-Kette); `config/models.py` (`AiPrefilterOptions`); `llm/jev_client.py` (`JevClient`/`MockJevClient`, kein `LLMProvider`); `services/ai_prefilter.py`; PRISMA-Fold-Zweig (`prisma/events.py`/`flow.py`); `services/cost.py` (`estimate_ai_prefilter`); neuer Befehl `crapai jev-prefilter`; Oberfläche (neue Seite `jev`, Einstellungen-Abschnitt, Aktionen); `pyproject.toml`-Extra `prefilter-jev`; `templates/pricing.example.csv` | 2026-10-02 | `780d0e0ef` |
+
+Zurückgestellt (ADR 0029 nennt sie ausdrücklich): kein Hintergrundprozess für den Vorfilter-Lauf selbst; keine eigene Box im PRISMA-Bild; kein Vergleich gegen menschliche Entscheidungen; `choice`/`score`-Primitive von Jev ungenutzt.
