@@ -821,6 +821,7 @@ Jeder Import, jede Duplikat-Markierung und jede Gültigkeitsprüfung schreibt ei
 * **Veraltete Zahlen werden gemeldet, nicht verschwiegen.** Importieren Sie nach dem letzten `dedup`, erscheint `STALE_DEDUP`: Die neuen Datensätze zählen dann als "zum Screening" und nicht als Duplikate, bis Sie `crapai check` ausführen. Läuft `dedup` allein nach Vorfilter oder Gültigkeitsprüfung, werden deren ältere Zahlen nicht abgezogen (`STALE_PREFILTER`, `STALE_VALIDITY`), damit nichts doppelt gezählt wird.
 * Wiederholtes `crapai check` schreibt nichts Neues, wenn sich nichts geändert hat; die Datei wächst nicht.
 * Die Zahlen lassen sich als Datei ausgeben (`crapai export mein-review --what flow`, Abschnitt 6l) → `prisma_flow.json`, oder gleich als Grafik (`--format png` oder `svg`, Abschnitt 6g).
+* **`crapai jev-prefilter` schreibt ein eigenes Ereignis** (Abschnitt 6q): die Zahlen erscheinen in `prisma_flow.json` als eigene Felder `records_removed_by_ai_prefilter` und `ai_prefilter_reasons` (in `records_removed_before_screening_other`/`records_to_screen` bereits eingerechnet). Anders als bei den deterministischen Vorfiltern/der Gültigkeitsprüfung gibt es hier **kein** `STALE_*`: Ein späterer `crapai dedup`/`check`-Lauf kann die Jev-Markierung nicht verändern, also kann die Momentaufnahme auch nicht veralten.
 
 ## 7. Die Tabelle `records.csv` lesen
 
@@ -837,7 +838,7 @@ Wichtigste Spalten:
 | `abstract_quality` | Hinweis zum Abstract: `ok`, `short` (unter 20 Wörter) oder `suspect_concat` (verdächtig kaputt oder zusammengeklebt); schliesst nie aus |
 | `is_retracted` | „true“, wenn PubMed den Datensatz als zurückgezogen führt |
 | `import_notes` | Hinweise des Imports zu diesem Datensatz |
-| `extra_json` | alle übrigen Angaben aus der Quelldatei |
+| `extra_json` | alle übrigen Angaben aus der Quelldatei; bei einem Datensatz, den der KI-Vorfilter Jev markiert hat (Abschnitt 6q), zusätzlich ein Schlüssel `jev` mit der vollen Rohantwort (`model`, `probability_true`, `probability_false`, `confidence`, `cost`, `tokens_in`, `tokens_out`) - vollständig nachvollziehbar, auch wenn `exclusion_details` nur die Kurzfassung zeigt |
 
 Öffnen in Excel: Datei → Öffnen → Textdatei, Kodierung **UTF-8**, Trennzeichen **Komma**, sonst erscheinen Umlaute falsch.
 
@@ -856,10 +857,13 @@ Jeder Datensatz hat höchstens einen Grund; er wird **markiert, nie gelöscht**.
 | `NOT_SCREENABLE` | kein Studieninhalt, der Titel ist nur "Front-matter", "Index", "Table of contents", "Cover" u. ä. | Gültigkeitsprüfung |
 | `RETRACTED` | zurückgezogene Publikation, nur wenn `prefilters.exclude_retracted: true` gesetzt ist | Gültigkeitsprüfung |
 | `NO_ABSTRACT` | kein Abstract (ausser bei `screening.include_title_only: true`, dann geht der Titel allein ans Modell) | Gültigkeitsprüfung |
+| `AI_PREFILTER_JEV` | der optionale KI-Vorfilter Jev war sich sehr sicher, dass die Kriterien nicht erfüllt sind (Abschnitt 6q) | `crapai jev-prefilter` (nie automatisch) |
 | *(leer)* | geht ans Modell | |
 
 Ein Duplikat ohne Abstract zählt als `DUPLICATE`, nicht als `NO_ABSTRACT` (im PRISMA-Fluss werden Duplikate zuerst entfernt); ein Vorfilter-Grund geht einem Gültigkeitsgrund vor. Zurückgezogene Studien, die nicht ausgeschlossen werden, bleiben im Lauf und
 sind über `is_retracted = true` erkennbar. Die Gültigkeitsprüfung wird mit `crapai check` ausgeführt (Abschnitt 6b).
+
+`AI_PREFILTER_JEV` steht **ausserhalb** dieser Reihenfolge: Anders als die drei vorangehenden Schritte läuft er nie automatisch mit `crapai check`/`crapai screen` mit, und keiner dieser Schritte darf die Markierung löschen oder ersetzen (anders als bei den Vorfilter-/Gültigkeitsgründen, die sich gegenseitig ablösen können) - einmal von Jev markiert, bleibt ein Datensatz so markiert, bis Sie ihn von Hand zurücksetzen (`exclusion_reason` in `records.csv` leeren).
 
 ## 8. Fehlermeldungen
 
@@ -902,10 +906,12 @@ kann die Software noch nicht; legen Sie in diesem Fall ein neues Projekt an. *(E
 
 **Warum sind Angaben in `extra_json`?** Damit nichts verloren geht, auch wenn es keine eigene Spalte gibt.
 
-**Muss ich online sein?** Für Import, Prüfung und Export nicht. Nur `crapai screen` ruft den Modellanbieter auf (ausser mit dem Mock-Anbieter, Abschnitt 6k).
+**Muss ich online sein?** Für Import, Prüfung und Export nicht. Nur `crapai screen` und, falls eingeschaltet, `crapai jev-prefilter` rufen einen Anbieter auf (ausser mit dem Mock-Anbieter bzw. `ai_prefilter.model: mock`, Abschnitte 6k und 6q).
 
 **Werden meine Daten an Dritte gesendet?** Der Import sendet nichts. Beim Screening gehen Titel und Abstracts an den von Ihnen gewählten Anbieter; das müssen Sie vorher
-bestätigen (Rückfrage oder `--yes`). Es gibt keine Telemetrie.
+bestätigen (Rückfrage oder `--yes`). Beim optionalen KI-Vorfilter (Abschnitt 6q) gehen Titel/Abstract an Jev (TypeSafe AI), ebenfalls nur nach ausdrücklicher Bestätigung und nur, wenn Sie ihn zuvor eingeschaltet haben. Es gibt keine Telemetrie.
+
+**Soll ich den KI-Vorfilter (Jev) einschalten?** Nur wenn Sie grosse, klar themenfremde Teile Ihrer Treffer schnell und günstig vorsortieren möchten, bevor der eigentliche, begründete Lauf beginnt. Er ist kein Ersatz für `crapai screen`: er liefert keine Begründung und kein Zitat, kann nur ausschliessen (nie einschliessen), und ist bei kleineren Projekten oder wenn jede Begründung zählt meist nicht nötig. Lesen Sie Abschnitt 6q, bevor Sie ihn aktivieren.
 
 ## 10. Was noch kommt
 
