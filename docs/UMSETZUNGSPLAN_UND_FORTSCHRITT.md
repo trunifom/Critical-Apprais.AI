@@ -250,3 +250,14 @@ Dritter und letzter Teil des Auftrags. Kein Plankapitel dafür vorhanden.
 | [x] | `io/writers/docx_report.py` (Ziele, Kriterien, PRISMA-Fluss, Ergebnisse des neusten Laufs); neue Abhängigkeit `python-docx` (Extra `report`, von der Projektleitung freigegeben); `crapai export --what report`; Oberfläche: Formatauswahl jetzt auch für `flow` (vorher fehlte sie dort); CI installiert neu `stats`/`report` | 2026-10-02 | `b1e764c1d` |
 
 Damit sind alle drei Teile des Auftrags (Volltext-Screening, Settings-Profile, Export-Formate) umgesetzt. Offen bleiben die an den jeweiligen Stellen dokumentierten, bewusst zurückgestellten Punkte (u. a. `map_reduce`-Strategie in der Engine, Vergleich mit menschlichen Entscheidungen, PRISMA-Bild im DOCX-Bericht einbetten).
+
+## Dokumentations-Nachbesserung und Ende-zu-Ende-Prüfung des Volltext-Pfads (2026-10-02)
+
+Auftrag der Projektleitung: GUI-Texte/Hinweise nach den drei vorangehenden Erweiterungen nochmals umfassend nachführen, und den Ablauf (PDFs → Analyse → Ein-/Ausschluss → Export) Schritt für Schritt am echten Programm (nicht nur an den bestehenden Tests) nachvollziehen.
+
+| Status | Schritt | Datum / Uhrzeit | Commit |
+|---|---|---|---|
+| [x] | Einleitungstexte der Seiten Daten/Export/Einstellungen/Lauf (DE+EN) um die drei neuen Funktionen ergänzt; Lauf-Seite zeigt bei Volltext-Läufen jetzt `strategy` und sperrt den Start bei `map_reduce` (war im ursprünglichen Plan vorgesehen, aber nie umgesetzt) | 2026-10-02 | `3f9c6c5ba` |
+| [x] | Echter Ende-zu-Ende-Lauf von Hand (eigenes Projekt, `mine.ris` mit echten Abstracts, selbstgebautes PDF-Zip): Abstract-Screening → PDF-Zip-Import → Moduswechsel → Volltext-Screening scheiterte zunächst zweimal (`E102`, kein Datensatz übrig); dabei drei echte, von der bestehenden Testsuite nicht erfasste Fehler gefunden und behoben: (1) `prisma/dedup.py` markierte einen PDF-Anhang (`fulltext_of` gesetzt) als Duplikat seines eigenen Ankers, weil er dieselbe DOI/denselben Titel trägt; (2) `prisma/validity.py` markierte denselben Anhang `NO_ABSTRACT` (er hat naturgemäss keinen), was seinen Anker dauerhaft "nicht screenbar" machte; (3) `services/export.py` exportierte den Anhang als eigenen, unsinnigen Eintrag in BibTeX/NBIB/RIS. Jede Behebung mit Regressionstest, jeder Test nachweislich rot ohne die jeweilige Behebung (`git stash` der einen Datei, Testlauf, Wiederherstellung). Danach lief derselbe Ende-zu-Ende-Fall vollständig durch: Volltext-Screening (1 Anker geplant, Volltext tatsächlich gesendet), alle Export-Formate (CSV/XLSX/RIS/BibTeX/NBIB, PRISMA-Fluss JSON/PNG/SVG, DOCX-Bericht) | 2026-10-02 | `91a6bbf8d` |
+
+Gesamte Suite (2000 bestanden, 2 übersprungen), `ruff check .` und `mypy src` nach beiden Commits sauber.
